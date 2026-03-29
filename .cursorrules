@@ -1,0 +1,16 @@
+You are working on the Shelton Tool-Hire Review Portal — a .NET 8 Clean Architecture project.
+
+Read CLAUDE.md in the project root for the complete architecture guide, coding conventions, and entity details.
+Read docs/ERD.md for the full Entity Relationship Diagram with all fields and relationships.
+
+Key rules:
+- Clean Architecture: Domain → Application → Infrastructure/API. Never violate dependency direction.
+- Domain and Application projects must NEVER reference EF Core or ASP.NET.
+- Use file-scoped namespaces, async/await with CancellationToken, and FluentValidation.
+- Use Fluent API for EF configuration, not data annotations.
+- All API responses use DTOs — never return domain entities directly.
+- Controllers must be thin — delegate to Application services.
+- Use Result<T> pattern for service layer returns.
+- Review ratings: EquipmentRating, CustomerServiceRating, TechnicalSupportRating, AfterSalesRating, ValueForMoneyRating (each 1-5).
+- Soft-delete only (IsActive flag), no hard deletes.
+- Use DateTime.UtcNow, never DateTime.Now.
