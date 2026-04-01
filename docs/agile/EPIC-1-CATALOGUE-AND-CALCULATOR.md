@@ -21,6 +21,7 @@ This epic covers everything a customer interacts with when they land on the site
 - Works sensibly on mobile screens as well as desktop
 
 **Story Points:** 5
+**Priority:** Must
 **Sprint:** 1
 
 ---
@@ -38,6 +39,7 @@ This epic covers everything a customer interacts with when they land on the site
 - An empty state message shows if a category has no tools listed yet
 
 **Story Points:** 5
+**Priority:** Must
 **Sprint:** 1
 
 ---
@@ -56,6 +58,7 @@ This epic covers everything a customer interacts with when they land on the site
 - Average customer rating is visible if reviews exist (links to Epic 2)
 
 **Story Points:** 5
+**Priority:** Must
 **Sprint:** 1
 
 ---
@@ -74,6 +77,7 @@ This epic covers everything a customer interacts with when they land on the site
 - Search is not case-sensitive
 
 **Story Points:** 5
+**Priority:** Must
 **Sprint:** 2
 
 ---
@@ -94,6 +98,7 @@ This epic covers everything a customer interacts with when they land on the site
 - If the selected period is zero or negative, show a sensible error
 
 **Story Points:** 8
+**Priority:** Must
 **Sprint:** 2
 
 ---
@@ -111,6 +116,7 @@ This epic covers everything a customer interacts with when they land on the site
 - The filter can be cleared to show all results again
 
 **Story Points:** 3
+**Priority:** Should
 **Sprint:** 2
 
 ---
@@ -128,6 +134,7 @@ This epic covers everything a customer interacts with when they land on the site
 - Navigation does not break or overlap on smaller screens
 
 **Story Points:** 5
+**Priority:** Should
 **Sprint:** 2
 
 ---
@@ -148,6 +155,7 @@ This epic covers everything a customer interacts with when they land on the site
 - Unit tests cover the controller and service logic
 
 **Story Points:** 8
+**Priority:** Must
 **Sprint:** 1
 
 ---
@@ -160,12 +168,14 @@ This epic covers everything a customer interacts with when they land on the site
 
 **Acceptance Criteria:**
 - `Categories` table with Id, Name, Description, ImageUrl
-- `Tools` table with Id, Name, Description, CategoryId (FK), HourlyRate, DailyRate, WeeklyRate, ImageUrls, IsActive, CreatedDate, UpdatedDate
+- `Tools` table with Id, Name, Description, CategoryId (FK), HourlyRate, DailyRate, WeeklyRate, SpecialNotes, DepositRequired, DepositAmount, IsActive, OverallRating, ReviewCount, CreatedDate, UpdatedDate
+- `ToolImages` table with Id, ToolId (FK), ImageUrl, DisplayOrder, UploadedDate — images are stored in a separate table rather than a JSON column, allowing proper indexing and individual image management
 - Seed data includes at least 3 categories with 4-5 tools each
 - EF Core migrations are set up and working
 - Database can be recreated from migrations on any team member's machine
 
 **Story Points:** 5
+**Priority:** Must
 **Sprint:** 1
 
 ---
@@ -184,6 +194,7 @@ This epic covers everything a customer interacts with when they land on the site
 - .gitignore covers all the usual suspects (bin, obj, node_modules, .env)
 
 **Story Points:** 5
+**Priority:** Could
 **Sprint:** 1
 
 ---

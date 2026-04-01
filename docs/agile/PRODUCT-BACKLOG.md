@@ -8,6 +8,18 @@ We sat down as a team and talked through what the company actually needs versus 
 
 ---
 
+## User Personas
+
+We defined three personas to keep user needs front and centre during development:
+
+**Dave the DIY Customer** — 35-year-old homeowner. Browses at weekends looking for the right tool for a home project. Wants clear pricing, honest reviews, and an easy way to work out what it will cost him. Gets frustrated by hidden charges and tools that turn up in poor condition.
+
+**Sarah the Site Manager** — 42, manages a small construction firm. Uses the portal daily to compare hire rates and check equipment reliability. Needs fast search, accurate pricing across different hire periods, and values detailed reviews about technical support quality.
+
+**Mark the Moderator** — 28, works in Shelton's customer service team. Responsible for keeping the review section clean, responding to customer concerns, and updating equipment listings when prices change. Needs an efficient moderation queue and straightforward content management tools.
+
+---
+
 ## Our Epics
 
 We have settled on three core epics. Each one represents a chunk of value that we can deliver and demonstrate at sprint reviews.
@@ -58,6 +70,18 @@ When a customer writes a review, they rate the experience across these areas (ea
 
 The overall rating is an average of all five. We discussed weighting them differently but decided to keep it simple for the prototype.
 
+**Note on the 5th category:** The brief suggested "Miscellaneous" as the fifth rating category. We discussed this as a team and decided to replace it with "Value for Money" for the following reasons:
+- A "Miscellaneous" rating produces vague, hard-to-interpret scores — customers do not know what they are rating, and the data is not actionable for the business.
+- Looking at established review platforms (Trustpilot, Google Reviews for hire companies like HSS and Speedy), "Value for Money" is consistently one of the most common and most valued rating dimensions.
+- Value for Money gives Shelton a specific, measurable metric that directly influences customer purchase decisions and can inform pricing strategy.
+- This change was unanimously agreed by the team after researching competitor review structures.
+
+---
+
+## Tools and Services
+
+The brief refers to "tools and services". After discussion, we decided to model services (such as equipment delivery, operator hire, or PAT testing) as tools within the catalogue rather than creating a separate entity. Services share the same attributes as tools — name, description, hire rates, images, and reviews — so a separate schema would duplicate structure without adding value. Where Shelton offers services, they are listed under a "Services" category alongside the physical equipment categories. This keeps the data model clean while covering the full range of offerings.
+
 ---
 
 ## Tech Stack
@@ -68,6 +92,19 @@ The overall rating is an average of all five. We discussed weighting them differ
 - **Testing:** xUnit (unit tests), Playwright (end-to-end)
 - **CI/CD:** GitHub Actions
 - **Auth:** ASP.NET Identity with JWT tokens
+
+---
+
+## MoSCoW Prioritisation
+
+We have assigned MoSCoW priorities to all user stories to make scope decisions clear:
+
+| Priority | Meaning | Stories |
+|----------|---------|--------|
+| **Must** | Core requirements — the system does not meet the brief without these | US-1.1, US-1.2, US-1.3, US-1.4, US-1.5, US-1.8, US-1.9, US-2.1, US-2.2, US-2.3, US-2.4, US-2.5, US-2.6, US-2.7, US-2.9, US-3.1, US-3.2, US-3.3, US-3.4, US-3.6, US-3.9 |
+| **Should** | Important for a complete product but the prototype could function without them | US-1.6, US-1.7, US-2.8, US-3.5, US-3.7, US-3.10 |
+| **Could** | Adds polish but can be dropped if time is short | US-1.10 (CI pipeline), US-3.8 (dashboard) |
+| **Won't** (this phase) | Explicitly out of scope for this prototype | Real payment integration, booking system, stock/availability tracking, multi-language support |
 
 ---
 

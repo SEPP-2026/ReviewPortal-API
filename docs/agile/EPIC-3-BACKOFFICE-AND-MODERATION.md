@@ -23,6 +23,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 - Failed login attempts show a generic error message (no hints about which field was wrong)
 
 **Story Points:** 5
+**Priority:** Must
 **Sprint:** 2
 
 ---
@@ -43,6 +44,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 - A success message confirms the addition
 
 **Story Points:** 5
+**Priority:** Must
 **Sprint:** 4
 
 ---
@@ -62,6 +64,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 - There is a confirmation step before saving ("Are you sure you want to update this item?")
 
 **Story Points:** 5
+**Priority:** Must
 **Sprint:** 4
 
 ---
@@ -80,6 +83,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 - A thumbnail preview is shown after upload before saving
 
 **Story Points:** 5
+**Priority:** Must
 **Sprint:** 4
 
 ---
@@ -98,6 +102,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 - We are not doing hard deletes — everything is soft-deleted so review history is preserved
 
 **Story Points:** 3
+**Priority:** Should
 **Sprint:** 4
 
 ---
@@ -117,6 +122,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 - The queue shows a count badge in the admin navigation so moderators can see at a glance how many items are waiting
 
 **Story Points:** 8
+**Priority:** Must
 **Sprint:** 3
 
 ---
@@ -135,6 +141,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 - Changes to category names are reflected across the whole site immediately
 
 **Story Points:** 3
+**Priority:** Should
 **Sprint:** 4
 
 ---
@@ -156,6 +163,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 - Stats refresh when the page is loaded (no need for real-time updates)
 
 **Story Points:** 5
+**Priority:** Could
 **Sprint:** 4
 
 ---
@@ -188,6 +196,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 - Unauthorised requests return 401, forbidden requests return 403
 
 **Story Points:** 13
+**Priority:** Must
 **Sprint:** 3 & 4
 
 ---
@@ -208,6 +217,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 - Tests pass consistently (no flaky failures)
 
 **Story Points:** 8
+**Priority:** Should
 **Sprint:** 4
 
 ---

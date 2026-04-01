@@ -30,5 +30,10 @@ public class ReviewCommentConfiguration : IEntityTypeConfiguration<ReviewComment
             .WithMany(r => r.Comments)
             .HasForeignKey(rc => rc.ReviewId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(rc => rc.User)
+            .WithMany(u => u.ReviewComments)
+            .HasForeignKey(rc => rc.UserId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

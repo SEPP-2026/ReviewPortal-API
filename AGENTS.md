@@ -34,6 +34,9 @@ This project uses **Clean Architecture** with 4 layers. Read `CLAUDE.md` for the
 |------|-------|
 | Full ERD | `docs/ERD.md` |
 | Architecture guide | `CLAUDE.md` |
+| Requirements specification | `docs/REQUIREMENTS-SPECIFICATION.md` |
+| Non-functional requirements | `docs/NON-FUNCTIONAL-REQUIREMENTS.md` |
+| Testing strategy | `docs/TESTING-STRATEGY.md` |
 | Agile backlog | `docs/agile/PRODUCT-BACKLOG.md` |
 | Sprint plan | `docs/agile/SPRINT-PLANNING.md` |
 | Epic 1 (Catalogue) | `docs/agile/EPIC-1-CATALOGUE-AND-CALCULATOR.md` |

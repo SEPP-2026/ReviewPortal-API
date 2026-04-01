@@ -7,6 +7,8 @@ public class ReviewComment : BaseEntity
 {
     public int ReviewId { get; set; }
 
+    public int? UserId { get; set; }
+
     public required string CommenterName { get; set; }
 
     public required string CommentText { get; set; }
@@ -17,4 +19,6 @@ public class ReviewComment : BaseEntity
 
     // Navigation properties
     public Review Review { get; set; } = null!;
+
+    public User? User { get; set; }
 }

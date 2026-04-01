@@ -18,5 +18,7 @@ public class User : BaseEntity
     // Navigation properties
     public ICollection<Review> Reviews { get; set; } = new List<Review>();
 
+    public ICollection<ReviewComment> ReviewComments { get; set; } = new List<ReviewComment>();
+
     public ICollection<CompanyResponse> CompanyResponses { get; set; } = new List<CompanyResponse>();
 }

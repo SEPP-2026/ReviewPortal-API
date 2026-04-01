@@ -25,6 +25,7 @@ This epic deals with the whole review lifecycle — writing a review, rating dif
 - The review is saved with a status of "Pending" (not visible to other customers until approved)
 
 **Story Points:** 8
+**Priority:** Must
 **Sprint:** 3
 
 ---
@@ -43,6 +44,7 @@ This epic deals with the whole review lifecycle — writing a review, rating dif
 - Reviews can be paginated if there are more than 10
 
 **Story Points:** 5
+**Priority:** Must
 **Sprint:** 3
 
 ---
@@ -61,6 +63,7 @@ This epic deals with the whole review lifecycle — writing a review, rating dif
 - If there are fewer than 2 reviews, show "Not enough reviews to rate" instead of a number
 
 **Story Points:** 5
+**Priority:** Must
 **Sprint:** 3
 
 ---
@@ -79,6 +82,7 @@ This epic deals with the whole review lifecycle — writing a review, rating dif
 - A review can have multiple comments but we are not doing threaded/nested replies within comments (one level deep only)
 
 **Story Points:** 5
+**Priority:** Must
 **Sprint:** 3
 
 ---
@@ -97,6 +101,7 @@ This epic deals with the whole review lifecycle — writing a review, rating dif
 - The response can be edited or removed by admin users
 
 **Story Points:** 5
+**Priority:** Must
 **Sprint:** 3
 
 ---
@@ -117,6 +122,7 @@ This epic deals with the whole review lifecycle — writing a review, rating dif
 - Unit tests cover all review service logic and edge cases
 
 **Story Points:** 8
+**Priority:** Must
 **Sprint:** 3
 
 ---
@@ -136,6 +142,7 @@ This epic deals with the whole review lifecycle — writing a review, rating dif
 - Authentication uses ASP.NET Identity with JWT bearer tokens
 
 **Story Points:** 8
+**Priority:** Must
 **Sprint:** 2
 
 ---
@@ -153,6 +160,7 @@ This epic deals with the whole review lifecycle — writing a review, rating dif
 - If a review was rejected, a brief reason is shown (set by the moderator)
 
 **Story Points:** 3
+**Priority:** Should
 **Sprint:** 4
 
 ---
@@ -171,6 +179,7 @@ This epic deals with the whole review lifecycle — writing a review, rating dif
 - EF Core migrations created and tested
 
 **Story Points:** 5
+**Priority:** Must
 **Sprint:** 2
 
 ---
