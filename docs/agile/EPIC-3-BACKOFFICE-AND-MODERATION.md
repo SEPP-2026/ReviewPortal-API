@@ -12,7 +12,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 
 **As a** Shelton staff member,
 **I want to** log into a secure admin area,
-**so that** I can manage equipment and moderate reviews without unauthorized people getting in.
+**so that** I can manage equipment and moderate reviews without unauthorised people gaining access.
 
 **Acceptance Criteria:**
 - Admin users log in with email and password through a separate admin login page
@@ -25,6 +25,18 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 **Story Points:** 5
 **Priority:** Must
 **Sprint:** 2
+
+**Tasks:**
+
+| # | Task | Owner |
+|---|------|-------|
+| 1 | Configure role-based authorisation policies for "Admin" and "Moderator" roles | Backend |
+| 2 | Include role claims in JWT token generation for admin users | Backend |
+| 3 | Build the admin login page (separate from the public login page) | Frontend |
+| 4 | Implement admin area layout and navigation (distinct from the public site) | Frontend |
+| 5 | Enforce role-based access on frontend routes — redirect unauthorised users | Frontend |
+| 6 | Display a generic error message on failed login (no field-specific hints) | Frontend |
+| 7 | Write unit tests for role-based authorisation and token claim logic | Testing |
 
 ---
 
@@ -47,6 +59,19 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 **Priority:** Must
 **Sprint:** 4
 
+**Tasks:**
+
+| # | Task | Owner |
+|---|------|-------|
+| 1 | Create `ToolManagementService.CreateTool()` method with validation for all required fields | Backend |
+| 2 | Enforce the minimum one-image requirement before allowing the tool to be saved | Backend |
+| 3 | Build the "Add Equipment" form in the admin area with all required and optional fields | Frontend |
+| 4 | Implement category dropdown populated from existing categories | Frontend |
+| 5 | Add client-side validation with clear error messages for missing required fields | Frontend |
+| 6 | Integrate image upload into the form (at least one image required) | Frontend |
+| 7 | Display a success confirmation message after the tool is saved | Frontend |
+| 8 | Write unit tests for the tool creation service, including validation edge cases | Testing |
+
 ---
 
 ### US-3.3 – Edit existing equipment details and pricing
@@ -67,6 +92,17 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 **Priority:** Must
 **Sprint:** 4
 
+**Tasks:**
+
+| # | Task | Owner |
+|---|------|-------|
+| 1 | Create `ToolManagementService.UpdateTool()` method that sets `UpdatedDate` automatically | Backend |
+| 2 | Add "Edit" button to each tool in the admin equipment list | Frontend |
+| 3 | Build the edit form pre-filled with the tool's current values | Frontend |
+| 4 | Implement a confirmation dialogue before saving changes ("Are you sure you want to update this item?") | Frontend |
+| 5 | Verify that changes are reflected on the public site immediately after saving | Frontend |
+| 6 | Write unit tests for the tool update service, including timestamp auto-setting | Testing |
+
 ---
 
 ### US-3.4 – Manage tool images
@@ -86,6 +122,18 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 **Priority:** Must
 **Sprint:** 4
 
+**Tasks:**
+
+| # | Task | Owner |
+|---|------|-------|
+| 1 | Create image upload service with file format validation (JPG, PNG, WebP) and size limit (5MB) | Backend |
+| 2 | Create image deletion service that enforces the minimum one-image constraint | Backend |
+| 3 | Configure image storage location (Azure Blob Storage or local uploads folder for the prototype) | Backend |
+| 4 | Display existing images on the equipment edit page with individual delete buttons | Frontend |
+| 5 | Build image upload component with thumbnail preview shown before saving | Frontend |
+| 6 | Prevent deletion of the last remaining image (show a warning message) | Frontend |
+| 7 | Write unit tests for image upload validation and the one-image minimum constraint | Testing |
+
 ---
 
 ### US-3.5 – Deactivate or remove equipment
@@ -104,6 +152,17 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 **Story Points:** 3
 **Priority:** Should
 **Sprint:** 4
+
+**Tasks:**
+
+| # | Task | Owner |
+|---|------|-------|
+| 1 | Implement soft-delete logic in `ToolManagementService` (set `IsActive = false`; exclude from public queries) | Backend |
+| 2 | Add a reactivation method that sets `IsActive = true` | Backend |
+| 3 | Add "Deactivate" and "Reactivate" toggle buttons in the admin equipment list | Frontend |
+| 4 | Show an "Inactive" label for deactivated tools in the admin view | Frontend |
+| 5 | Verify that deactivated tools are hidden from the public catalogue and search results | Testing |
+| 6 | Write unit tests for soft-delete and reactivation logic | Testing |
 
 ---
 
@@ -125,6 +184,19 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 **Priority:** Must
 **Sprint:** 3
 
+**Tasks:**
+
+| # | Task | Owner |
+|---|------|-------|
+| 1 | Create `ModerationService` to return all pending reviews and comments, sorted by oldest first | Backend |
+| 2 | Implement approve action — update status to "Approved" and make content visible on the public site | Backend |
+| 3 | Implement reject action — update status to "Rejected" and store the rejection reason | Backend |
+| 4 | Build the "Moderation Queue" page displaying pending items (reviewer name, tool name, text, date, star ratings) | Frontend |
+| 5 | Add "Approve" and "Reject" buttons for each item, with a text input for the rejection reason | Frontend |
+| 6 | Add a pending-count badge in the admin navigation to indicate how many items are waiting | Frontend |
+| 7 | Ensure rejection reasons are transparent and visible to reviewers on their "My Reviews" page (links to US-2.8) | Frontend |
+| 8 | Write unit tests for moderation service logic (approve, reject, sorting, reason storage) | Testing |
+
 ---
 
 ### US-3.7 – Manage categories
@@ -144,13 +216,25 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 **Priority:** Should
 **Sprint:** 4
 
+**Tasks:**
+
+| # | Task | Owner |
+|---|------|-------|
+| 1 | Create `CategoryManagementService` with methods to add, update, and validate categories | Backend |
+| 2 | Implement a safeguard that prevents deletion of categories that still contain tools | Backend |
+| 3 | Build the "Categories" management page in the admin area | Frontend |
+| 4 | Add a form for creating a new category (name, description, image upload) | Frontend |
+| 5 | Allow editing of existing category details (name, description, image) | Frontend |
+| 6 | Show a warning message when an admin attempts to delete a category that has tools assigned | Frontend |
+| 7 | Write unit tests for category management service, including the deletion safeguard | Testing |
+
 ---
 
 ### US-3.8 – Admin dashboard with overview stats
 
 **As an** admin,
 **I want to** see a quick summary of key numbers when I log in,
-**so that** I have an idea of how the portal is doing without having to dig into each section.
+**so that** I have an idea of how the portal is doing without having to look through each section.
 
 **Acceptance Criteria:**
 - The admin home page shows:
@@ -166,9 +250,22 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 **Priority:** Could
 **Sprint:** 4
 
+**Tasks:**
+
+| # | Task | Owner |
+|---|------|-------|
+| 1 | Create `DashboardService` to calculate and return summary statistics (tool counts, pending reviews, monthly reviews, top-rated, most-reviewed) | Backend |
+| 2 | Build the admin home page layout with summary cards or simple charts | Frontend |
+| 3 | Display tool counts (active vs inactive) and review statistics | Frontend |
+| 4 | Display the top 5 highest-rated and top 5 most-reviewed tools | Frontend |
+| 5 | Ensure dashboard has adequate colour contrast and screen reader support for accessibility | Frontend |
+| 6 | Write unit tests for the dashboard statistics service | Testing |
+
 ---
 
 ### US-3.9 – Admin API endpoints
+
+*[Technical — kept for reference]*
 
 **As a** developer building the admin features,
 **I want** secured API endpoints for managing equipment, categories, and moderation,
@@ -202,6 +299,8 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 ---
 
 ### US-3.10 – Playwright end-to-end tests for critical flows
+
+*[Technical — kept for reference]*
 
 **As a** developer and part of the team's quality process,
 **I want** automated end-to-end tests for the most important user journeys,
