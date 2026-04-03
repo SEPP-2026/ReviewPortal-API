@@ -1,0 +1,1 @@
+github connection check with atlassian account.
