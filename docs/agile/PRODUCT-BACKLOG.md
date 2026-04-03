@@ -2,38 +2,50 @@
 
 ## Project Overview
 
-Shelton Tool-Hire wants a web-based review portal so customers can browse the hire catalogue, check rental prices, calculate costs for specific periods, and leave honest reviews about the tools and the service they received. On the business side, staff need a way to manage equipment listings, adjust pricing, upload images, and moderate the reviews before they go live.
+Shelton Tool-Hire requires a web-based review portal that allows customers to browse the hire catalogue, check rental prices, calculate costs for specific hire periods, and leave honest reviews about the tools and the service they received. On the business side, staff need the ability to manage equipment listings, adjust pricing, upload images, and moderate reviews before they are published.
 
-We sat down as a team and talked through what the company actually needs versus what would be nice to have. We looked at sites like HSS Hire, Speedy Hire, Jewson Tool Hire, and Brandon Hire Station to get a feel for how the industry handles categories and pricing. Most of them break things down by trade or job type, so we have gone with something similar.
+As a team, we discussed what the company actually needs compared to what would simply be nice to have. We reviewed competitor sites such as HSS Hire, Speedy Hire, Jewson Tool Hire, and Brandon Hire Station to understand how the hire industry typically handles categories and pricing. Most competitors organise their catalogues by trade or job type, so we have followed a similar approach.
+
+---
+
+## User Personas
+
+We defined three personas to keep user needs at the centre of development:
+
+**Dave the DIY Customer** — A 35-year-old homeowner who browses at weekends looking for the right tool for a home project. He wants clear pricing, honest reviews, and a straightforward way to work out what it will cost. He gets frustrated by hidden charges and tools that arrive in poor condition.
+
+**Sarah the Site Manager** — A 42-year-old who manages a small construction firm. She uses the portal daily to compare hire rates and check equipment reliability. She needs fast search, accurate pricing across different hire periods, and values detailed reviews about technical support quality.
+
+**Mark the Moderator** — A 28-year-old member of Shelton's customer service team. He is responsible for keeping the review section clean, responding to customer concerns, and updating equipment listings when prices change. He needs an efficient moderation queue and straightforward content management tools.
 
 ---
 
 ## Our Epics
 
-We have settled on three core epics. Each one represents a chunk of value that we can deliver and demonstrate at sprint reviews.
+We have settled on three core epics. Each one represents a meaningful portion of value that can be delivered and demonstrated at sprint reviews.
 
-| # | Epic | Who benefits | Quick summary |
-|---|------|-------------|---------------|
-| 1 | Tool Catalogue & Rental Calculator | Customers | Browse, search, and price up tool hire |
-| 2 | Reviews, Ratings & Community Interaction | Customers & the business | Leave reviews, comment, respond, rate the service |
+| # | Epic | Who Benefits | Summary |
+|---|------|-------------|---------|
+| 1 | Tool Catalogue & Rental Calculator | Customers | Browse, search, and calculate the cost of tool hire |
+| 2 | Reviews, Ratings & Community Interaction | Customers & the business | Leave reviews, comment, respond, and rate the service |
 | 3 | Back-Office Management & Moderation | Shelton staff | Manage listings, pricing, images, and moderate content |
 
 ---
 
-## Sprint Plan (4 Sprints × 2 weeks each)
+## Sprint Plan (4 Sprints × 2 Weeks Each)
 
-| Sprint | Dates (approx.) | Focus |
+| Sprint | Dates (Approx.) | Focus |
 |--------|-----------------|-------|
 | Sprint 1 | Weeks 1–2 | Project setup, database schema, authentication, basic catalogue browsing |
-| Sprint 2 | Weeks 3–4 | Rental calculator, search & filtering, category pages |
-| Sprint 3 | Weeks 5–6 | Reviews & ratings system, commenting, moderation queue |
+| Sprint 2 | Weeks 3–4 | Rental calculator, search and filtering, category pages |
+| Sprint 3 | Weeks 5–6 | Reviews and ratings system, commenting, moderation queue |
 | Sprint 4 | Weeks 7–8 | Admin dashboard, polish, testing, CI/CD, final integration |
 
 ---
 
 ## Tool Categories
 
-After looking at what competitors offer and thinking about what Shelton's customers would actually search for, we decided on these categories:
+After reviewing competitor offerings and considering what Shelton's customers would realistically search for, we agreed on the following categories:
 
 - **Building & Construction** – cement mixers, scaffolding, concrete saws, etc.
 - **Cleaning & Maintenance** – pressure washers, industrial vacuums, floor scrubbers
@@ -48,15 +60,27 @@ After looking at what competitors offer and thinking about what Shelton's custom
 
 ## Review Categories
 
-When a customer writes a review, they rate the experience across these areas (each out of 5 stars):
+When a customer writes a review, they rate their experience across these five areas (each out of 5 stars):
 
-1. **Equipment Performance** – Did the tool do the job? Was it in good nick?
+1. **Equipment Performance** – Did the tool do the job? Was it in good condition?
 2. **Booking & Customer Service** – How easy was it to book? Were the staff helpful?
-3. **Technical Support & Guidance** – Did they explain how to use it properly? Good advice?
-4. **After-Sales & Breakdown Support** – What happened when something went wrong? Out-of-hours help?
-5. **Value for Money** – Was the price fair for what you got?
+3. **Technical Support & Guidance** – Did they explain how to use it properly? Was the advice useful?
+4. **After-Sales & Breakdown Support** – What happened when something went wrong? Was out-of-hours help available?
+5. **Value for Money** – Was the price fair for what was provided?
 
-The overall rating is an average of all five. We discussed weighting them differently but decided to keep it simple for the prototype.
+The overall rating is an average of all five categories. We considered weighting them differently but decided to keep it straightforward for the prototype.
+
+**Note on the 5th category:** The project brief suggested "Miscellaneous" as the fifth rating category. We discussed this as a team and decided to replace it with "Value for Money" for the following reasons:
+- A "Miscellaneous" rating produces vague, difficult-to-interpret scores — customers would not know what they are rating, and the data would not be useful to the business.
+- Established review platforms (Trustpilot, Google Reviews for hire companies such as HSS and Speedy) consistently include "Value for Money" as one of the most common and most valued rating dimensions.
+- "Value for Money" gives Shelton a specific, measurable metric that directly influences customer purchasing decisions and can inform pricing strategy.
+- This change was unanimously agreed by the team after researching competitor review structures.
+
+---
+
+## Tools and Services
+
+The project brief refers to "tools and services". After discussion, we decided to model services (such as equipment delivery, operator hire, or PAT testing) as tools within the catalogue rather than creating a separate entity. Services share the same attributes as tools — name, description, hire rates, images, and reviews — so a separate schema would duplicate structure without adding value. Where Shelton offers services, they are listed under a "Services" category alongside the physical equipment categories. This keeps the data model clean while covering the full range of offerings.
 
 ---
 
@@ -71,11 +95,24 @@ The overall rating is an average of all five. We discussed weighting them differ
 
 ---
 
+## MoSCoW Prioritisation
+
+We assigned MoSCoW priorities to all user stories to make scope decisions clear:
+
+| Priority | Meaning | Stories |
+|----------|---------|--------|
+| **Must** | Core requirements — the system does not meet the brief without these | US-1.1, US-1.2, US-1.3, US-1.4, US-1.5, US-1.8, US-1.9, US-2.1, US-2.2, US-2.3, US-2.4, US-2.5, US-2.6, US-2.7, US-2.9, US-3.1, US-3.2, US-3.3, US-3.4, US-3.6, US-3.9 |
+| **Should** | Important for a complete product but the prototype could work without them | US-1.6, US-1.7, US-2.8, US-3.5, US-3.7, US-3.10 |
+| **Could** | Adds polish but can be dropped if time is limited | US-1.10 (CI pipeline), US-3.8 (dashboard) |
+| **Won't** (this phase) | Explicitly out of scope for this prototype | Real payment integration, booking system, stock/availability tracking, multi-language support |
+
+---
+
 ## Definition of Done
 
-A story is done when:
-- Code is written and peer-reviewed via pull request
+A story is considered done when:
+- Code is written and peer-reviewed through a pull request
 - Unit tests pass
-- Feature works as described in acceptance criteria
-- No obvious bugs on a quick manual check
-- Merged into the develop branch
+- The feature works as described in the acceptance criteria
+- No obvious bugs are found during a quick manual check
+- Code is merged into the develop branch

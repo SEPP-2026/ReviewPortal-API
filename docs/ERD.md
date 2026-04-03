@@ -71,6 +71,7 @@ erDiagram
     ReviewComments {
         int Id PK
         int ReviewId FK
+        int UserId FK
         string CommenterName
         string CommentText
         string Status
@@ -91,6 +92,7 @@ erDiagram
     Tools ||--o{ Reviews : "has many"
     Users ||--o{ Reviews : "writes"
     Reviews ||--o{ ReviewComments : "has many"
+    Users ||--o{ ReviewComments : "comments"
     Reviews ||--|| CompanyResponses : "has one"
     Users ||--o{ CompanyResponses : "responds as staff"
 ```
@@ -203,6 +205,7 @@ Customer comments on existing reviews. One level deep only (no nested threading)
 |-------|------|-------------|-------------|
 | **Id** | `int` | PK, Identity | Unique comment identifier |
 | **ReviewId** | `int` | FK → Reviews.Id, Required | Parent review |
+| **UserId** | `int` | FK → Users.Id, Nullable | Logged-in commenter (null for anonymous) |
 | **CommenterName** | `nvarchar(100)` | Required | Commenter's display name |
 | **CommentText** | `nvarchar(1000)` | Required, Min: 10 chars | Comment content |
 | **Status** | `nvarchar(20)` | Required, Default: `"Pending"` | `Pending`, `Approved`, or `Rejected` |
@@ -237,6 +240,7 @@ Official Shelton Tool-Hire responses to customer reviews. One response per revie
 | Tools → Reviews | One-to-Many | A tool can have many reviews; each review is for one tool |
 | Users → Reviews | One-to-Many | A user can write many reviews; each review has at most one user |
 | Reviews → ReviewComments | One-to-Many | A review can have many comments; each comment belongs to one review |
+| Users → ReviewComments | One-to-Many | A logged-in user can post many comments; each comment optionally links to one user |
 | Reviews → CompanyResponses | One-to-One | A review has at most one official company response |
 | Users → CompanyResponses | One-to-Many | A staff user can author many company responses |
 

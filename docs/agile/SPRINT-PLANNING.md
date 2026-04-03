@@ -1,12 +1,12 @@
 # Sprint Planning – All Sprints
 
-This document gives a consolidated view of how we have split the work across all four sprints. Each sprint is two weeks.
+This document provides a consolidated view of how we have distributed the work across all four sprints. Each sprint lasts two weeks.
 
 ---
 
 ## Sprint 1 – Foundation (Weeks 1–2)
 
-**Sprint Goal:** Get the project infrastructure in place and deliver a working, browsable tool catalogue with real data coming from the API.
+**Sprint Goal:** Set up the project infrastructure and deliver a working, browsable tool catalogue with real data served by the API.
 
 | Story ID | Story Title | Epic | Points | Owner |
 |----------|-------------|------|--------|-------|
@@ -20,15 +20,15 @@ This document gives a consolidated view of how we have split the work across all
 **Total Points:** 33
 
 **What we should be able to demo at Sprint Review:**
-- Running API that returns categories and tools from a SQL database
-- A working frontend that shows the homepage with categories, a category page with tool listings, and a tool detail page
-- GitHub Actions pipeline that builds and runs tests on every push
+- A running API that returns categories and tools from a SQL database
+- A working frontend showing the homepage with categories, a category page with tool listings, and a tool detail page
+- A GitHub Actions pipeline that builds and runs tests on every push
 
 ---
 
 ## Sprint 2 – Search, Calculator & Auth (Weeks 3–4)
 
-**Sprint Goal:** Let customers find tools effectively and see how much hire will cost. Set up user registration and admin authentication for Sprint 3.
+**Sprint Goal:** Enable customers to find tools effectively and see how much hire will cost. Set up user registration and admin authentication in preparation for Sprint 3.
 
 | Story ID | Story Title | Epic | Points | Owner |
 |----------|-------------|------|--------|-------|
@@ -43,18 +43,18 @@ This document gives a consolidated view of how we have split the work across all
 **Total Points:** 39
 
 **What we should be able to demo at Sprint Review:**
-- Search that finds tools by keyword
-- Rental calculator on each tool page that works out costs for a given date range
+- Search functionality that finds tools by keyword
+- A rental calculator on each tool page that works out costs for a given date range
 - Price filtering on category pages
 - User registration and login working with JWT tokens
-- Admin login with separate access level
-- Mobile-friendly layout across the catalogue
+- Admin login with a separate access level
+- A mobile-friendly layout across the catalogue
 
 ---
 
 ## Sprint 3 – Reviews & Moderation (Weeks 5–6)
 
-**Sprint Goal:** Deliver the full review and rating system including moderation, so customers can leave feedback and the business can manage it.
+**Sprint Goal:** Deliver the full review and rating system including moderation, so that customers can leave feedback and the business can manage it.
 
 | Story ID | Story Title | Epic | Points | Owner |
 |----------|-------------|------|--------|-------|
@@ -72,16 +72,16 @@ This document gives a consolidated view of how we have split the work across all
 **What we should be able to demo at Sprint Review:**
 - Customers can submit a review with star ratings across five categories
 - Reviews go into a moderation queue and are only visible after approval
-- Comments on reviews, also moderated
-- Company can respond to reviews from the admin side
-- Tools show average ratings and can be sorted by rating
-- Moderation queue in the admin area with approve/reject functionality
+- Comments on reviews, which are also moderated
+- The company can respond to reviews from the admin side
+- Tools display average ratings and can be sorted by rating
+- A moderation queue in the admin area with approve and reject functionality
 
 ---
 
 ## Sprint 4 – Admin Tools, Polish & Testing (Weeks 7–8)
 
-**Sprint Goal:** Complete the back-office features, tie up loose ends, polish the UI, and make sure the whole system is tested and reliable.
+**Sprint Goal:** Complete the back-office features, address remaining items, polish the UI, and ensure the whole system is thoroughly tested and reliable.
 
 | Story ID | Story Title | Epic | Points | Owner |
 |----------|-------------|------|--------|-------|
@@ -98,18 +98,18 @@ This document gives a consolidated view of how we have split the work across all
 **Total Points:** 44
 
 **What we should be able to demo at Sprint Review:**
-- Full admin dashboard with stats
-- Admins can add, edit, deactivate equipment and manage images
-- Category management
-- "My Reviews" page for logged-in customers
+- A full admin dashboard with summary statistics
+- Admins can add, edit, and deactivate equipment, as well as manage images
+- Category management functionality
+- A "My Reviews" page for logged-in customers
 - Playwright tests covering the three main user journeys
-- GitHub Actions pipeline running full test suite
-- Everything polished and ready for final presentation
+- GitHub Actions pipeline running the full test suite
+- A polished system ready for the final presentation
 
 ---
 
 ## Velocity Notes
 
-We are estimating a team velocity of roughly 35–45 points per sprint. Sprint 3 is the heaviest at 50 points, but a good chunk of that (the API endpoints) can be started towards the end of Sprint 2 if we finish early. We will reassess after Sprint 1 based on how much we actually got through.
+We are estimating a team velocity of roughly 35–45 points per sprint. Sprint 3 is the heaviest at 50 points, but a significant portion of that work (the API endpoints) can be started towards the end of Sprint 2 if we finish early. We will reassess after Sprint 1 based on how much we actually completed.
 
-If Sprint 3 looks like it is going to slip, we will move US-2.4 (comments on reviews) or US-2.5 (company responses) into Sprint 4 as they are not critical for the core review flow.
+If Sprint 3 looks likely to slip, we will move US-2.4 (comments on reviews) or US-2.5 (company responses) into Sprint 4, as they are not critical for the core review flow.

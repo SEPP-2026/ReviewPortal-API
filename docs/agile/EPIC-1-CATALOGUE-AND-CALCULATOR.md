@@ -1,6 +1,6 @@
 # Epic 1 – Tool Catalogue & Rental Calculator
 
-**As a customer, I want to browse Shelton's full range of hire equipment, find what I need quickly, and work out exactly how much it will cost me before I commit to booking.**
+**As a customer, I want to browse Shelton's full range of hire equipment, find what I need quickly, and work out exactly how much it will cost before I commit to booking.**
 
 This epic covers everything a customer interacts with when they land on the site and start looking for tools. It includes the homepage, category pages, individual tool detail pages, search functionality, and the rental cost calculator.
 
@@ -12,16 +12,28 @@ This epic covers everything a customer interacts with when they land on the site
 
 **As a** first-time visitor to the site,
 **I want to** see the main tool categories laid out clearly on the homepage,
-**so that** I can quickly find the type of equipment I am looking for without having to dig around.
+**so that** I can quickly find the type of equipment I am looking for without having to search around.
 
 **Acceptance Criteria:**
 - Homepage displays all tool categories with a relevant image and name for each
 - Clicking a category takes the user to a filtered catalogue page
 - The page loads within 3 seconds on a reasonable internet connection
-- Works sensibly on mobile screens as well as desktop
+- Works properly on mobile screens as well as desktop
 
 **Story Points:** 5
+**Priority:** Must
 **Sprint:** 1
+
+**Tasks:**
+
+| # | Task | Owner |
+|---|------|-------|
+| 1 | Create `CategoryService` method to retrieve all categories with images | Backend |
+| 2 | Build homepage layout with category grid (responsive card-based design) | Frontend |
+| 3 | Create reusable `CategoryCard` component displaying image and name | Frontend |
+| 4 | Implement navigation from each category card to the category browsing page | Frontend |
+| 5 | Ensure the page meets basic accessibility standards (alt text on images, keyboard navigation) | Frontend |
+| 6 | Write unit tests for `CategoryService` retrieval logic | Testing |
 
 ---
 
@@ -35,10 +47,24 @@ This epic covers everything a customer interacts with when they land on the site
 - Each category page shows a list of tools with thumbnail image, name, and starting price
 - Tools can be sorted by name or price (low to high, high to low)
 - Pagination or infinite scroll is used if there are more than 12 items
-- An empty state message shows if a category has no tools listed yet
+- An empty state message is shown if a category has no tools listed yet
 
 **Story Points:** 5
+**Priority:** Must
 **Sprint:** 1
+
+**Tasks:**
+
+| # | Task | Owner |
+|---|------|-------|
+| 1 | Create `ToolService` method to return paginated tools filtered by category | Backend |
+| 2 | Implement sorting logic (by name, price ascending, price descending) in the service layer | Backend |
+| 3 | Build category page layout with tool listing grid | Frontend |
+| 4 | Create reusable `ToolCard` component (thumbnail, name, starting price) | Frontend |
+| 5 | Add sort controls (dropdown or toggle buttons) to the page header | Frontend |
+| 6 | Implement pagination component for results exceeding 12 items | Frontend |
+| 7 | Handle and display empty state message when a category has no tools | Frontend |
+| 8 | Write unit tests for sorting and pagination logic | Testing |
 
 ---
 
@@ -49,14 +75,28 @@ This epic covers everything a customer interacts with when they land on the site
 **so that** I can make an informed decision about whether to hire it.
 
 **Acceptance Criteria:**
-- Page shows tool name, full description, multiple images (with ability to click through them), and the category it belongs to
+- Page shows tool name, full description, multiple images (with the ability to click through them), and the category it belongs to
 - Hire rates are displayed clearly: hourly rate, daily rate, and weekly rate
 - Any special notes or requirements (e.g. "requires a deposit" or "needs a trained operator") are shown
 - The page includes a link or section for the rental calculator (see US-1.5)
 - Average customer rating is visible if reviews exist (links to Epic 2)
 
 **Story Points:** 5
+**Priority:** Must
 **Sprint:** 1
+
+**Tasks:**
+
+| # | Task | Owner |
+|---|------|-------|
+| 1 | Create `ToolService` method to return full tool details including images and hire rates | Backend |
+| 2 | Build tool detail page layout with all required sections | Frontend |
+| 3 | Implement image gallery component with click-through navigation | Frontend |
+| 4 | Display hire rates in a clear, tabular format (hourly, daily, weekly) | Frontend |
+| 5 | Show special notes and deposit information where applicable | Frontend |
+| 6 | Add a placeholder section for the rental calculator (to be completed in US-1.5) | Frontend |
+| 7 | Display average customer rating if reviews exist (placeholder until Epic 2 is built) | Frontend |
+| 8 | Write unit tests for the tool detail service method | Testing |
 
 ---
 
@@ -74,7 +114,19 @@ This epic covers everything a customer interacts with when they land on the site
 - Search is not case-sensitive
 
 **Story Points:** 5
+**Priority:** Must
 **Sprint:** 2
+
+**Tasks:**
+
+| # | Task | Owner |
+|---|------|-------|
+| 1 | Implement search logic in `ToolService` with case-insensitive matching across name, description, and category | Backend |
+| 2 | Add the search bar component to the site-wide header/navigation | Frontend |
+| 3 | Build search results page reusing the `ToolCard` component | Frontend |
+| 4 | Display a friendly "no results" message with suggested actions when no matches are found | Frontend |
+| 5 | Ensure search bar is usable on mobile viewports | Frontend |
+| 6 | Write unit tests for search service logic, including edge cases (empty query, special characters) | Testing |
 
 ---
 
@@ -91,10 +143,23 @@ This epic covers everything a customer interacts with when they land on the site
 - Calculation logic: the system should work out the cheapest combination (e.g. 3 days is cheaper as a weekly rate if the weekly rate is less than 3 × daily)
 - A breakdown is shown: "2 days × £45/day + 3 hours × £8/hour = £99"
 - Validation prevents selecting an end date before the start date
-- If the selected period is zero or negative, show a sensible error
+- If the selected period is zero or negative, a sensible error is shown
 
 **Story Points:** 8
+**Priority:** Must
 **Sprint:** 2
+
+**Tasks:**
+
+| # | Task | Owner |
+|---|------|-------|
+| 1 | Implement rental cost calculation service that determines the cheapest combination of hourly, daily, and weekly rates | Backend |
+| 2 | Add date range validation logic (prevent negative or zero-length periods) | Backend |
+| 3 | Create a calculator API endpoint that accepts start/end date-times and returns cost breakdown | Backend |
+| 4 | Build date-time picker component for start and end inputs on the tool detail page | Frontend |
+| 5 | Display cost breakdown in a clear format (e.g. "2 days × £45/day + 3 hours × £8/hour = £99") | Frontend |
+| 6 | Show validation errors for invalid date selections | Frontend |
+| 7 | Write unit tests for the calculation logic covering multiple scenarios (hours only, days only, mixed, weekly thresholds) | Testing |
 
 ---
 
@@ -111,7 +176,18 @@ This epic covers everything a customer interacts with when they land on the site
 - The filter can be cleared to show all results again
 
 **Story Points:** 3
+**Priority:** Should
 **Sprint:** 2
+
+**Tasks:**
+
+| # | Task | Owner |
+|---|------|-------|
+| 1 | Add price range filter parameters (min/max daily rate) to the tool listing service method | Backend |
+| 2 | Build price range filter control (min/max inputs or a slider) on the category page | Frontend |
+| 3 | Update the tool listing to refresh dynamically without a full page reload when the filter is applied | Frontend |
+| 4 | Add a "clear filter" option that resets results to the full listing | Frontend |
+| 5 | Write unit tests for the price filter logic in the service layer | Testing |
 
 ---
 
@@ -122,17 +198,31 @@ This epic covers everything a customer interacts with when they land on the site
 **so that** I can look things up on site without needing a laptop.
 
 **Acceptance Criteria:**
-- All catalogue pages (homepage, category, detail, search results) are usable on screens 375px wide and up
+- All catalogue pages (homepage, category, detail, search results) are usable on screens 375px wide and above
 - Images resize appropriately
 - The search bar is accessible on mobile
 - Navigation does not break or overlap on smaller screens
 
 **Story Points:** 5
+**Priority:** Should
 **Sprint:** 2
+
+**Tasks:**
+
+| # | Task | Owner |
+|---|------|-------|
+| 1 | Audit all catalogue pages (homepage, category, detail, search results) for 375px+ compatibility | Frontend |
+| 2 | Implement responsive image resizing and appropriate aspect ratios | Frontend |
+| 3 | Ensure the search bar is fully accessible and usable on mobile viewports | Frontend |
+| 4 | Build a mobile-friendly navigation pattern (e.g. hamburger menu) that avoids overlapping elements | Frontend |
+| 5 | Ensure touch targets meet minimum size guidelines for accessibility | Frontend |
+| 6 | Test layout across common mobile viewport sizes (375px, 390px, 414px) | Testing |
 
 ---
 
 ### US-1.8 – API endpoints for tools and categories
+
+*[Technical — kept for reference]*
 
 **As a** developer working on the front end,
 **I want** RESTful API endpoints for categories and tools,
@@ -148,11 +238,14 @@ This epic covers everything a customer interacts with when they land on the site
 - Unit tests cover the controller and service logic
 
 **Story Points:** 8
+**Priority:** Must
 **Sprint:** 1
 
 ---
 
 ### US-1.9 – Database schema for tools and categories
+
+*[Technical — kept for reference]*
 
 **As a** developer,
 **I want** a properly structured database with tables for categories, tools, and hire rates,
@@ -160,17 +253,21 @@ This epic covers everything a customer interacts with when they land on the site
 
 **Acceptance Criteria:**
 - `Categories` table with Id, Name, Description, ImageUrl
-- `Tools` table with Id, Name, Description, CategoryId (FK), HourlyRate, DailyRate, WeeklyRate, ImageUrls, IsActive, CreatedDate, UpdatedDate
-- Seed data includes at least 3 categories with 4-5 tools each
+- `Tools` table with Id, Name, Description, CategoryId (FK), HourlyRate, DailyRate, WeeklyRate, SpecialNotes, DepositRequired, DepositAmount, IsActive, OverallRating, ReviewCount, CreatedDate, UpdatedDate
+- `ToolImages` table with Id, ToolId (FK), ImageUrl, DisplayOrder, UploadedDate — images are stored in a separate table rather than a JSON column, allowing proper indexing and individual image management
+- Seed data includes at least 3 categories with 4–5 tools each
 - EF Core migrations are set up and working
 - Database can be recreated from migrations on any team member's machine
 
 **Story Points:** 5
+**Priority:** Must
 **Sprint:** 1
 
 ---
 
 ### US-1.10 – Project scaffolding and CI pipeline
+
+*[Technical — kept for reference]*
 
 **As a** team member,
 **I want** the project structure, build pipeline, and dev environment set up,
@@ -184,6 +281,7 @@ This epic covers everything a customer interacts with when they land on the site
 - .gitignore covers all the usual suspects (bin, obj, node_modules, .env)
 
 **Story Points:** 5
+**Priority:** Could
 **Sprint:** 1
 
 ---
