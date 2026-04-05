@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using ReviewPortal.Domain.Interfaces;
 using ReviewPortal.Infrastructure.Data;
 using ReviewPortal.Infrastructure.Repositories;
+using ReviewPortal.Application.Interfaces;
+using ReviewPortal.Application.Services;
 
 namespace ReviewPortal.API.Extensions;
 
@@ -17,6 +19,7 @@ public static class ServiceCollectionExtensions
 
         // Repositories
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         return services;
@@ -26,7 +29,7 @@ public static class ServiceCollectionExtensions
     {
         // Application services will be registered here as they are implemented
         // e.g. services.AddScoped<IToolService, ToolService>();
-        // e.g. services.AddScoped<ICategoryService, CategoryService>();
+        services.AddScoped<ICategoryService, CategoryService>();
         // e.g. services.AddScoped<IReviewService, ReviewService>();
         // e.g. services.AddScoped<IAuthService, AuthService>();
 
