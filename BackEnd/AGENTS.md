@@ -1,18 +1,19 @@
-# AGENTS.md – AI Agent Instructions
+# AGENTS.md – AI Agent Instructions (Back End)
 
-> This file is read by AI coding agents (Codex, Devin, Copilot Workspace, etc.) to understand how to work in this repository.
+> This file is read by AI coding agents (Codex, Devin, Copilot Workspace, etc.) to understand how to work in the **back-end** portion of this repository.
+> All paths below are relative to the `BackEnd/` directory.
 
 ## Quick Start
 
 ```bash
-# Restore and build
-dotnet build ReviewPortal.sln
+# Restore and build (run from BackEnd/)
+dotnet build ReviewPortal.slnx
 
 # Run the API (default: https://localhost:5001)
 dotnet run --project src/ReviewPortal.API
 
 # Run all tests
-dotnet test ReviewPortal.sln
+dotnet test ReviewPortal.slnx
 ```
 
 ## Architecture

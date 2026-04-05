@@ -1,7 +1,8 @@
-You are working on the Shelton Tool-Hire Review Portal — a .NET 8 Clean Architecture project.
+You are working on the **back end** of the Shelton Tool-Hire Review Portal — a .NET 8 Clean Architecture project.
+This project lives inside the `BackEnd/` directory of a monorepo (the frontend is in the sibling `FrontEnd/` directory).
 
-Read CLAUDE.md in the project root for the complete architecture guide, coding conventions, and entity details.
-Read docs/ERD.md for the full Entity Relationship Diagram with all fields and relationships.
+Read `CLAUDE.md` in the `BackEnd/` directory for the complete architecture guide, coding conventions, and entity details.
+Read `docs/ERD.md` for the full Entity Relationship Diagram with all fields and relationships.
 
 Key rules:
 - Clean Architecture: Domain → Application → Infrastructure/API. Never violate dependency direction.

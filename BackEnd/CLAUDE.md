@@ -1,11 +1,13 @@
-# CLAUDE.md – Shelton Tool-Hire Review Portal
+# CLAUDE.md – Shelton Tool-Hire Review Portal (Back End)
 
 ## Project Overview
 
-This is the **Shelton Tool-Hire Review Portal** — a web application where customers browse hire equipment, calculate rental costs, and leave reviews. Staff manage the catalogue and moderate content from a back-office admin area.
+This is the **back-end** component of the **Shelton Tool-Hire Review Portal** — a web application where customers browse hire equipment, calculate rental costs, and leave reviews. Staff manage the catalogue and moderate content from a back-office admin area.
+
+> **Monorepo layout:** The repository root contains `BackEnd/` (this project) and `FrontEnd/` (the client application). All paths in this document are relative to the `BackEnd/` directory.
 
 - **Backend:** ASP.NET Core Web API (.NET 8) with Clean Architecture
-- **Frontend:** Next.js (React) — lives in `/src/ReviewPortal.Web`
+- **Frontend:** Lives in the sibling `../FrontEnd/` directory (separate from this .NET solution)
 - **Database:** Microsoft SQL Server with EF Core (Code-First migrations)
 - **Auth:** ASP.NET Identity with JWT bearer tokens
 - **Testing:** xUnit (unit + integration), Playwright (E2E)
@@ -16,16 +18,21 @@ This is the **Shelton Tool-Hire Review Portal** — a web application where cust
 ## Solution Structure (Clean Architecture)
 
 ```
-src/
-├── ReviewPortal.Domain/           # Entities, Enums, Value Objects, Domain Interfaces
-├── ReviewPortal.Application/      # Use Cases, DTOs, Service Interfaces, Validators
-├── ReviewPortal.Infrastructure/   # EF Core DbContext, Repositories, External Services
-├── ReviewPortal.API/              # Controllers, Middleware, DI Configuration
-└── ReviewPortal.Web/              # Next.js frontend (future)
+BackEnd/                           # ← You are here
+├── src/
+│   ├── ReviewPortal.Domain/           # Entities, Enums, Value Objects, Domain Interfaces
+│   ├── ReviewPortal.Application/      # Use Cases, DTOs, Service Interfaces, Validators
+│   ├── ReviewPortal.Infrastructure/   # EF Core DbContext, Repositories, External Services
+│   └── ReviewPortal.API/              # Controllers, Middleware, DI Configuration
+├── tests/
+│   ├── ReviewPortal.UnitTests/        # Unit tests for Application + Domain
+│   └── ReviewPortal.IntegrationTests/ # Integration tests with test database
+├── docs/                              # Project documentation & agile artefacts
+├── ReviewPortal.slnx                  # .NET solution file
+├── CLAUDE.md                          # This file
+└── AGENTS.md                          # AI agent instructions
 
-tests/
-├── ReviewPortal.UnitTests/        # Unit tests for Application + Domain
-└── ReviewPortal.IntegrationTests/ # Integration tests with test database
+FrontEnd/                          # Sibling directory (client app)
 ```
 
 ### Dependency Rule (STRICT)
@@ -177,6 +184,8 @@ Extensions/      # ServiceCollectionExtensions for DI registration
 ---
 
 ## Common Commands
+
+> All commands below should be run from the `BackEnd/` directory.
 
 ```bash
 # Build the solution
