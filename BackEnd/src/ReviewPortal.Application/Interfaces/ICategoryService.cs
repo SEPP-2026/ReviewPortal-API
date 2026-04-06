@@ -12,4 +12,6 @@ public interface ICategoryService
     Task<Result<CategoryDto>> CreateCategoryAsync(CreateCategoryRequest request, CancellationToken cancellationToken = default);
 
     Task<Result<CategoryDto>> UpdateCategoryAsync(int id, UpdateCategoryRequest request, CancellationToken cancellationToken = default);
+
+    Task<Result<bool>> DeleteCategoryAsync(int id, CancellationToken cancellationToken = default);
 }
