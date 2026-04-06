@@ -1,0 +1,5 @@
+## Repository-wide IDE state
+.vs/
+*.vsidx
+slnx.sqlite
+

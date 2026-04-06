@@ -30,6 +30,7 @@ build/
 bld/
 [Ll]og/
 [Ll]ogs/
+*.log
 msbuild.log
 msbuild.err
 msbuild.wrn
