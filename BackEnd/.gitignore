@@ -13,7 +13,6 @@
 .vs/
 *.vsidx
 *.rsuser
-launchSettings.json
 slnx.sqlite
 
 ## NuGet
