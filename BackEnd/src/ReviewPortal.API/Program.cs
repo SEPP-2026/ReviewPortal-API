@@ -1,12 +1,41 @@
+using System.Security.Claims;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ReviewPortal.API.Extensions;
 using ReviewPortal.API.Middleware;
+using ReviewPortal.Application.Common;
 
 var builder = WebApplication.CreateBuilder(args);
+var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>() ?? new JwtSettings();
+ValidateJwtSettings(jwtSettings);
 
 // Add services to the container.
+builder.Services.AddSingleton(jwtSettings);
+builder.Services.AddProblemDetails();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+
+// Add JWT Authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSettings.Issuer,
+            ValidAudience = jwtSettings.Audience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
+            NameClaimType = ClaimTypes.NameIdentifier,
+            RoleClaimType = ClaimTypes.Role,
+            ClockSkew = TimeSpan.FromMinutes(2)
+        };
+    });
+
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "ReviewPortal.API", Version = "v1" });
@@ -44,14 +73,17 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplicationServices();
 
 // Add CORS policy for Next.js frontend
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? ["http://localhost:3000", "https://localhost:3000"];
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("NextJsPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "https://localhost:3000")
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials(); // Often needed for Next.js with cookies/auth
+              .AllowCredentials();
     });
 });
 
@@ -76,7 +108,39 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Add redirect from root to Swagger UI
-app.MapGet("/", () => Results.Redirect("/swagger/index.html"));
+app.MapGet("/", () => Results.Ok(new
+{
+    service = "ReviewPortal API",
+    environment = app.Environment.EnvironmentName
+}));
+
+app.MapGet("/health", () => Results.Ok(new
+{
+    status = "Healthy",
+    checkedAtUtc = DateTime.UtcNow
+}));
 
 app.Run();
+
+static void ValidateJwtSettings(JwtSettings settings)
+{
+    if (string.IsNullOrWhiteSpace(settings.Secret) || settings.Secret.Length < 32)
+    {
+        throw new InvalidOperationException("JWT configuration is missing a secure secret. Set Jwt:Secret via user secrets or environment variables.");
+    }
+
+    if (string.IsNullOrWhiteSpace(settings.Issuer))
+    {
+        throw new InvalidOperationException("JWT configuration is missing Jwt:Issuer.");
+    }
+
+    if (string.IsNullOrWhiteSpace(settings.Audience))
+    {
+        throw new InvalidOperationException("JWT configuration is missing Jwt:Audience.");
+    }
+
+    if (settings.ExpiryMinutes <= 0)
+    {
+        throw new InvalidOperationException("JWT configuration must use a positive ExpiryMinutes value.");
+    }
+}

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ReviewPortal.API.Extensions;
 using ReviewPortal.Application.DTOs.Categories;
 using ReviewPortal.Application.Interfaces;
 
@@ -20,22 +21,14 @@ public class CategoriesController : ControllerBase
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
         var result = await _categoryService.GetAllCategoriesAsync(cancellationToken);
-        if (!result.IsSuccess)
-        {
-            return BadRequest(new { Error = result.Error });
-        }
-        return Ok(result.Value);
+        return this.ToActionResult(result, Ok);
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
         var result = await _categoryService.GetCategoryByIdAsync(id, cancellationToken);
-        if (!result.IsSuccess)
-        {
-            return NotFound(new { Error = result.Error });
-        }
-        return Ok(result.Value);
+        return this.ToActionResult(result, Ok);
     }
 
     [HttpPost]
@@ -43,11 +36,7 @@ public class CategoriesController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateCategoryRequest request, CancellationToken cancellationToken)
     {
         var result = await _categoryService.CreateCategoryAsync(request, cancellationToken);
-        if (!result.IsSuccess)
-        {
-            return BadRequest(new { Error = result.Error });
-        }
-        return CreatedAtAction(nameof(GetById), new { id = result.Value?.Id }, result.Value);
+        return this.ToActionResult(result, category => CreatedAtAction(nameof(GetById), new { id = category.Id }, category));
     }
 
     [HttpPut("{id}")]
@@ -55,11 +44,7 @@ public class CategoriesController : ControllerBase
     public async Task<IActionResult> Update(int id, [FromBody] UpdateCategoryRequest request, CancellationToken cancellationToken)
     {
         var result = await _categoryService.UpdateCategoryAsync(id, request, cancellationToken);
-        if (!result.IsSuccess)
-        {
-            return BadRequest(new { Error = result.Error });
-        }
-        return Ok(result.Value);
+        return this.ToActionResult(result, Ok);
     }
 
     [HttpDelete("{id}")]
@@ -67,10 +52,6 @@ public class CategoriesController : ControllerBase
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var result = await _categoryService.DeleteCategoryAsync(id, cancellationToken);
-        if (!result.IsSuccess)
-        {
-            return BadRequest(new { Error = result.Error });
-        }
-        return NoContent();
+        return this.ToActionResult(result, _ => NoContent());
     }
 }
