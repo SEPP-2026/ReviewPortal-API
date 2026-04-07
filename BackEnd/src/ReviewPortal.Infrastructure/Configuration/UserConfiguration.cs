@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using ReviewPortal.Domain.Entities;
+using ReviewPortal.Infrastructure.Data;
 
 namespace ReviewPortal.Infrastructure.Configuration;
 
@@ -31,5 +32,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(u => u.CreatedDate)
             .HasDefaultValueSql("GETUTCDATE()");
+
+        builder.HasData(UserSeedData.Users);
     }
 }

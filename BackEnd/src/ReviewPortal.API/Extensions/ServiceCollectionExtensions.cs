@@ -2,9 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using ReviewPortal.Application.Interfaces;
 using ReviewPortal.Application.Services;
 using ReviewPortal.Domain.Interfaces;
-using ReviewPortal.Infrastructure.Authentication;
 using ReviewPortal.Infrastructure.Data;
 using ReviewPortal.Infrastructure.Repositories;
+using ReviewPortal.Infrastructure.Authentication;
 
 namespace ReviewPortal.API.Extensions;
 
@@ -32,7 +32,7 @@ public static class ServiceCollectionExtensions
 
         // Authentication Providers
         services.AddScoped<IJwtProvider, JwtProvider>();
-        services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
+        services.AddScoped<IPasswordHasher, IdentityPasswordHasher>();
 
         return services;
     }
