@@ -35,6 +35,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.FromMinutes(2)
         };
     });
+builder.Services.AddAuthorization();
 
 builder.Services.AddSwaggerGen(c =>
 {

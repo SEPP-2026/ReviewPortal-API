@@ -113,6 +113,11 @@ public class AuthService : IAuthService
             return "Name is required.";
         }
 
+        if (request.Name.Trim().Length > 100)
+        {
+            return "Name must be 100 characters or fewer.";
+        }
+
         if (string.IsNullOrWhiteSpace(request.Email))
         {
             return "Email is required.";
@@ -121,6 +126,11 @@ public class AuthService : IAuthService
         if (!IsValidEmail(request.Email))
         {
             return "A valid email address is required.";
+        }
+
+        if (request.Email.Trim().Length > 256)
+        {
+            return "Email must be 256 characters or fewer.";
         }
 
         if (string.IsNullOrWhiteSpace(request.Password))
