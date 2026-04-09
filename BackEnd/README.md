@@ -73,6 +73,7 @@ dotnet ef database update --project src/ReviewPortal.Infrastructure --startup-pr
 ```
 
 This creates the schema and inserts the seeded test users automatically.
+Run the full seed script afterwards if you want populated catalogue, review, comment, and response data across every table.
 
 ### 4. Run the API
 
@@ -125,11 +126,18 @@ Generated SQL files are stored in [`scripts/sql/`](scripts/sql/):
 
 - `InitialCreate.sql` - full migration script
 - `SeedTestUsers.sql` - standalone user seed script
+- `SeedFullTestData.sql` - standalone full relational seed script for all current tables
 
 Run the standalone user seed script manually with `sqlcmd` if needed:
 
 ```powershell
 sqlcmd -S "<server>" -d "<database>" -U "<username>" -P "<password>" -i "C:\Users\user\source\repos\ReviewPortal\BackEnd\scripts\sql\SeedTestUsers.sql"
+```
+
+Run the full relational seed script to populate categories, tools, images, reviews, comments, and company responses:
+
+```powershell
+sqlcmd -S "<server>" -d "<database>" -U "<username>" -P "<password>" -i "C:\Users\user\source\repos\ReviewPortal\BackEnd\scripts\sql\SeedFullTestData.sql"
 ```
 
 ## Common Commands

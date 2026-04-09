@@ -113,6 +113,51 @@ internal sealed class InMemoryUserRepository : IUserRepository
     }
 }
 
+internal sealed class InMemoryToolRepository : IToolRepository
+{
+    private readonly List<Tool> _tools;
+
+    public InMemoryToolRepository(IEnumerable<Tool>? tools = null)
+    {
+        _tools = tools?.ToList() ?? [];
+    }
+
+    public Task<Tool?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(_tools.SingleOrDefault(tool => tool.Id == id));
+    }
+
+    public Task<IReadOnlyList<Tool>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<IReadOnlyList<Tool>>(_tools);
+    }
+
+    public Task<Tool> AddAsync(Tool entity, CancellationToken cancellationToken = default)
+    {
+        entity.Id = _tools.Count == 0 ? 1 : _tools.Max(tool => tool.Id) + 1;
+        _tools.Add(entity);
+
+        return Task.FromResult(entity);
+    }
+
+    public Task UpdateAsync(Tool entity, CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteAsync(Tool entity, CancellationToken cancellationToken = default)
+    {
+        _tools.Remove(entity);
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<Tool>> GetActiveByCategoryAsync(int categoryId, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<IReadOnlyList<Tool>>(
+            _tools.Where(tool => tool.IsActive && tool.CategoryId == categoryId).ToList());
+    }
+}
+
 internal sealed class FakeUnitOfWork : IUnitOfWork
 {
     public int SaveChangesCallCount { get; private set; }
