@@ -26,7 +26,14 @@ public class CategoriesController : ControllerBase
         return this.ToActionResult(result, Ok);
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("featured")]
+    public async Task<IActionResult> GetFeatured(CancellationToken cancellationToken)
+    {
+        var result = await _categoryService.GetFeaturedCategoriesAsync(cancellationToken);
+        return this.ToActionResult(result, Ok);
+    }
+
+    [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
         var result = await _categoryService.GetCategoryByIdAsync(id, cancellationToken);

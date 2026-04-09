@@ -33,6 +33,11 @@ public class CategoryService : ICategoryService
         return Result<IReadOnlyList<CategoryDto>>.Success(categoryDtos);
     }
 
+    public Task<Result<IReadOnlyList<CategoryDto>>> GetFeaturedCategoriesAsync(CancellationToken cancellationToken = default)
+    {
+        return GetAllCategoriesAsync(cancellationToken);
+    }
+
     public async Task<Result<CategoryDto>> GetCategoryByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var category = await _categoryRepository.GetByIdWithToolsAsync(id, cancellationToken);
