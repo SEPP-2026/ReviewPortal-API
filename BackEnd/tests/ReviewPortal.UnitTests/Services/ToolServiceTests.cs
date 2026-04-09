@@ -124,6 +124,85 @@ public class ToolServiceTests
     }
 
     [Fact]
+    public async Task FilterByPriceRangeAsync_WhenCategoryDoesNotExist_ReturnsNotFound()
+    {
+        var service = CreateService();
+
+        var result = await service.FilterByPriceRangeAsync(404, minPrice: 25m, maxPrice: 75m, page: 1, pageSize: 12);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.FailureType);
+    }
+
+    [Fact]
+    public async Task FilterByPriceRangeAsync_WhenDailyRateRangeProvided_ReturnsMatchingActiveTools()
+    {
+        var category = new Category { Id = 1, Name = "Building & Construction" };
+        var service = CreateService(
+            categories: [category],
+            tools:
+            [
+                CreateTool(1, category, "Budget Drill", hourlyRate: 7m, dailyRate: 25m),
+                CreateTool(2, category, "Concrete Saw", hourlyRate: 18m, dailyRate: 65m),
+                CreateTool(3, category, "Platform Ladder", hourlyRate: 10m, dailyRate: 40m),
+                CreateTool(4, category, "Tower Scaffold", hourlyRate: 20m, dailyRate: 80m),
+                CreateTool(5, category, "Retired Saw", hourlyRate: 15m, dailyRate: 55m, isActive: false)
+            ]);
+
+        var result = await service.FilterByPriceRangeAsync(1, minPrice: 40m, maxPrice: 80m, page: 1, pageSize: 12, sortBy: "name");
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(3, result.Value!.TotalCount);
+        Assert.Equal(["Concrete Saw", "Platform Ladder", "Tower Scaffold"], result.Value.Items.Select(item => item.Name).ToArray());
+        Assert.All(result.Value.Items, item => Assert.InRange(item.DailyRate, 40m, 80m));
+    }
+
+    [Fact]
+    public async Task FilterByPriceRangeAsync_WhenOnlyMaximumPriceProvided_ReturnsToolsAtOrBelowMaximum()
+    {
+        var category = new Category { Id = 1, Name = "Cleaning & Maintenance" };
+        var service = CreateService(
+            categories: [category],
+            tools:
+            [
+                CreateTool(1, category, "Industrial Wet Vacuum", hourlyRate: 9m, dailyRate: 32m),
+                CreateTool(2, category, "Petrol Pressure Washer", hourlyRate: 14m, dailyRate: 52m)
+            ]);
+
+        var result = await service.FilterByPriceRangeAsync(1, minPrice: null, maxPrice: 40m, page: 1, pageSize: 12);
+
+        Assert.True(result.IsSuccess);
+        var item = Assert.Single(result.Value!.Items);
+        Assert.Equal("Industrial Wet Vacuum", item.Name);
+    }
+
+    [Fact]
+    public async Task FilterByPriceRangeAsync_WhenPriceRangeIsInvalid_ReturnsValidationFailure()
+    {
+        var category = new Category { Id = 1, Name = "Garden & Landscaping" };
+        var service = CreateService(categories: [category]);
+
+        var result = await service.FilterByPriceRangeAsync(1, minPrice: 90m, maxPrice: 40m, page: 1, pageSize: 12);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Minimum price must be less than or equal to maximum price.", result.Error);
+    }
+
+    [Fact]
+    public async Task FilterByPriceRangeAsync_WhenPriceIsNegative_ReturnsValidationFailure()
+    {
+        var category = new Category { Id = 1, Name = "Garden & Landscaping" };
+        var service = CreateService(categories: [category]);
+
+        var result = await service.FilterByPriceRangeAsync(1, minPrice: -1m, maxPrice: 40m, page: 1, pageSize: 12);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Price values must be greater than or equal to 0.", result.Error);
+    }
+
+    [Fact]
     public async Task GetToolByIdAsync_WhenToolExists_ReturnsFullDetailWithOrderedImages()
     {
         var category = new Category { Id = 1, Name = "Electrical & Heating" };

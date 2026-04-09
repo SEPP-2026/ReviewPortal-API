@@ -77,9 +77,39 @@ public class ToolService : IToolService
         return Result<PagedList<ToolSummaryDto>>.Success(CreatePagedSummary(matchingTools, page, pageSize));
     }
 
-    public Task<Result<PagedList<ToolSummaryDto>>> FilterByPriceRangeAsync(int categoryId, decimal? minPrice, decimal? maxPrice, int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<Result<PagedList<ToolSummaryDto>>> FilterByPriceRangeAsync(
+        int categoryId,
+        decimal? minPrice,
+        decimal? maxPrice,
+        int page,
+        int pageSize,
+        string? sortBy = null,
+        CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(Result<PagedList<ToolSummaryDto>>.Failure("Price-range filtering is not implemented in this slice."));
+        var validationError = ValidatePaging(page, pageSize) ?? ValidatePriceRange(minPrice, maxPrice);
+        if (validationError is not null)
+        {
+            return Result<PagedList<ToolSummaryDto>>.Failure(validationError);
+        }
+
+        var category = await _categoryRepository.GetByIdAsync(categoryId, cancellationToken);
+        if (category is null)
+        {
+            return Result<PagedList<ToolSummaryDto>>.NotFound($"Category with ID {categoryId} not found.");
+        }
+
+        var tools = await _toolRepository.GetActiveByCategoryAsync(categoryId, cancellationToken);
+        var filteredTools = tools.Where(tool =>
+            (!minPrice.HasValue || tool.DailyRate >= minPrice.Value) &&
+            (!maxPrice.HasValue || tool.DailyRate <= maxPrice.Value));
+
+        var sortedTools = ApplySort(filteredTools, sortBy, out validationError);
+        if (validationError is not null)
+        {
+            return Result<PagedList<ToolSummaryDto>>.Failure(validationError);
+        }
+
+        return Result<PagedList<ToolSummaryDto>>.Success(CreatePagedSummary(sortedTools, page, pageSize));
     }
 
     public async Task<Result<RentalCalculationResponse>> CalculateRentalCostAsync(int toolId, RentalCalculationRequest request, CancellationToken cancellationToken = default)
@@ -161,6 +191,21 @@ public class ToolService : IToolService
         if (query.Trim().Length > 200)
         {
             return "Search query must be 200 characters or fewer.";
+        }
+
+        return null;
+    }
+
+    private static string? ValidatePriceRange(decimal? minPrice, decimal? maxPrice)
+    {
+        if (minPrice is < 0m || maxPrice is < 0m)
+        {
+            return "Price values must be greater than or equal to 0.";
+        }
+
+        if (minPrice.HasValue && maxPrice.HasValue && minPrice.Value > maxPrice.Value)
+        {
+            return "Minimum price must be less than or equal to maximum price.";
         }
 
         return null;

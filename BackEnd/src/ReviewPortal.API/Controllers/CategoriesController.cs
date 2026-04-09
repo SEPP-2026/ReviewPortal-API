@@ -47,10 +47,15 @@ public class CategoriesController : ControllerBase
         [FromQuery] int pageSize = 12,
         [FromQuery] string? sortBy = null,
         [FromQuery] string? sortOrder = null,
+        [FromQuery] decimal? minPrice = null,
+        [FromQuery] decimal? maxPrice = null,
         CancellationToken cancellationToken = default)
     {
         var effectiveSort = BuildSortValue(sortBy, sortOrder);
-        var result = await _toolService.GetToolsByCategoryAsync(id, page, pageSize, effectiveSort, cancellationToken);
+        var result = minPrice.HasValue || maxPrice.HasValue
+            ? await _toolService.FilterByPriceRangeAsync(id, minPrice, maxPrice, page, pageSize, effectiveSort, cancellationToken)
+            : await _toolService.GetToolsByCategoryAsync(id, page, pageSize, effectiveSort, cancellationToken);
+
         return this.ToActionResult(result, Ok);
     }
 

@@ -84,6 +84,56 @@ public class CatalogueControllerTests
     }
 
     [Fact]
+    public async Task CategoriesGetTools_WhenPriceRangeProvided_UsesDailyRateFilter()
+    {
+        var pagedTools = CreatePagedTools("Concrete Saw");
+        var toolService = new FakeToolService
+        {
+            FilteredCategoryToolsResult = Result<PagedList<ToolSummaryDto>>.Success(pagedTools)
+        };
+        var controller = new CategoriesController(new FakeCategoryService(), toolService);
+
+        var result = await controller.GetTools(
+            6,
+            page: 1,
+            pageSize: 12,
+            sortBy: "price",
+            sortOrder: "asc",
+            minPrice: 40m,
+            maxPrice: 80m,
+            cancellationToken: CancellationToken.None);
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Same(pagedTools, okResult.Value);
+        Assert.Equal(6, toolService.LastFilterCategoryId);
+        Assert.Equal(40m, toolService.LastMinPrice);
+        Assert.Equal(80m, toolService.LastMaxPrice);
+        Assert.Equal(1, toolService.LastFilterPage);
+        Assert.Equal(12, toolService.LastFilterPageSize);
+        Assert.Equal("price_asc", toolService.LastFilterSortBy);
+        Assert.Null(toolService.LastCategoryId);
+    }
+
+    [Fact]
+    public async Task CategoriesGetTools_WhenPriceRangeIsInvalid_ReturnsBadRequestProblem()
+    {
+        var toolService = new FakeToolService
+        {
+            FilteredCategoryToolsResult = Result<PagedList<ToolSummaryDto>>.Failure("Minimum price must be less than or equal to maximum price.")
+        };
+        var controller = new CategoriesController(new FakeCategoryService(), toolService);
+
+        var result = await controller.GetTools(
+            6,
+            minPrice: 90m,
+            maxPrice: 40m,
+            cancellationToken: CancellationToken.None);
+
+        var problemResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status400BadRequest, problemResult.StatusCode);
+    }
+
+    [Fact]
     public async Task ToolsSearch_ReturnsPagedSearchResults()
     {
         var pagedTools = CreatePagedTools("Petrol Pressure Washer");
@@ -262,6 +312,18 @@ public class CatalogueControllerTests
 
         public string? LastCategorySortBy { get; private set; }
 
+        public int? LastFilterCategoryId { get; private set; }
+
+        public decimal? LastMinPrice { get; private set; }
+
+        public decimal? LastMaxPrice { get; private set; }
+
+        public int? LastFilterPage { get; private set; }
+
+        public int? LastFilterPageSize { get; private set; }
+
+        public string? LastFilterSortBy { get; private set; }
+
         public string? LastSearchQuery { get; private set; }
 
         public int? LastSearchPage { get; private set; }
@@ -278,6 +340,9 @@ public class CatalogueControllerTests
             Result<PagedList<ToolSummaryDto>>.Success(CreatePagedTools("Default Tool"));
 
         public Result<PagedList<ToolSummaryDto>> SearchToolsResult { get; set; } =
+            Result<PagedList<ToolSummaryDto>>.Success(CreatePagedTools("Default Tool"));
+
+        public Result<PagedList<ToolSummaryDto>> FilteredCategoryToolsResult { get; set; } =
             Result<PagedList<ToolSummaryDto>>.Success(CreatePagedTools("Default Tool"));
 
         public Result<ToolDto> ToolByIdResult { get; set; } =
@@ -309,9 +374,15 @@ public class CatalogueControllerTests
             return Task.FromResult(SearchToolsResult);
         }
 
-        public Task<Result<PagedList<ToolSummaryDto>>> FilterByPriceRangeAsync(int categoryId, decimal? minPrice, decimal? maxPrice, int page, int pageSize, CancellationToken cancellationToken = default)
+        public Task<Result<PagedList<ToolSummaryDto>>> FilterByPriceRangeAsync(int categoryId, decimal? minPrice, decimal? maxPrice, int page, int pageSize, string? sortBy = null, CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(Result<PagedList<ToolSummaryDto>>.Failure("Not used by these tests."));
+            LastFilterCategoryId = categoryId;
+            LastMinPrice = minPrice;
+            LastMaxPrice = maxPrice;
+            LastFilterPage = page;
+            LastFilterPageSize = pageSize;
+            LastFilterSortBy = sortBy;
+            return Task.FromResult(FilteredCategoryToolsResult);
         }
 
         public Task<Result<RentalCalculationResponse>> CalculateRentalCostAsync(int toolId, RentalCalculationRequest request, CancellationToken cancellationToken = default)
