@@ -57,7 +57,7 @@ public class ToolService : IToolService
 
     public Task<Result<ToolDto>> GetToolByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(Result<ToolDto>.Failure("Tool detail retrieval is not implemented in this slice."));
+        return GetToolByIdInternalAsync(id, cancellationToken);
     }
 
     public Task<Result<PagedList<ToolSummaryDto>>> SearchToolsAsync(string query, int page, int pageSize, CancellationToken cancellationToken = default)
@@ -174,6 +174,38 @@ public class ToolService : IToolService
                 .ThenBy(image => image.Id)
                 .Select(image => image.ImageUrl)
                 .FirstOrDefault());
+    }
+
+    private async Task<Result<ToolDto>> GetToolByIdInternalAsync(int id, CancellationToken cancellationToken)
+    {
+        var tool = await _toolRepository.GetByIdWithDetailsAsync(id, cancellationToken);
+        if (tool is null || !tool.IsActive)
+        {
+            return Result<ToolDto>.NotFound($"Tool with ID {id} not found.");
+        }
+
+        return Result<ToolDto>.Success(new ToolDto(
+            tool.Id,
+            tool.CategoryId,
+            tool.Category.Name,
+            tool.Name,
+            tool.Description,
+            tool.HourlyRate,
+            tool.DailyRate,
+            tool.WeeklyRate,
+            tool.SpecialNotes,
+            tool.DepositRequired,
+            tool.DepositAmount,
+            tool.IsActive,
+            tool.OverallRating,
+            tool.ReviewCount,
+            tool.Images
+                .OrderBy(image => image.DisplayOrder)
+                .ThenBy(image => image.Id)
+                .Select(image => new ToolImageDto(image.Id, image.ImageUrl, image.DisplayOrder))
+                .ToList(),
+            tool.CreatedDate,
+            tool.UpdatedDate));
     }
 
     private static (decimal Price, string Unit) GetStartingPrice(Tool tool)
