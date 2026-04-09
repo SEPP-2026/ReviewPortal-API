@@ -15,6 +15,17 @@ public class ToolsController : ControllerBase
         _toolService = toolService;
     }
 
+    [HttpGet("search")]
+    public async Task<IActionResult> Search(
+        [FromQuery(Name = "q")] string? query,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 12,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _toolService.SearchToolsAsync(query ?? string.Empty, page, pageSize, cancellationToken);
+        return this.ToActionResult(result, Ok);
+    }
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
