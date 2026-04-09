@@ -30,6 +30,8 @@ public record ToolSummaryDto(
     int Id,
     string Name,
     string CategoryName,
+    decimal StartingPrice,
+    string StartingPriceUnit,
     decimal DailyRate,
     decimal? OverallRating,
     int ReviewCount,

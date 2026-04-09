@@ -11,10 +11,12 @@ namespace ReviewPortal.API.Controllers;
 public class CategoriesController : ControllerBase
 {
     private readonly ICategoryService _categoryService;
+    private readonly IToolService _toolService;
 
-    public CategoriesController(ICategoryService categoryService)
+    public CategoriesController(ICategoryService categoryService, IToolService toolService)
     {
         _categoryService = categoryService;
+        _toolService = toolService;
     }
 
     [HttpGet]
@@ -28,6 +30,20 @@ public class CategoriesController : ControllerBase
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
         var result = await _categoryService.GetCategoryByIdAsync(id, cancellationToken);
+        return this.ToActionResult(result, Ok);
+    }
+
+    [HttpGet("{id:int}/tools")]
+    public async Task<IActionResult> GetTools(
+        int id,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 12,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] string? sortOrder = null,
+        CancellationToken cancellationToken = default)
+    {
+        var effectiveSort = BuildSortValue(sortBy, sortOrder);
+        var result = await _toolService.GetToolsByCategoryAsync(id, page, pageSize, effectiveSort, cancellationToken);
         return this.ToActionResult(result, Ok);
     }
 
@@ -53,5 +69,20 @@ public class CategoriesController : ControllerBase
     {
         var result = await _categoryService.DeleteCategoryAsync(id, cancellationToken);
         return this.ToActionResult(result, _ => NoContent());
+    }
+
+    private static string? BuildSortValue(string? sortBy, string? sortOrder)
+    {
+        if (string.IsNullOrWhiteSpace(sortBy))
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(sortOrder))
+        {
+            return sortBy;
+        }
+
+        return $"{sortBy}_{sortOrder}";
     }
 }
