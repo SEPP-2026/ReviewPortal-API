@@ -45,14 +45,7 @@ public class ToolService : IToolService
             return Result<PagedList<ToolSummaryDto>>.Failure(validationError);
         }
 
-        var toolList = sortedTools.ToList();
-        var items = toolList
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(MapSummary)
-            .ToList();
-
-        return Result<PagedList<ToolSummaryDto>>.Success(new PagedList<ToolSummaryDto>(items, page, pageSize, toolList.Count));
+        return Result<PagedList<ToolSummaryDto>>.Success(CreatePagedSummary(sortedTools, page, pageSize));
     }
 
     public Task<Result<ToolDto>> GetToolByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -60,9 +53,25 @@ public class ToolService : IToolService
         return GetToolByIdInternalAsync(id, cancellationToken);
     }
 
-    public Task<Result<PagedList<ToolSummaryDto>>> SearchToolsAsync(string query, int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<Result<PagedList<ToolSummaryDto>>> SearchToolsAsync(string query, int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(Result<PagedList<ToolSummaryDto>>.Failure("Tool search is not implemented in this slice."));
+        var validationError = ValidatePaging(page, pageSize) ?? ValidateSearchQuery(query);
+        if (validationError is not null)
+        {
+            return Result<PagedList<ToolSummaryDto>>.Failure(validationError);
+        }
+
+        var normalizedQuery = query.Trim();
+        var tools = await _toolRepository.GetAllActiveWithDetailsAsync(cancellationToken);
+        var matchingTools = tools
+            .Where(tool =>
+                ContainsIgnoreCase(tool.Name, normalizedQuery) ||
+                ContainsIgnoreCase(tool.Description, normalizedQuery) ||
+                ContainsIgnoreCase(tool.Category.Name, normalizedQuery))
+            .OrderBy(tool => tool.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(tool => tool.Id);
+
+        return Result<PagedList<ToolSummaryDto>>.Success(CreatePagedSummary(matchingTools, page, pageSize));
     }
 
     public Task<Result<PagedList<ToolSummaryDto>>> FilterByPriceRangeAsync(int categoryId, decimal? minPrice, decimal? maxPrice, int page, int pageSize, CancellationToken cancellationToken = default)
@@ -105,6 +114,21 @@ public class ToolService : IToolService
         if (pageSize > MaxPageSize)
         {
             return $"Page size must not exceed {MaxPageSize}.";
+        }
+
+        return null;
+    }
+
+    private static string? ValidateSearchQuery(string query)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return "Search query is required.";
+        }
+
+        if (query.Trim().Length > 200)
+        {
+            return "Search query must be 200 characters or fewer.";
         }
 
         return null;
@@ -174,6 +198,23 @@ public class ToolService : IToolService
                 .ThenBy(image => image.Id)
                 .Select(image => image.ImageUrl)
                 .FirstOrDefault());
+    }
+
+    private static PagedList<ToolSummaryDto> CreatePagedSummary(IEnumerable<Tool> tools, int page, int pageSize)
+    {
+        var toolList = tools.ToList();
+        var items = toolList
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(MapSummary)
+            .ToList();
+
+        return new PagedList<ToolSummaryDto>(items, page, pageSize, toolList.Count);
+    }
+
+    private static bool ContainsIgnoreCase(string value, string query)
+    {
+        return value.Contains(query, StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task<Result<ToolDto>> GetToolByIdInternalAsync(int id, CancellationToken cancellationToken)

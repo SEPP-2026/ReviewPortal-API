@@ -157,6 +157,12 @@ internal sealed class InMemoryToolRepository : IToolRepository
             _tools.Where(tool => tool.IsActive && tool.CategoryId == categoryId).ToList());
     }
 
+    public Task<IReadOnlyList<Tool>> GetAllActiveWithDetailsAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<IReadOnlyList<Tool>>(
+            _tools.Where(tool => tool.IsActive).ToList());
+    }
+
     public Task<Tool?> GetByIdWithDetailsAsync(int id, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(_tools.SingleOrDefault(tool => tool.Id == id));
