@@ -179,6 +179,102 @@ public class ToolServiceTests
         Assert.Equal(ErrorType.NotFound, result.FailureType);
     }
 
+    [Fact]
+    public async Task SearchToolsAsync_WhenQueryMatchesName_ReturnsMatchingToolSummary()
+    {
+        var category = new Category { Id = 1, Name = "Breaking & Drilling" };
+        var matchingTool = CreateTool(1, category, "SDS Max Drill", hourlyRate: 15m);
+        matchingTool.Images =
+        [
+            new ToolImage { Id = 1, ToolId = 1, ImageUrl = "sds-drill.jpg", DisplayOrder = 1 }
+        ];
+
+        var service = CreateService(
+            categories: [category],
+            tools:
+            [
+                matchingTool,
+                CreateTool(2, category, "Hydraulic Breaker", hourlyRate: 22m)
+            ]);
+
+        var result = await service.SearchToolsAsync("drill", 1, 12);
+
+        Assert.True(result.IsSuccess);
+        var item = Assert.Single(result.Value!.Items);
+        Assert.Equal("SDS Max Drill", item.Name);
+        Assert.Equal("Breaking & Drilling", item.CategoryName);
+        Assert.Equal(15m, item.StartingPrice);
+        Assert.Equal("sds-drill.jpg", item.ThumbnailUrl);
+    }
+
+    [Fact]
+    public async Task SearchToolsAsync_WhenQueryMatchesDescriptionOrCategory_ReturnsCaseInsensitiveMatches()
+    {
+        var cleaning = new Category { Id = 1, Name = "Cleaning & Maintenance" };
+        var heating = new Category { Id = 2, Name = "Electrical & Heating" };
+        var pressureWasher = CreateTool(1, cleaning, "Petrol Pressure Washer", hourlyRate: 14m);
+        pressureWasher.Description = "High-output machine for paving and site vehicles.";
+        var dehumidifier = CreateTool(2, heating, "50L Dehumidifier", hourlyRate: 11m);
+        var rotavator = CreateTool(3, new Category { Id = 3, Name = "Garden & Landscaping" }, "Rotavator", hourlyRate: 16m);
+
+        var service = CreateService(
+            categories: [cleaning, heating, rotavator.Category],
+            tools: [pressureWasher, dehumidifier, rotavator]);
+
+        var descriptionResult = await service.SearchToolsAsync("PAVING", 1, 12);
+        var categoryResult = await service.SearchToolsAsync("heating", 1, 12);
+
+        Assert.True(descriptionResult.IsSuccess);
+        Assert.Equal(["Petrol Pressure Washer"], descriptionResult.Value!.Items.Select(item => item.Name).ToArray());
+        Assert.True(categoryResult.IsSuccess);
+        Assert.Equal(["50L Dehumidifier"], categoryResult.Value!.Items.Select(item => item.Name).ToArray());
+    }
+
+    [Fact]
+    public async Task SearchToolsAsync_WhenToolIsInactive_ExcludesTool()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var service = CreateService(
+            categories: [category],
+            tools:
+            [
+                CreateTool(1, category, "Platform Ladder", hourlyRate: 10m, isActive: true),
+                CreateTool(2, category, "Retired Platform Lift", hourlyRate: 18m, isActive: false)
+            ]);
+
+        var result = await service.SearchToolsAsync("platform", 1, 12);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(["Platform Ladder"], result.Value!.Items.Select(item => item.Name).ToArray());
+    }
+
+    [Fact]
+    public async Task SearchToolsAsync_WhenNoToolsMatch_ReturnsEmptyPagedResult()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var service = CreateService(
+            categories: [category],
+            tools: [CreateTool(1, category, "Platform Ladder", hourlyRate: 10m)]);
+
+        var result = await service.SearchToolsAsync("excavator", 1, 12);
+
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.Value!.Items);
+        Assert.Equal(0, result.Value.TotalCount);
+    }
+
+    [Fact]
+    public async Task SearchToolsAsync_WhenQueryIsBlank_ReturnsValidationFailure()
+    {
+        var service = CreateService();
+
+        var result = await service.SearchToolsAsync("   ", 1, 12);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Search query is required.", result.Error);
+    }
+
     private static ToolService CreateService(
         IEnumerable<Category>? categories = null,
         IEnumerable<Tool>? tools = null)
