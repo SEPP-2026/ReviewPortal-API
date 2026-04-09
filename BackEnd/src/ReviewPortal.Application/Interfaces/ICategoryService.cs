@@ -7,6 +7,8 @@ public interface ICategoryService
 {
     Task<Result<IReadOnlyList<CategoryDto>>> GetAllCategoriesAsync(CancellationToken cancellationToken = default);
 
+    Task<Result<IReadOnlyList<CategoryDto>>> GetFeaturedCategoriesAsync(CancellationToken cancellationToken = default);
+
     Task<Result<CategoryDto>> GetCategoryByIdAsync(int id, CancellationToken cancellationToken = default);
 
     Task<Result<CategoryDto>> CreateCategoryAsync(CreateCategoryRequest request, CancellationToken cancellationToken = default);

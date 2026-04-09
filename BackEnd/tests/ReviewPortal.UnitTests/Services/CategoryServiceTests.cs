@@ -80,6 +80,30 @@ public class CategoryServiceTests
         Assert.Equal(["Access", "Zipping"], result.Value!.Select(category => category.Name).ToArray());
     }
 
+    [Fact]
+    public async Task GetFeaturedCategoriesAsync_ReturnsHomepageCategoriesWithImages()
+    {
+        var service = CreateService(new InMemoryCategoryRepository(
+        [
+            new Category
+            {
+                Id = 2,
+                Name = "Breaking & Drilling",
+                Description = "Core drilling and demolition equipment.",
+                ImageUrl = "breaking-drilling.jpg",
+                Tools = [CreateTool(1, "SDS Max Drill")]
+            }
+        ]));
+
+        var result = await service.GetFeaturedCategoriesAsync();
+
+        Assert.True(result.IsSuccess);
+        var category = Assert.Single(result.Value!);
+        Assert.Equal("Breaking & Drilling", category.Name);
+        Assert.Equal("breaking-drilling.jpg", category.ImageUrl);
+        Assert.Equal(1, category.ToolCount);
+    }
+
     private static CategoryService CreateService(InMemoryCategoryRepository? repository = null)
     {
         return new CategoryService(

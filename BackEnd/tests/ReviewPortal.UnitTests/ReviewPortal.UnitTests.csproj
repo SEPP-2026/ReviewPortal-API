@@ -17,12 +17,31 @@
   </ItemGroup>
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\src\ReviewPortal.API\Controllers\CategoriesController.cs" Link="Controllers\CategoriesController.cs" />
+    <Compile Include="..\..\src\ReviewPortal.API\Controllers\ToolsController.cs" Link="Controllers\ToolsController.cs" />
+    <Compile Include="..\..\src\ReviewPortal.API\Extensions\ControllerBaseExtensions.cs" Link="Extensions\ControllerBaseExtensions.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseBinaryProjectReferences)' != 'true'">
     <ProjectReference Include="..\..\src\ReviewPortal.Domain\ReviewPortal.Domain.csproj" />
     <ProjectReference Include="..\..\src\ReviewPortal.Application\ReviewPortal.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseBinaryProjectReferences)' == 'true'">
+    <Reference Include="ReviewPortal.Domain">
+      <HintPath>..\..\src\ReviewPortal.Domain\bin\$(Configuration)\net8.0\ReviewPortal.Domain.dll</HintPath>
+    </Reference>
+    <Reference Include="ReviewPortal.Application">
+      <HintPath>..\..\src\ReviewPortal.Application\bin\$(Configuration)\net8.0\ReviewPortal.Application.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

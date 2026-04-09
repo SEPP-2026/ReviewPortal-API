@@ -1,3 +1,4 @@
+using System.Globalization;
 using ReviewPortal.Application.Common;
 using ReviewPortal.Application.DTOs.Tools;
 using ReviewPortal.Application.Interfaces;
@@ -9,6 +10,8 @@ namespace ReviewPortal.Application.Services;
 public class ToolService : IToolService
 {
     private const int MaxPageSize = 100;
+    private const int HoursInDay = 24;
+    private const int HoursInWeek = 168;
 
     private readonly IToolRepository _toolRepository;
     private readonly ICategoryRepository _categoryRepository;
@@ -74,14 +77,73 @@ public class ToolService : IToolService
         return Result<PagedList<ToolSummaryDto>>.Success(CreatePagedSummary(matchingTools, page, pageSize));
     }
 
-    public Task<Result<PagedList<ToolSummaryDto>>> FilterByPriceRangeAsync(int categoryId, decimal? minPrice, decimal? maxPrice, int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<Result<PagedList<ToolSummaryDto>>> FilterByPriceRangeAsync(
+        int categoryId,
+        decimal? minPrice,
+        decimal? maxPrice,
+        int page,
+        int pageSize,
+        string? sortBy = null,
+        CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(Result<PagedList<ToolSummaryDto>>.Failure("Price-range filtering is not implemented in this slice."));
+        var validationError = ValidatePaging(page, pageSize) ?? ValidatePriceRange(minPrice, maxPrice);
+        if (validationError is not null)
+        {
+            return Result<PagedList<ToolSummaryDto>>.Failure(validationError);
+        }
+
+        var category = await _categoryRepository.GetByIdAsync(categoryId, cancellationToken);
+        if (category is null)
+        {
+            return Result<PagedList<ToolSummaryDto>>.NotFound($"Category with ID {categoryId} not found.");
+        }
+
+        var tools = await _toolRepository.GetActiveByCategoryAsync(categoryId, cancellationToken);
+        var filteredTools = tools.Where(tool =>
+            (!minPrice.HasValue || tool.DailyRate >= minPrice.Value) &&
+            (!maxPrice.HasValue || tool.DailyRate <= maxPrice.Value));
+
+        var sortedTools = ApplySort(filteredTools, sortBy, out validationError);
+        if (validationError is not null)
+        {
+            return Result<PagedList<ToolSummaryDto>>.Failure(validationError);
+        }
+
+        return Result<PagedList<ToolSummaryDto>>.Success(CreatePagedSummary(sortedTools, page, pageSize));
     }
 
-    public Task<Result<RentalCalculationResponse>> CalculateRentalCostAsync(int toolId, RentalCalculationRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result<RentalCalculationResponse>> CalculateRentalCostAsync(int toolId, RentalCalculationRequest request, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(Result<RentalCalculationResponse>.Failure("Rental calculation is not implemented in this slice."));
+        if (request.EndDateTime <= request.StartDateTime)
+        {
+            return Result<RentalCalculationResponse>.Failure("End date/time must be after the start date/time.");
+        }
+
+        var tool = await _toolRepository.GetByIdWithDetailsAsync(toolId, cancellationToken);
+        if (tool is null || !tool.IsActive)
+        {
+            return Result<RentalCalculationResponse>.NotFound($"Tool with ID {toolId} not found.");
+        }
+
+        var rentalPeriod = request.EndDateTime - request.StartDateTime;
+        if (rentalPeriod.TotalHours > int.MaxValue)
+        {
+            return Result<RentalCalculationResponse>.Failure("Rental period is too long.");
+        }
+
+        var billableHours = (int)Math.Ceiling(rentalPeriod.TotalHours);
+        var cheapestCombination = FindCheapestRentalCombination(
+            billableHours,
+            tool.HourlyRate,
+            tool.DailyRate,
+            tool.WeeklyRate);
+
+        return Result<RentalCalculationResponse>.Success(new RentalCalculationResponse(
+            tool.Name,
+            request.StartDateTime,
+            request.EndDateTime,
+            BuildRentalBreakdown(cheapestCombination, tool),
+            cheapestCombination.TotalCost));
     }
 
     public Task<Result<ToolDto>> CreateToolAsync(CreateToolRequest request, CancellationToken cancellationToken = default)
@@ -129,6 +191,21 @@ public class ToolService : IToolService
         if (query.Trim().Length > 200)
         {
             return "Search query must be 200 characters or fewer.";
+        }
+
+        return null;
+    }
+
+    private static string? ValidatePriceRange(decimal? minPrice, decimal? maxPrice)
+    {
+        if (minPrice is < 0m || maxPrice is < 0m)
+        {
+            return "Price values must be greater than or equal to 0.";
+        }
+
+        if (minPrice.HasValue && maxPrice.HasValue && minPrice.Value > maxPrice.Value)
+        {
+            return "Minimum price must be less than or equal to maximum price.";
         }
 
         return null;
@@ -217,6 +294,92 @@ public class ToolService : IToolService
         return value.Contains(query, StringComparison.OrdinalIgnoreCase);
     }
 
+    private static RentalCombination FindCheapestRentalCombination(
+        int requestedHours,
+        decimal hourlyRate,
+        decimal dailyRate,
+        decimal weeklyRate)
+    {
+        RentalCombination? bestCombination = null;
+        var maxWeeks = DivideAndRoundUp(requestedHours, HoursInWeek) + 1;
+
+        for (var weeks = 0; weeks <= maxWeeks; weeks++)
+        {
+            var remainingHoursAfterWeeks = requestedHours - (weeks * HoursInWeek);
+            var daysNeeded = remainingHoursAfterWeeks > 0
+                ? DivideAndRoundUp(remainingHoursAfterWeeks, HoursInDay)
+                : 0;
+            var maxDays = daysNeeded + 1;
+
+            for (var days = 0; days <= maxDays; days++)
+            {
+                var hoursCoveredByLargerUnits = (weeks * HoursInWeek) + (days * HoursInDay);
+                var hours = Math.Max(0, requestedHours - hoursCoveredByLargerUnits);
+                var coveredHours = hoursCoveredByLargerUnits + hours;
+                var totalCost = (weeks * weeklyRate) + (days * dailyRate) + (hours * hourlyRate);
+                var candidate = new RentalCombination(weeks, days, hours, coveredHours, totalCost);
+
+                if (bestCombination is null || IsBetterRentalCombination(candidate, bestCombination))
+                {
+                    bestCombination = candidate;
+                }
+            }
+        }
+
+        return bestCombination!;
+    }
+
+    private static bool IsBetterRentalCombination(RentalCombination candidate, RentalCombination currentBest)
+    {
+        if (candidate.TotalCost != currentBest.TotalCost)
+        {
+            return candidate.TotalCost < currentBest.TotalCost;
+        }
+
+        if (candidate.CoveredHours != currentBest.CoveredHours)
+        {
+            return candidate.CoveredHours < currentBest.CoveredHours;
+        }
+
+        return candidate.UnitCount < currentBest.UnitCount;
+    }
+
+    private static int DivideAndRoundUp(int value, int divisor)
+    {
+        return (value + divisor - 1) / divisor;
+    }
+
+    private static string BuildRentalBreakdown(RentalCombination combination, Tool tool)
+    {
+        var parts = new List<string>();
+
+        AddBreakdownPart(parts, combination.Weeks, "week", tool.WeeklyRate);
+        AddBreakdownPart(parts, combination.Days, "day", tool.DailyRate);
+        AddBreakdownPart(parts, combination.Hours, "hour", tool.HourlyRate);
+
+        return $"{string.Join(" + ", parts)} = {FormatCost(combination.TotalCost)}";
+    }
+
+    private static void AddBreakdownPart(List<string> parts, int quantity, string unit, decimal rate)
+    {
+        if (quantity <= 0)
+        {
+            return;
+        }
+
+        parts.Add($"{quantity} {unit}{Pluralize(quantity)} x {FormatCost(rate)}/{unit}");
+    }
+
+    private static string Pluralize(int quantity)
+    {
+        return quantity == 1 ? string.Empty : "s";
+    }
+
+    private static string FormatCost(decimal value)
+    {
+        return value.ToString("0.00", CultureInfo.InvariantCulture);
+    }
+
     private async Task<Result<ToolDto>> GetToolByIdInternalAsync(int id, CancellationToken cancellationToken)
     {
         var tool = await _toolRepository.GetByIdWithDetailsAsync(id, cancellationToken);
@@ -262,5 +425,10 @@ public class ToolService : IToolService
         {
             var rate => (rate.Item1, rate.Item2)
         };
+    }
+
+    private sealed record RentalCombination(int Weeks, int Days, int Hours, int CoveredHours, decimal TotalCost)
+    {
+        public int UnitCount => Weeks + Days + Hours;
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using ReviewPortal.API.Extensions;
+using ReviewPortal.Application.DTOs.Tools;
 using ReviewPortal.Application.Interfaces;
 
 namespace ReviewPortal.API.Controllers;
@@ -30,6 +31,16 @@ public class ToolsController : ControllerBase
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
         var result = await _toolService.GetToolByIdAsync(id, cancellationToken);
+        return this.ToActionResult(result, Ok);
+    }
+
+    [HttpPost("{id:int}/rental-calculation")]
+    public async Task<IActionResult> CalculateRentalCost(
+        int id,
+        [FromBody] RentalCalculationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _toolService.CalculateRentalCostAsync(id, request, cancellationToken);
         return this.ToActionResult(result, Ok);
     }
 }
