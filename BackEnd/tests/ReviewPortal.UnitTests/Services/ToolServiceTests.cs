@@ -197,7 +197,7 @@ public class ToolServiceTests
                 CreateTool(2, category, "Hydraulic Breaker", hourlyRate: 22m)
             ]);
 
-        var result = await service.SearchToolsAsync("drill", 1, 12);
+        var result = await service.SearchToolsAsync("sds", 1, 12);
 
         Assert.True(result.IsSuccess);
         var item = Assert.Single(result.Value!.Items);
@@ -273,6 +273,84 @@ public class ToolServiceTests
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorType.Validation, result.FailureType);
         Assert.Equal("Search query is required.", result.Error);
+    }
+
+    [Fact]
+    public async Task CalculateRentalCostAsync_WhenHoursOnlyIsCheapest_ReturnsHourlyCost()
+    {
+        var category = new Category { Id = 1, Name = "Breaking & Drilling" };
+        var tool = CreateTool(1, category, "SDS Max Drill", hourlyRate: 8m, dailyRate: 45m, weeklyRate: 250m);
+        var service = CreateService(categories: [category], tools: [tool]);
+        var start = new DateTime(2026, 1, 1, 9, 0, 0, DateTimeKind.Utc);
+        var end = start.AddHours(3);
+
+        var result = await service.CalculateRentalCostAsync(1, new(start, end));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("SDS Max Drill", result.Value!.ToolName);
+        Assert.Equal(24m, result.Value.TotalCost);
+        Assert.Equal("3 hours x 8.00/hour = 24.00", result.Value.Breakdown);
+    }
+
+    [Fact]
+    public async Task CalculateRentalCostAsync_WhenDailyRateIsCheaper_ReturnsDailyCost()
+    {
+        var category = new Category { Id = 1, Name = "Cleaning & Maintenance" };
+        var tool = CreateTool(1, category, "Petrol Pressure Washer", hourlyRate: 10m, dailyRate: 50m, weeklyRate: 300m);
+        var service = CreateService(categories: [category], tools: [tool]);
+        var start = new DateTime(2026, 1, 1, 9, 0, 0, DateTimeKind.Utc);
+        var end = start.AddHours(8);
+
+        var result = await service.CalculateRentalCostAsync(1, new(start, end));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(50m, result.Value!.TotalCost);
+        Assert.Equal("1 day x 50.00/day = 50.00", result.Value.Breakdown);
+    }
+
+    [Fact]
+    public async Task CalculateRentalCostAsync_WhenPeriodIsMixed_ReturnsDailyAndHourlyCost()
+    {
+        var category = new Category { Id = 1, Name = "Electrical & Heating" };
+        var tool = CreateTool(1, category, "50L Dehumidifier", hourlyRate: 8m, dailyRate: 45m, weeklyRate: 250m);
+        var service = CreateService(categories: [category], tools: [tool]);
+        var start = new DateTime(2026, 1, 1, 9, 0, 0, DateTimeKind.Utc);
+        var end = start.AddDays(1).AddHours(3);
+
+        var result = await service.CalculateRentalCostAsync(1, new(start, end));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(69m, result.Value!.TotalCost);
+        Assert.Equal("1 day x 45.00/day + 3 hours x 8.00/hour = 69.00", result.Value.Breakdown);
+    }
+
+    [Fact]
+    public async Task CalculateRentalCostAsync_WhenWeeklyRateIsCheaperForThreeDays_ReturnsWeeklyCost()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var tool = CreateTool(1, category, "Tower Scaffold", hourlyRate: 10m, dailyRate: 45m, weeklyRate: 100m);
+        var service = CreateService(categories: [category], tools: [tool]);
+        var start = new DateTime(2026, 1, 1, 9, 0, 0, DateTimeKind.Utc);
+        var end = start.AddDays(3);
+
+        var result = await service.CalculateRentalCostAsync(1, new(start, end));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(100m, result.Value!.TotalCost);
+        Assert.Equal("1 week x 100.00/week = 100.00", result.Value.Breakdown);
+    }
+
+    [Fact]
+    public async Task CalculateRentalCostAsync_WhenEndDateTimeIsNotAfterStartDateTime_ReturnsValidationFailure()
+    {
+        var service = CreateService();
+        var start = new DateTime(2026, 1, 1, 9, 0, 0, DateTimeKind.Utc);
+
+        var result = await service.CalculateRentalCostAsync(1, new(start, start));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("End date/time must be after the start date/time.", result.Error);
     }
 
     private static ToolService CreateService(
