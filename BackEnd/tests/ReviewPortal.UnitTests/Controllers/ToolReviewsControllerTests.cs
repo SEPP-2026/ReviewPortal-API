@@ -11,6 +11,61 @@ namespace ReviewPortal.UnitTests.Controllers;
 public class ToolReviewsControllerTests
 {
     [Fact]
+    public async Task GetApproved_WhenReviewsExist_ReturnsOkAndPassesPaging()
+    {
+        var response = new ToolReviewsDto(
+            7,
+            4.2m,
+            2,
+            null,
+            new PagedList<ReviewDto>([CreateReviewDto()], 2, 5, 7));
+        var reviewService = new FakeReviewService
+        {
+            GetApprovedReviewsResult = Result<ToolReviewsDto>.Success(response)
+        };
+        var controller = new ToolReviewsController(reviewService);
+
+        var result = await controller.GetApproved(7, page: 2, pageSize: 5, cancellationToken: CancellationToken.None);
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Same(response, okResult.Value);
+        Assert.Equal(7, reviewService.LastGetToolId);
+        Assert.Equal(2, reviewService.LastGetPage);
+        Assert.Equal(5, reviewService.LastGetPageSize);
+    }
+
+    [Fact]
+    public async Task GetApproved_WhenDefaultsAreUsed_PassesDefaultPageSize()
+    {
+        var reviewService = new FakeReviewService
+        {
+            GetApprovedReviewsResult = Result<ToolReviewsDto>.Success(
+                new ToolReviewsDto(7, null, 0, "No reviews yet - be the first to share your experience", new PagedList<ReviewDto>([], 1, 10, 0)))
+        };
+        var controller = new ToolReviewsController(reviewService);
+
+        await controller.GetApproved(7, cancellationToken: CancellationToken.None);
+
+        Assert.Equal(1, reviewService.LastGetPage);
+        Assert.Equal(10, reviewService.LastGetPageSize);
+    }
+
+    [Fact]
+    public async Task GetApproved_WhenValidationFails_ReturnsBadRequestProblem()
+    {
+        var reviewService = new FakeReviewService
+        {
+            GetApprovedReviewsResult = Result<ToolReviewsDto>.Failure("Page must be greater than or equal to 1.")
+        };
+        var controller = new ToolReviewsController(reviewService);
+
+        var result = await controller.GetApproved(7, page: 0, pageSize: 10, cancellationToken: CancellationToken.None);
+
+        var problemResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status400BadRequest, problemResult.StatusCode);
+    }
+
+    [Fact]
     public async Task Create_WhenReviewIsSubmitted_ReturnsCreatedResponse()
     {
         var review = CreateReviewDto();
@@ -110,11 +165,21 @@ public class ToolReviewsControllerTests
     {
         public int? LastToolId { get; private set; }
 
+        public int? LastGetToolId { get; private set; }
+
+        public int? LastGetPage { get; private set; }
+
+        public int? LastGetPageSize { get; private set; }
+
         public CreateReviewRequest? LastRequest { get; private set; }
 
         public int? LastUserId { get; private set; }
 
         public Result<ReviewDto> CreateReviewResult { get; set; } = Result<ReviewDto>.Success(CreateReviewDto());
+
+        public Result<ToolReviewsDto> GetApprovedReviewsResult { get; set; } =
+            Result<ToolReviewsDto>.Success(
+                new ToolReviewsDto(7, null, 0, "No reviews yet - be the first to share your experience", new PagedList<ReviewDto>([], 1, 10, 0)));
 
         public Task<Result<ReviewDto>> CreateReviewAsync(int toolId, CreateReviewRequest request, int? userId = null, CancellationToken cancellationToken = default)
         {
@@ -124,9 +189,12 @@ public class ToolReviewsControllerTests
             return Task.FromResult(CreateReviewResult);
         }
 
-        public Task<Result<PagedList<ReviewDto>>> GetApprovedReviewsAsync(int toolId, int page, int pageSize, CancellationToken cancellationToken = default)
+        public Task<Result<ToolReviewsDto>> GetApprovedReviewsAsync(int toolId, int page, int pageSize, CancellationToken cancellationToken = default)
         {
-            throw new NotSupportedException();
+            LastGetToolId = toolId;
+            LastGetPage = page;
+            LastGetPageSize = pageSize;
+            return Task.FromResult(GetApprovedReviewsResult);
         }
 
         public Task<Result<ReviewCommentDto>> AddCommentAsync(int reviewId, CreateCommentRequest request, CancellationToken cancellationToken = default)

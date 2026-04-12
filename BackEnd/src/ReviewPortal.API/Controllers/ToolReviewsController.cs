@@ -10,11 +10,24 @@ namespace ReviewPortal.API.Controllers;
 [Route("api/tools/{toolId:int}/reviews")]
 public class ToolReviewsController : ControllerBase
 {
+    private const int DefaultPageSize = 10;
+
     private readonly IReviewService _reviewService;
 
     public ToolReviewsController(IReviewService reviewService)
     {
         _reviewService = reviewService;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetApproved(
+        int toolId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = DefaultPageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _reviewService.GetApprovedReviewsAsync(toolId, page, pageSize, cancellationToken);
+        return this.ToActionResult(result, Ok);
     }
 
     [HttpPost]
