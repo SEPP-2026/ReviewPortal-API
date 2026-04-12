@@ -61,19 +61,36 @@ Notes:
 ### 2. Restore and build
 
 ```powershell
+dotnet restore ReviewPortal.slnx
 dotnet build ReviewPortal.slnx
 ```
 
 ### 3. Create or update the database
 
-Apply the EF Core migration:
+Apply all EF Core migrations:
 
 ```powershell
 dotnet ef database update --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
 ```
 
-This creates the schema and inserts the seeded test users plus the Epic 1 catalogue categories, tools, and tool images automatically.
-Run the full seed script afterwards if you want additional populated review, comment, and company response data across every table.
+This applies the full schema, including the password reset columns used by the auth API, and inserts the seeded test users plus the Epic 1 catalogue categories, tools, and tool images automatically.
+
+If you need to apply only the latest auth-related schema update, you can target the password reset migration explicitly:
+
+```powershell
+dotnet ef database update 20260412090000_AddUserPasswordResetFields --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
+```
+
+Recommended order for a local refresh:
+
+```powershell
+dotnet restore ReviewPortal.slnx
+dotnet build ReviewPortal.slnx
+dotnet ef database update --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
+sqlcmd -S "<server>" -d "<database>" -U "<username>" -P "<password>" -i "C:\Users\user\source\repos\ReviewPortal\BackEnd\scripts\sql\SeedTestUsers.sql"
+sqlcmd -S "<server>" -d "<database>" -U "<username>" -P "<password>" -i "C:\Users\user\source\repos\ReviewPortal\BackEnd\scripts\sql\SeedFullTestData.sql"
+dotnet run --project src/ReviewPortal.API
+```
 
 ### 4. Run the API
 
@@ -100,6 +117,9 @@ The current backend supports:
 - user registration with name, email, and password
 - login returning a JWT token
 - authenticated `/api/auth/me`
+- authenticated `/api/auth/change-password`
+- `/api/auth/forgot-password`
+- `/api/auth/reset-password`
 - role claims for `Customer`, `Admin`, and `Moderator`
 
 Password rules:
@@ -109,6 +129,13 @@ Password rules:
 - at least one number
 
 Passwords are stored using ASP.NET Identity password hashing.
+
+Forgot/reset password note:
+
+- the current system does not send email
+- `POST /api/auth/forgot-password` returns a reset token in the API response for local/dev use
+- `POST /api/auth/reset-password` consumes that token and updates the password
+- rerunning the seed scripts clears stored reset tokens for the seeded test users
 
 ## Seeded Test Users
 
@@ -124,9 +151,16 @@ These users are seeded into `dbo.Users` by the migration:
 
 Generated SQL files are stored in [`scripts/sql/`](scripts/sql/):
 
-- `InitialCreate.sql` - full migration script
-- `SeedTestUsers.sql` - standalone user seed script
-- `SeedFullTestData.sql` - standalone full relational seed script for all current tables, including Epic 1 catalogue data with at least three categories containing four tools each
+- `InitialCreate.sql` - initial schema migration SQL
+- `AddUserPasswordResetFields.sql` - idempotent SQL script to add the password reset columns
+- `SeedTestUsers.sql` - standalone rerunnable user seed script
+- `SeedFullTestData.sql` - standalone rerunnable full relational seed script for all current tables, including Epic 1 catalogue data with at least three categories containing four tools each
+
+Run the password reset schema SQL manually with `sqlcmd` if you are not using `dotnet ef database update`:
+
+```powershell
+sqlcmd -S "<server>" -d "<database>" -U "<username>" -P "<password>" -i "C:\Users\user\source\repos\ReviewPortal\BackEnd\scripts\sql\AddUserPasswordResetFields.sql"
+```
 
 Run the standalone user seed script manually with `sqlcmd` if needed:
 
@@ -148,7 +182,10 @@ dotnet test ReviewPortal.slnx
 dotnet run --project src/ReviewPortal.API
 dotnet ef migrations add <MigrationName> --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
 dotnet ef database update --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
+dotnet ef database update 20260412090000_AddUserPasswordResetFields --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
 dotnet ef migrations script 0 <MigrationName> --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API --output scripts/sql/<MigrationName>.sql
+sqlcmd -S "<server>" -d "<database>" -U "<username>" -P "<password>" -i "C:\Users\user\source\repos\ReviewPortal\BackEnd\scripts\sql\SeedTestUsers.sql"
+sqlcmd -S "<server>" -d "<database>" -U "<username>" -P "<password>" -i "C:\Users\user\source\repos\ReviewPortal\BackEnd\scripts\sql\SeedFullTestData.sql"
 ```
 
 ## Troubleshooting

@@ -11,6 +11,10 @@ public class User : BaseEntity
 
     public required string PasswordHash { get; set; }
 
+    public string? PasswordResetTokenHash { get; set; }
+
+    public DateTime? PasswordResetTokenExpiryUtc { get; set; }
+
     public UserRole Role { get; set; } = UserRole.Customer;
 
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
