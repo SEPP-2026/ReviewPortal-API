@@ -126,11 +126,6 @@ public class ToolService : IToolService
         }
 
         var rentalPeriod = request.EndDateTime - request.StartDateTime;
-        if (rentalPeriod.TotalHours > int.MaxValue)
-        {
-            return Result<RentalCalculationResponse>.Failure("Rental period is too long.");
-        }
-
         var billableHours = (int)Math.Ceiling(rentalPeriod.TotalHours);
         var cheapestCombination = FindCheapestRentalCombination(
             billableHours,

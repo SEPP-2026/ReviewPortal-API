@@ -72,8 +72,8 @@ Apply the EF Core migration:
 dotnet ef database update --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
 ```
 
-This creates the schema and inserts the seeded test users automatically.
-Run the full seed script afterwards if you want populated catalogue, review, comment, and response data across every table.
+This creates the schema and inserts the seeded test users plus the Epic 1 catalogue categories, tools, and tool images automatically.
+Run the full seed script afterwards if you want additional populated review, comment, and company response data across every table.
 
 ### 4. Run the API
 
@@ -126,7 +126,7 @@ Generated SQL files are stored in [`scripts/sql/`](scripts/sql/):
 
 - `InitialCreate.sql` - full migration script
 - `SeedTestUsers.sql` - standalone user seed script
-- `SeedFullTestData.sql` - standalone full relational seed script for all current tables
+- `SeedFullTestData.sql` - standalone full relational seed script for all current tables, including Epic 1 catalogue data with at least three categories containing four tools each
 
 Run the standalone user seed script manually with `sqlcmd` if needed:
 
