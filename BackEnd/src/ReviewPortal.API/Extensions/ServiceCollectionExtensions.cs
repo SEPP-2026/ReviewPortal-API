@@ -43,6 +43,7 @@ public static class ServiceCollectionExtensions
         // Application services will be registered here as they are implemented
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IToolService, ToolService>();
+        services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IAuthService, AuthService>();
 
         return services;

@@ -1,22 +1,25 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Wrench } from "lucide-react";
 
 export default function EquipmentNotFound() {
   return (
-    <div className="min-h-screen bg-[#F2F2F2] flex items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center bg-[#F2F2F2]">
       <div className="text-center">
-        <div className="text-6xl mb-4">🔧</div>
-        <h1 className="text-3xl font-bold text-[#111111] mb-4">
+        <div className="mb-4 flex justify-center text-accent">
+          <Wrench className="h-16 w-16" aria-hidden="true" />
+        </div>
+        <h1 className="mb-4 text-3xl font-bold text-[#111111]">
           Equipment Not Found
         </h1>
-        <p className="text-[#666666] mb-8">
-          The equipment you're looking for doesn't exist or has been removed.
+        <p className="mb-8 text-[#666666]">
+          The equipment you&apos;re looking for doesn&apos;t exist or has been
+          removed.
         </p>
         <Link
           href="/equipment"
-          className="inline-flex items-center gap-2 bg-accent hover:bg-[#C97F00] text-black font-semibold px-6 py-3 rounded-lg transition-colors"
+          className="inline-flex items-center gap-2 rounded-lg bg-accent px-6 py-3 font-semibold text-black transition-colors hover:bg-[#C97F00]"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="h-5 w-5" />
           Browse Equipment
         </Link>
       </div>
