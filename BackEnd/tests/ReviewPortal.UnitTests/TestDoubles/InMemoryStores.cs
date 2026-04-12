@@ -169,6 +169,47 @@ internal sealed class InMemoryToolRepository : IToolRepository
     }
 }
 
+internal sealed class InMemoryRepository<T> : IRepository<T> where T : BaseEntity
+{
+    private readonly List<T> _entities;
+
+    public InMemoryRepository(IEnumerable<T>? entities = null)
+    {
+        _entities = entities?.ToList() ?? [];
+    }
+
+    public IReadOnlyList<T> Items => _entities;
+
+    public Task<T?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(_entities.SingleOrDefault(entity => entity.Id == id));
+    }
+
+    public Task<IReadOnlyList<T>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<IReadOnlyList<T>>(_entities);
+    }
+
+    public Task<T> AddAsync(T entity, CancellationToken cancellationToken = default)
+    {
+        entity.Id = _entities.Count == 0 ? 1 : _entities.Max(existing => existing.Id) + 1;
+        _entities.Add(entity);
+
+        return Task.FromResult(entity);
+    }
+
+    public Task UpdateAsync(T entity, CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteAsync(T entity, CancellationToken cancellationToken = default)
+    {
+        _entities.Remove(entity);
+        return Task.CompletedTask;
+    }
+}
+
 internal sealed class FakeUnitOfWork : IUnitOfWork
 {
     public int SaveChangesCallCount { get; private set; }
