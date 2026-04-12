@@ -16,6 +16,9 @@
   - moderator.test@reviewportal.local / Moderator123!
 
   Intended for development and local testing on a fresh or disposable database.
+  Safe to run multiple times. Re-running refreshes the seeded records to the
+  canonical development state and clears any stored password reset tokens when
+  those columns exist.
 */
 
 SET NOCOUNT ON;
@@ -23,25 +26,57 @@ SET XACT_ABORT ON;
 
 BEGIN TRANSACTION;
 
+DECLARE @HasPasswordResetColumns bit = CASE
+    WHEN COL_LENGTH('dbo.Users', 'PasswordResetTokenHash') IS NOT NULL
+     AND COL_LENGTH('dbo.Users', 'PasswordResetTokenExpiryUtc') IS NOT NULL
+    THEN 1
+    ELSE 0
+END;
+
 SET IDENTITY_INSERT dbo.Users ON;
 
-MERGE dbo.Users AS target
-USING (VALUES
-    (1, N'Test Customer', N'customer.test@reviewportal.local', N'AQAAAAIAAYagAAAAEA0G/BQ4WPdNpKqAnK0Mam0BNoG560l4GFfcdOa4Xps8ZYyGiiH6yxH5EgC1llfMqQ==', N'Customer', CAST('2026-04-06T00:00:00' AS datetime2)),
-    (2, N'Test Admin', N'admin.test@reviewportal.local', N'AQAAAAIAAYagAAAAEOqaZaaWb29MnbnePdQNWq+wQO66MHMXfZh0ouwcBZjORmC3mllgI0zebkL9iOSFqQ==', N'Admin', CAST('2026-04-06T00:00:00' AS datetime2)),
-    (3, N'Test Moderator', N'moderator.test@reviewportal.local', N'AQAAAAIAAYagAAAAEMnrqmN8EAAHiVorrGMGoFopVvlvMBVCFw0pvQz9mgWzxZrB1RGNwUsqv+n41Wss/g==', N'Moderator', CAST('2026-04-06T00:00:00' AS datetime2))
-) AS source (Id, Name, Email, PasswordHash, Role, CreatedDate)
-ON target.Id = source.Id
-WHEN MATCHED THEN
-    UPDATE SET
-        Name = source.Name,
-        Email = source.Email,
-        PasswordHash = source.PasswordHash,
-        Role = source.Role,
-        CreatedDate = source.CreatedDate
-WHEN NOT MATCHED BY TARGET THEN
-    INSERT (Id, Name, Email, PasswordHash, Role, CreatedDate)
-    VALUES (source.Id, source.Name, source.Email, source.PasswordHash, source.Role, source.CreatedDate);
+IF @HasPasswordResetColumns = 1
+BEGIN
+    MERGE dbo.Users AS target
+    USING (VALUES
+        (1, N'Test Customer', N'customer.test@reviewportal.local', N'AQAAAAIAAYagAAAAEA0G/BQ4WPdNpKqAnK0Mam0BNoG560l4GFfcdOa4Xps8ZYyGiiH6yxH5EgC1llfMqQ==', CAST(NULL AS nvarchar(256)), CAST(NULL AS datetime2), N'Customer', CAST('2026-04-06T00:00:00' AS datetime2)),
+        (2, N'Test Admin', N'admin.test@reviewportal.local', N'AQAAAAIAAYagAAAAEOqaZaaWb29MnbnePdQNWq+wQO66MHMXfZh0ouwcBZjORmC3mllgI0zebkL9iOSFqQ==', CAST(NULL AS nvarchar(256)), CAST(NULL AS datetime2), N'Admin', CAST('2026-04-06T00:00:00' AS datetime2)),
+        (3, N'Test Moderator', N'moderator.test@reviewportal.local', N'AQAAAAIAAYagAAAAEMnrqmN8EAAHiVorrGMGoFopVvlvMBVCFw0pvQz9mgWzxZrB1RGNwUsqv+n41Wss/g==', CAST(NULL AS nvarchar(256)), CAST(NULL AS datetime2), N'Moderator', CAST('2026-04-06T00:00:00' AS datetime2))
+    ) AS source (Id, Name, Email, PasswordHash, PasswordResetTokenHash, PasswordResetTokenExpiryUtc, Role, CreatedDate)
+    ON target.Id = source.Id
+    WHEN MATCHED THEN
+        UPDATE SET
+            Name = source.Name,
+            Email = source.Email,
+            PasswordHash = source.PasswordHash,
+            PasswordResetTokenHash = source.PasswordResetTokenHash,
+            PasswordResetTokenExpiryUtc = source.PasswordResetTokenExpiryUtc,
+            Role = source.Role,
+            CreatedDate = source.CreatedDate
+    WHEN NOT MATCHED BY TARGET THEN
+        INSERT (Id, Name, Email, PasswordHash, PasswordResetTokenHash, PasswordResetTokenExpiryUtc, Role, CreatedDate)
+        VALUES (source.Id, source.Name, source.Email, source.PasswordHash, source.PasswordResetTokenHash, source.PasswordResetTokenExpiryUtc, source.Role, source.CreatedDate);
+END
+ELSE
+BEGIN
+    MERGE dbo.Users AS target
+    USING (VALUES
+        (1, N'Test Customer', N'customer.test@reviewportal.local', N'AQAAAAIAAYagAAAAEA0G/BQ4WPdNpKqAnK0Mam0BNoG560l4GFfcdOa4Xps8ZYyGiiH6yxH5EgC1llfMqQ==', N'Customer', CAST('2026-04-06T00:00:00' AS datetime2)),
+        (2, N'Test Admin', N'admin.test@reviewportal.local', N'AQAAAAIAAYagAAAAEOqaZaaWb29MnbnePdQNWq+wQO66MHMXfZh0ouwcBZjORmC3mllgI0zebkL9iOSFqQ==', N'Admin', CAST('2026-04-06T00:00:00' AS datetime2)),
+        (3, N'Test Moderator', N'moderator.test@reviewportal.local', N'AQAAAAIAAYagAAAAEMnrqmN8EAAHiVorrGMGoFopVvlvMBVCFw0pvQz9mgWzxZrB1RGNwUsqv+n41Wss/g==', N'Moderator', CAST('2026-04-06T00:00:00' AS datetime2))
+    ) AS source (Id, Name, Email, PasswordHash, Role, CreatedDate)
+    ON target.Id = source.Id
+    WHEN MATCHED THEN
+        UPDATE SET
+            Name = source.Name,
+            Email = source.Email,
+            PasswordHash = source.PasswordHash,
+            Role = source.Role,
+            CreatedDate = source.CreatedDate
+    WHEN NOT MATCHED BY TARGET THEN
+        INSERT (Id, Name, Email, PasswordHash, Role, CreatedDate)
+        VALUES (source.Id, source.Name, source.Email, source.PasswordHash, source.Role, source.CreatedDate);
+END;
 
 SET IDENTITY_INSERT dbo.Users OFF;
 

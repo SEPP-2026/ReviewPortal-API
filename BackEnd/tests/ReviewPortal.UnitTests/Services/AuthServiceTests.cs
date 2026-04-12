@@ -111,6 +111,163 @@ public class AuthServiceTests
     }
 
     [Fact]
+    public async Task ChangePasswordAsync_WithIncorrectCurrentPassword_ReturnsUnauthorized()
+    {
+        var service = CreateService(new InMemoryUserRepository(
+        [
+            new User
+            {
+                Id = 9,
+                Name = "Maya",
+                Email = "maya@example.com",
+                PasswordHash = "hashed::Secure123",
+                Role = UserRole.Customer
+            }
+        ]));
+
+        var result = await service.ChangePasswordAsync(9, new ChangePasswordRequest("Wrong123", "NewSecure123"));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Unauthorized, result.FailureType);
+        Assert.Equal("Current password is incorrect.", result.Error);
+    }
+
+    [Fact]
+    public async Task ChangePasswordAsync_WithValidRequest_UpdatesPasswordAndClearsResetState()
+    {
+        var userRepository = new InMemoryUserRepository(
+        [
+            new User
+            {
+                Id = 9,
+                Name = "Maya",
+                Email = "maya@example.com",
+                PasswordHash = "hashed::Secure123",
+                PasswordResetTokenHash = "old-token-hash",
+                PasswordResetTokenExpiryUtc = DateTime.UtcNow.AddMinutes(5),
+                Role = UserRole.Customer
+            }
+        ]);
+        var unitOfWork = new FakeUnitOfWork();
+        var service = CreateService(userRepository, unitOfWork);
+
+        var result = await service.ChangePasswordAsync(9, new ChangePasswordRequest("Secure123", "NewSecure123"));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Password changed successfully.", result.Value!.Message);
+        Assert.Equal(1, unitOfWork.SaveChangesCallCount);
+
+        var updatedUser = await userRepository.GetByEmailAsync("maya@example.com");
+        Assert.NotNull(updatedUser);
+        Assert.Equal("hashed::NewSecure123", updatedUser!.PasswordHash);
+        Assert.Null(updatedUser.PasswordResetTokenHash);
+        Assert.Null(updatedUser.PasswordResetTokenExpiryUtc);
+    }
+
+    [Fact]
+    public async Task ForgotPasswordAsync_WhenEmailIsUnknown_ReturnsGenericSuccessWithoutToken()
+    {
+        var service = CreateService();
+
+        var result = await service.ForgotPasswordAsync(new ForgotPasswordRequest("unknown@example.com"));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("If an account exists for that email, a reset token has been generated. Because email delivery is not configured, use the returned token to complete the reset.", result.Value!.Message);
+        Assert.Null(result.Value.ResetToken);
+        Assert.Null(result.Value.ResetTokenExpiresAtUtc);
+    }
+
+    [Fact]
+    public async Task ForgotPasswordAsync_WhenEmailExists_ReturnsResetTokenAndStoresHash()
+    {
+        var userRepository = new InMemoryUserRepository(
+        [
+            new User
+            {
+                Id = 12,
+                Name = "Nina",
+                Email = "nina@example.com",
+                PasswordHash = "hashed::Secure123",
+                Role = UserRole.Customer
+            }
+        ]);
+        var unitOfWork = new FakeUnitOfWork();
+        var service = CreateService(userRepository, unitOfWork);
+
+        var result = await service.ForgotPasswordAsync(new ForgotPasswordRequest("nina@example.com"));
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value!.ResetToken);
+        Assert.NotNull(result.Value.ResetTokenExpiresAtUtc);
+        Assert.Equal(1, unitOfWork.SaveChangesCallCount);
+
+        var updatedUser = await userRepository.GetByEmailAsync("nina@example.com");
+        Assert.NotNull(updatedUser);
+        Assert.NotNull(updatedUser!.PasswordResetTokenHash);
+        Assert.True(updatedUser.PasswordResetTokenExpiryUtc > DateTime.UtcNow);
+        Assert.NotEqual(result.Value.ResetToken, updatedUser.PasswordResetTokenHash);
+    }
+
+    [Fact]
+    public async Task ResetPasswordAsync_WithExpiredToken_ReturnsValidationFailure()
+    {
+        var userRepository = new InMemoryUserRepository(
+        [
+            new User
+            {
+                Id = 13,
+                Name = "Ava",
+                Email = "ava@example.com",
+                PasswordHash = "hashed::Secure123",
+                PasswordResetTokenHash = "expired-token-hash",
+                PasswordResetTokenExpiryUtc = DateTime.UtcNow.AddMinutes(-1),
+                Role = UserRole.Customer
+            }
+        ]);
+        var service = CreateService(userRepository);
+
+        var result = await service.ResetPasswordAsync(new ResetPasswordRequest("ava@example.com", "expired-token", "FreshPass123"));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Reset token is invalid or has expired.", result.Error);
+    }
+
+    [Fact]
+    public async Task ResetPasswordAsync_WithValidToken_UpdatesPasswordAndClearsResetState()
+    {
+        var userRepository = new InMemoryUserRepository(
+        [
+            new User
+            {
+                Id = 15,
+                Name = "Luca",
+                Email = "luca@example.com",
+                PasswordHash = "hashed::Secure123",
+                Role = UserRole.Customer
+            }
+        ]);
+        var unitOfWork = new FakeUnitOfWork();
+        var service = CreateService(userRepository, unitOfWork);
+
+        var forgotPasswordResult = await service.ForgotPasswordAsync(new ForgotPasswordRequest("luca@example.com"));
+        var resetPasswordResult = await service.ResetPasswordAsync(new ResetPasswordRequest(
+            "luca@example.com",
+            forgotPasswordResult.Value!.ResetToken!,
+            "FreshPass123"));
+
+        Assert.True(resetPasswordResult.IsSuccess);
+        Assert.Equal("Password has been reset successfully.", resetPasswordResult.Value!.Message);
+        Assert.Equal(2, unitOfWork.SaveChangesCallCount);
+
+        var updatedUser = await userRepository.GetByEmailAsync("luca@example.com");
+        Assert.NotNull(updatedUser);
+        Assert.Equal("hashed::FreshPass123", updatedUser!.PasswordHash);
+        Assert.Null(updatedUser.PasswordResetTokenHash);
+        Assert.Null(updatedUser.PasswordResetTokenExpiryUtc);
+    }
+
+    [Fact]
     public async Task GetCurrentUserAsync_WhenUserIsMissing_ReturnsNotFound()
     {
         var service = CreateService();

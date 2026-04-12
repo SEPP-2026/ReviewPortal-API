@@ -5,11 +5,16 @@ using ReviewPortal.Domain.Entities;
 using ReviewPortal.Domain.Enums;
 using ReviewPortal.Domain.Interfaces;
 using System.Net.Mail;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace ReviewPortal.Application.Services;
 
 public class AuthService : IAuthService
 {
+    private static readonly TimeSpan PasswordResetTokenLifetime = TimeSpan.FromMinutes(30);
+    private const string ForgotPasswordMessage = "If an account exists for that email, a reset token has been generated. Because email delivery is not configured, use the returned token to complete the reset.";
+
     private readonly IUserRepository _userRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IJwtProvider _jwtProvider;
@@ -106,51 +111,173 @@ public class AuthService : IAuthService
         ));
     }
 
+    public async Task<Result<PasswordActionResponse>> ChangePasswordAsync(int userId, ChangePasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        var validationError = ValidateChangePasswordRequest(request);
+        if (validationError is not null)
+        {
+            return Result<PasswordActionResponse>.Failure(validationError);
+        }
+
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+        if (user is null)
+        {
+            return Result<PasswordActionResponse>.NotFound("User not found.");
+        }
+
+        if (!_passwordHasher.Verify(request.CurrentPassword, user.PasswordHash))
+        {
+            return Result<PasswordActionResponse>.Unauthorized("Current password is incorrect.");
+        }
+
+        if (request.CurrentPassword == request.NewPassword)
+        {
+            return Result<PasswordActionResponse>.Failure("New password must be different from the current password.");
+        }
+
+        user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
+        ClearPasswordResetState(user);
+
+        await _userRepository.UpdateAsync(user, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result<PasswordActionResponse>.Success(new PasswordActionResponse("Password changed successfully."));
+    }
+
+    public async Task<Result<ForgotPasswordResponse>> ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        var validationError = ValidateEmail(request.Email);
+        if (validationError is not null)
+        {
+            return Result<ForgotPasswordResponse>.Failure(validationError);
+        }
+
+        var normalizedEmail = NormalizeEmail(request.Email);
+        var user = await _userRepository.GetByEmailAsync(normalizedEmail, cancellationToken);
+        if (user is null)
+        {
+            return Result<ForgotPasswordResponse>.Success(new ForgotPasswordResponse(ForgotPasswordMessage, null, null));
+        }
+
+        var resetToken = GenerateResetToken();
+        user.PasswordResetTokenHash = HashToken(resetToken);
+        user.PasswordResetTokenExpiryUtc = DateTime.UtcNow.Add(PasswordResetTokenLifetime);
+
+        await _userRepository.UpdateAsync(user, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result<ForgotPasswordResponse>.Success(new ForgotPasswordResponse(
+            ForgotPasswordMessage,
+            resetToken,
+            user.PasswordResetTokenExpiryUtc));
+    }
+
+    public async Task<Result<PasswordActionResponse>> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        var validationError = ValidateResetPasswordRequest(request);
+        if (validationError is not null)
+        {
+            return Result<PasswordActionResponse>.Failure(validationError);
+        }
+
+        var user = await _userRepository.GetByEmailAsync(NormalizeEmail(request.Email), cancellationToken);
+        if (user is null || !IsValidResetToken(user, request.ResetToken))
+        {
+            return Result<PasswordActionResponse>.Failure("Reset token is invalid or has expired.");
+        }
+
+        user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
+        ClearPasswordResetState(user);
+
+        await _userRepository.UpdateAsync(user, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result<PasswordActionResponse>.Success(new PasswordActionResponse("Password has been reset successfully."));
+    }
+
     private static string? ValidateRegistrationRequest(RegisterRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.Name))
+        return ValidateName(request.Name)
+            ?? ValidateEmail(request.Email)
+            ?? ValidatePassword(request.Password, "Password");
+    }
+
+    private static string? ValidateChangePasswordRequest(ChangePasswordRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.CurrentPassword))
+        {
+            return "Current password is required.";
+        }
+
+        return ValidatePassword(request.NewPassword, "New password");
+    }
+
+    private static string? ValidateResetPasswordRequest(ResetPasswordRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.ResetToken))
+        {
+            return "Reset token is required.";
+        }
+
+        return ValidateEmail(request.Email)
+            ?? ValidatePassword(request.NewPassword, "New password");
+    }
+
+    private static string? ValidateName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
         {
             return "Name is required.";
         }
 
-        if (request.Name.Trim().Length > 100)
+        if (name.Trim().Length > 100)
         {
             return "Name must be 100 characters or fewer.";
         }
 
-        if (string.IsNullOrWhiteSpace(request.Email))
+        return null;
+    }
+
+    private static string? ValidateEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
         {
             return "Email is required.";
         }
 
-        if (!IsValidEmail(request.Email))
+        if (!IsValidEmail(email))
         {
             return "A valid email address is required.";
         }
 
-        if (request.Email.Trim().Length > 256)
+        if (email.Trim().Length > 256)
         {
             return "Email must be 256 characters or fewer.";
         }
 
-        if (string.IsNullOrWhiteSpace(request.Password))
+        return null;
+    }
+
+    private static string? ValidatePassword(string password, string fieldLabel)
+    {
+        if (string.IsNullOrWhiteSpace(password))
         {
-            return "Password is required.";
+            return $"{fieldLabel} is required.";
         }
 
-        if (request.Password.Length < 8)
+        if (password.Length < 8)
         {
-            return "Password must be at least 8 characters long.";
+            return $"{fieldLabel} must be at least 8 characters long.";
         }
 
-        if (!request.Password.Any(char.IsUpper))
+        if (!password.Any(char.IsUpper))
         {
-            return "Password must contain at least one uppercase letter.";
+            return $"{fieldLabel} must contain at least one uppercase letter.";
         }
 
-        if (!request.Password.Any(char.IsDigit))
+        if (!password.Any(char.IsDigit))
         {
-            return "Password must contain at least one number.";
+            return $"{fieldLabel} must contain at least one number.";
         }
 
         return null;
@@ -159,6 +286,41 @@ public class AuthService : IAuthService
     private static bool IsValidEmail(string email)
     {
         return MailAddress.TryCreate(email.Trim(), out _);
+    }
+
+    private static string GenerateResetToken()
+    {
+        return Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+    }
+
+    private static string HashToken(string token)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(token));
+        return Convert.ToBase64String(bytes);
+    }
+
+    private static bool IsValidResetToken(User user, string resetToken)
+    {
+        if (string.IsNullOrWhiteSpace(user.PasswordResetTokenHash) || !user.PasswordResetTokenExpiryUtc.HasValue)
+        {
+            return false;
+        }
+
+        if (user.PasswordResetTokenExpiryUtc.Value < DateTime.UtcNow)
+        {
+            return false;
+        }
+
+        var providedTokenHashBytes = Convert.FromBase64String(HashToken(resetToken));
+        var storedTokenHashBytes = Convert.FromBase64String(user.PasswordResetTokenHash);
+
+        return CryptographicOperations.FixedTimeEquals(providedTokenHashBytes, storedTokenHashBytes);
+    }
+
+    private static void ClearPasswordResetState(User user)
+    {
+        user.PasswordResetTokenHash = null;
+        user.PasswordResetTokenExpiryUtc = null;
     }
 
     private static string NormalizeEmail(string email)

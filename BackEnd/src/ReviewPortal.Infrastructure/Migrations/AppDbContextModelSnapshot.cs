@@ -343,6 +343,13 @@ namespace ReviewPortal.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("PasswordResetTokenExpiryUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PasswordResetTokenHash")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(50)
