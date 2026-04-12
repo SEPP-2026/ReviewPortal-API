@@ -7,7 +7,7 @@ public interface IReviewService
 {
     Task<Result<ReviewDto>> CreateReviewAsync(int toolId, CreateReviewRequest request, int? userId = null, CancellationToken cancellationToken = default);
 
-    Task<Result<PagedList<ReviewDto>>> GetApprovedReviewsAsync(int toolId, int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<Result<ToolReviewsDto>> GetApprovedReviewsAsync(int toolId, int page, int pageSize, CancellationToken cancellationToken = default);
 
     Task<Result<ReviewCommentDto>> AddCommentAsync(int reviewId, CreateCommentRequest request, CancellationToken cancellationToken = default);
 

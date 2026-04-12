@@ -14,7 +14,7 @@ public class ReviewServiceTests
     {
         var category = new Category { Id = 1, Name = "Cleaning & Maintenance" };
         var tool = CreateTool(7, category, isActive: true);
-        var reviewRepository = new InMemoryRepository<Review>();
+        var reviewRepository = new InMemoryReviewRepository();
         var unitOfWork = new FakeUnitOfWork();
         var service = CreateService(reviewRepository, unitOfWork, tools: [tool]);
 
@@ -56,7 +56,7 @@ public class ReviewServiceTests
             PasswordHash = "hash"
         };
 
-        var reviewRepository = new InMemoryRepository<Review>();
+        var reviewRepository = new InMemoryReviewRepository();
         var service = CreateService(reviewRepository, new FakeUnitOfWork(), tools: [tool], users: [user]);
 
         var request = new CreateReviewRequest(
@@ -156,14 +156,194 @@ public class ReviewServiceTests
         Assert.Equal("Authenticated user account could not be found.", result.Error);
     }
 
+    [Fact]
+    public async Task GetApprovedReviewsAsync_WhenToolDoesNotExist_ReturnsNotFound()
+    {
+        var service = CreateService();
+
+        var result = await service.GetApprovedReviewsAsync(404, page: 1, pageSize: 10);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.FailureType);
+        Assert.Equal("Tool with ID 404 not found.", result.Error);
+    }
+
+    [Fact]
+    public async Task GetApprovedReviewsAsync_WhenNoApprovedReviews_ReturnsEmptyMessageAndNoAverage()
+    {
+        var category = new Category { Id = 1, Name = "Cleaning & Maintenance" };
+        var tool = CreateTool(7, category, isActive: true);
+        var service = CreateService(tools: [tool]);
+
+        var result = await service.GetApprovedReviewsAsync(tool.Id, page: 1, pageSize: 10);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(tool.Id, result.Value!.ToolId);
+        Assert.Null(result.Value.AverageOverallRating);
+        Assert.Equal(0, result.Value.TotalApprovedReviews);
+        Assert.Equal("No reviews yet - be the first to share your experience", result.Value.EmptyStateMessage);
+        Assert.Empty(result.Value.Reviews.Items);
+    }
+
+    [Fact]
+    public async Task GetApprovedReviewsAsync_ReturnsApprovedReviewsSortedByMostRecentFirst()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var tool = CreateTool(9, category, isActive: true);
+        var firstApproved = CreateReview(
+            1,
+            tool,
+            "Ava",
+            ReviewStatus.Approved,
+            new DateTime(2026, 4, 1, 8, 0, 0, DateTimeKind.Utc),
+            5,
+            4,
+            4,
+            5,
+            5);
+        firstApproved.Comments =
+        [
+            new ReviewComment
+            {
+                Id = 2,
+                ReviewId = 1,
+                CommenterName = "Pending commenter",
+                CommentText = "This should not appear.",
+                Status = ReviewStatus.Pending,
+                CreatedDate = new DateTime(2026, 4, 2, 8, 0, 0, DateTimeKind.Utc)
+            },
+            new ReviewComment
+            {
+                Id = 1,
+                ReviewId = 1,
+                CommenterName = "Helpful commenter",
+                CommentText = "We had the same experience.",
+                Status = ReviewStatus.Approved,
+                CreatedDate = new DateTime(2026, 4, 1, 9, 0, 0, DateTimeKind.Utc)
+            }
+        ];
+        firstApproved.CompanyResponse = new CompanyResponse
+        {
+            Id = 11,
+            ReviewId = 1,
+            StaffUserId = 50,
+            ResponseText = "Thanks for the feedback.",
+            CreatedDate = new DateTime(2026, 4, 3, 8, 0, 0, DateTimeKind.Utc),
+            UpdatedDate = new DateTime(2026, 4, 3, 9, 0, 0, DateTimeKind.Utc),
+            StaffUser = new User
+            {
+                Id = 50,
+                Name = "Shelton Team",
+                Email = "team@example.com",
+                PasswordHash = "hash"
+            }
+        };
+
+        var secondApproved = CreateReview(
+            2,
+            tool,
+            "Ben",
+            ReviewStatus.Approved,
+            new DateTime(2026, 4, 10, 8, 0, 0, DateTimeKind.Utc),
+            4,
+            4,
+            3,
+            4,
+            2);
+        var pendingReview = CreateReview(
+            3,
+            tool,
+            "Pending Person",
+            ReviewStatus.Pending,
+            new DateTime(2026, 4, 12, 8, 0, 0, DateTimeKind.Utc),
+            5,
+            5,
+            5,
+            5,
+            5);
+        var otherTool = CreateTool(10, category, isActive: true);
+        var otherToolApproved = CreateReview(
+            4,
+            otherTool,
+            "Other Tool Reviewer",
+            ReviewStatus.Approved,
+            new DateTime(2026, 4, 11, 8, 0, 0, DateTimeKind.Utc),
+            5,
+            5,
+            5,
+            5,
+            5);
+
+        var service = CreateService(
+            reviews: [firstApproved, secondApproved, pendingReview, otherToolApproved],
+            tools: [tool, otherTool]);
+
+        var result = await service.GetApprovedReviewsAsync(tool.Id, page: 1, pageSize: 10);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Value!.TotalApprovedReviews);
+        Assert.Equal(4.0m, result.Value.AverageOverallRating);
+        Assert.Null(result.Value.EmptyStateMessage);
+        Assert.Equal(["Ben", "Ava"], result.Value.Reviews.Items.Select(review => review.ReviewerName).ToArray());
+
+        var olderReview = result.Value.Reviews.Items.Last();
+        var comment = Assert.Single(olderReview.Comments);
+        Assert.Equal("Helpful commenter", comment.CommenterName);
+        Assert.NotNull(olderReview.CompanyResponse);
+        Assert.Equal("Shelton Team", olderReview.CompanyResponse!.StaffName);
+    }
+
+    [Fact]
+    public async Task GetApprovedReviewsAsync_PaginatesApprovedReviews()
+    {
+        var category = new Category { Id = 1, Name = "Garden & Landscaping" };
+        var tool = CreateTool(4, category, isActive: true);
+        var reviews = Enumerable.Range(1, 12)
+            .Select(index => CreateReview(
+                index,
+                tool,
+                $"Reviewer {index}",
+                ReviewStatus.Approved,
+                new DateTime(2026, 4, 1, 8, 0, 0, DateTimeKind.Utc).AddDays(index),
+                4,
+                4,
+                4,
+                4,
+                4))
+            .ToArray();
+        var service = CreateService(reviews: reviews, tools: [tool]);
+
+        var result = await service.GetApprovedReviewsAsync(tool.Id, page: 2, pageSize: 10);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(12, result.Value!.Reviews.TotalCount);
+        Assert.Equal(2, result.Value.Reviews.TotalPages);
+        Assert.Equal(["Reviewer 2", "Reviewer 1"], result.Value.Reviews.Items.Select(review => review.ReviewerName).ToArray());
+    }
+
+    [Fact]
+    public async Task GetApprovedReviewsAsync_WhenPageIsInvalid_ReturnsValidationFailure()
+    {
+        var category = new Category { Id = 1, Name = "Electrical & Heating" };
+        var tool = CreateTool(6, category, isActive: true);
+        var service = CreateService(tools: [tool]);
+
+        var result = await service.GetApprovedReviewsAsync(tool.Id, page: 0, pageSize: 10);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Page must be greater than or equal to 1.", result.Error);
+    }
+
     private static ReviewService CreateService(
-        InMemoryRepository<Review>? reviewRepository = null,
+        InMemoryReviewRepository? reviewRepository = null,
         FakeUnitOfWork? unitOfWork = null,
+        IEnumerable<Review>? reviews = null,
         IEnumerable<Tool>? tools = null,
         IEnumerable<User>? users = null)
     {
         return new ReviewService(
-            reviewRepository ?? new InMemoryRepository<Review>(),
+            reviewRepository ?? new InMemoryReviewRepository(reviews),
             new InMemoryToolRepository(tools),
             new InMemoryUserRepository(users),
             unitOfWork ?? new FakeUnitOfWork());
@@ -197,5 +377,39 @@ public class ReviewServiceTests
             IsActive = isActive,
             Images = []
         };
+    }
+
+    private static Review CreateReview(
+        int id,
+        Tool tool,
+        string reviewerName,
+        ReviewStatus status,
+        DateTime createdDate,
+        int equipmentRating,
+        int customerServiceRating,
+        int technicalSupportRating,
+        int afterSalesRating,
+        int valueForMoneyRating)
+    {
+        var review = new Review
+        {
+            Id = id,
+            ToolId = tool.Id,
+            Tool = tool,
+            ReviewerName = reviewerName,
+            ReviewerEmail = $"{reviewerName.Replace(" ", string.Empty).ToLowerInvariant()}@example.com",
+            ReviewText = $"{reviewerName} left detailed and useful feedback for this hire.",
+            EquipmentRating = equipmentRating,
+            CustomerServiceRating = customerServiceRating,
+            TechnicalSupportRating = technicalSupportRating,
+            AfterSalesRating = afterSalesRating,
+            ValueForMoneyRating = valueForMoneyRating,
+            Status = status,
+            CreatedDate = createdDate,
+            Comments = []
+        };
+
+        review.CalculateOverallRating();
+        return review;
     }
 }

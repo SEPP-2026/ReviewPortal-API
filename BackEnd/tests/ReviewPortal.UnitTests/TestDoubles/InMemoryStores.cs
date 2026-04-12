@@ -2,6 +2,7 @@ using ReviewPortal.Application.Common;
 using ReviewPortal.Application.Interfaces;
 using ReviewPortal.Domain.Common;
 using ReviewPortal.Domain.Entities;
+using ReviewPortal.Domain.Enums;
 using ReviewPortal.Domain.Interfaces;
 
 namespace ReviewPortal.UnitTests.TestDoubles;
@@ -166,6 +167,57 @@ internal sealed class InMemoryToolRepository : IToolRepository
     public Task<Tool?> GetByIdWithDetailsAsync(int id, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(_tools.SingleOrDefault(tool => tool.Id == id));
+    }
+}
+
+internal sealed class InMemoryReviewRepository : IReviewRepository
+{
+    private readonly List<Review> _reviews;
+
+    public InMemoryReviewRepository(IEnumerable<Review>? reviews = null)
+    {
+        _reviews = reviews?.ToList() ?? [];
+    }
+
+    public IReadOnlyList<Review> Items => _reviews;
+
+    public Task<Review?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(_reviews.SingleOrDefault(review => review.Id == id));
+    }
+
+    public Task<IReadOnlyList<Review>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<IReadOnlyList<Review>>(_reviews);
+    }
+
+    public Task<Review> AddAsync(Review entity, CancellationToken cancellationToken = default)
+    {
+        entity.Id = _reviews.Count == 0 ? 1 : _reviews.Max(review => review.Id) + 1;
+        _reviews.Add(entity);
+
+        return Task.FromResult(entity);
+    }
+
+    public Task UpdateAsync(Review entity, CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteAsync(Review entity, CancellationToken cancellationToken = default)
+    {
+        _reviews.Remove(entity);
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<Review>> GetApprovedByToolIdWithDetailsAsync(int toolId, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<IReadOnlyList<Review>>(
+            _reviews
+                .Where(review => review.ToolId == toolId && review.Status == ReviewStatus.Approved)
+                .OrderByDescending(review => review.CreatedDate)
+                .ThenByDescending(review => review.Id)
+                .ToList());
     }
 }
 

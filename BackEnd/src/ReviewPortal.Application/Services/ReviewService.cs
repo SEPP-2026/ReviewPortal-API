@@ -11,16 +11,17 @@ namespace ReviewPortal.Application.Services;
 public class ReviewService : IReviewService
 {
     private const int DefaultMaxPageSize = 100;
+    private const string NoReviewsMessage = "No reviews yet - be the first to share your experience";
     private const int MinReviewLength = 20;
     private const int MaxReviewLength = 2000;
 
-    private readonly IRepository<Review> _reviewRepository;
+    private readonly IReviewRepository _reviewRepository;
     private readonly IToolRepository _toolRepository;
     private readonly IUserRepository _userRepository;
     private readonly IUnitOfWork _unitOfWork;
 
     public ReviewService(
-        IRepository<Review> reviewRepository,
+        IReviewRepository reviewRepository,
         IToolRepository toolRepository,
         IUserRepository userRepository,
         IUnitOfWork unitOfWork)
@@ -78,9 +79,44 @@ public class ReviewService : IReviewService
         return Result<ReviewDto>.Success(MapReview(review, tool.Name));
     }
 
-    public Task<Result<PagedList<ReviewDto>>> GetApprovedReviewsAsync(int toolId, int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<Result<ToolReviewsDto>> GetApprovedReviewsAsync(int toolId, int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(Result<PagedList<ReviewDto>>.Failure("Approved review retrieval is not implemented in this slice."));
+        var validationError = ValidatePaging(page, pageSize);
+        if (validationError is not null)
+        {
+            return Result<ToolReviewsDto>.Failure(validationError);
+        }
+
+        var tool = await _toolRepository.GetByIdAsync(toolId, cancellationToken);
+        if (tool is null || !tool.IsActive)
+        {
+            return Result<ToolReviewsDto>.NotFound($"Tool with ID {toolId} not found.");
+        }
+
+        var approvedReviews = await _reviewRepository.GetApprovedByToolIdWithDetailsAsync(toolId, cancellationToken);
+        var mappedReviews = approvedReviews
+            .Select(review => MapReview(review, tool.Name))
+            .ToList();
+
+        var pagedReviews = new PagedList<ReviewDto>(
+            mappedReviews
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList(),
+            page,
+            pageSize,
+            mappedReviews.Count);
+
+        decimal? averageOverallRating = mappedReviews.Count == 0
+            ? null
+            : Math.Round(mappedReviews.Average(review => review.OverallRating), 2, MidpointRounding.AwayFromZero);
+
+        return Result<ToolReviewsDto>.Success(new ToolReviewsDto(
+            toolId,
+            averageOverallRating,
+            mappedReviews.Count,
+            mappedReviews.Count == 0 ? NoReviewsMessage : null,
+            pagedReviews));
     }
 
     public Task<Result<ReviewCommentDto>> AddCommentAsync(int reviewId, CreateCommentRequest request, CancellationToken cancellationToken = default)
@@ -182,6 +218,26 @@ public class ReviewService : IReviewService
         return null;
     }
 
+    private static string? ValidatePaging(int page, int pageSize)
+    {
+        if (page < 1)
+        {
+            return "Page must be greater than or equal to 1.";
+        }
+
+        if (pageSize < 1)
+        {
+            return "Page size must be greater than or equal to 1.";
+        }
+
+        if (pageSize > DefaultMaxPageSize)
+        {
+            return $"Page size must not exceed {DefaultMaxPageSize}.";
+        }
+
+        return null;
+    }
+
     private async Task<Result<(string ReviewerName, string ReviewerEmail)>> ResolveReviewerDetailsAsync(
         CreateReviewRequest request,
         int? userId,
@@ -204,6 +260,26 @@ public class ReviewService : IReviewService
 
     private static ReviewDto MapReview(Review review, string toolName)
     {
+        var approvedComments = review.Comments
+            .Where(comment => comment.Status == ReviewStatus.Approved)
+            .OrderBy(comment => comment.CreatedDate)
+            .ThenBy(comment => comment.Id)
+            .Select(comment => new ReviewCommentDto(
+                comment.Id,
+                comment.CommenterName,
+                comment.CommentText,
+                comment.CreatedDate))
+            .ToList();
+
+        var companyResponse = review.CompanyResponse is null
+            ? null
+            : new CompanyResponseDto(
+                review.CompanyResponse.Id,
+                review.CompanyResponse.ResponseText,
+                review.CompanyResponse.StaffUser?.Name ?? string.Empty,
+                review.CompanyResponse.CreatedDate,
+                review.CompanyResponse.UpdatedDate);
+
         return new ReviewDto(
             review.Id,
             review.ToolId,
@@ -219,7 +295,7 @@ public class ReviewService : IReviewService
             review.Status.ToString(),
             review.RejectionReason,
             review.CreatedDate,
-            [],
-            null);
+            approvedComments,
+            companyResponse);
     }
 }
