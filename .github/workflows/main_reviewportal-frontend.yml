@@ -49,13 +49,14 @@ jobs:
           cd frontend/.next/standalone
           zip -r ../../../deploy.zip .
 
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
       - name: Deploy to Azure Web App
-        env:
-          PUBLISH_URL: reviewportal-frontend-dccvarataff4a8hg.scm.southeastasia-01.azurewebsites.net
-          PUBLISH_USER: $reviewportal-frontend
-          PUBLISH_PASSWORD: P4b7RkxfMxbWokqNZRJRMrzt6HfqhCGDt1JropjCEQuFc8e6TaWA6jEumnf7
-        run: |
-          curl -X POST \
-            -u "$PUBLISH_USER:$PUBLISH_PASSWORD" \
-            --data-binary @deploy.zip \
-            https://$PUBLISH_URL/api/zipdeploy
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          slot-name: production
+          package: deploy.zip
