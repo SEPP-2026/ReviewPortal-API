@@ -46,11 +46,16 @@ jobs:
         run: |
           cp -r frontend/.next/static frontend/.next/standalone/.next/static
           cp -r frontend/public frontend/.next/standalone/public
+          cd frontend/.next/standalone
+          zip -r ../../../deploy.zip .
 
       - name: Deploy to Azure Web App
-        id: deploy
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_CREDENTIALS }}
-          package: frontend/.next/standalone
+        env:
+          PUBLISH_URL: reviewportal-frontend-dccvarataff4a8hg.scm.southeastasia-01.azurewebsites.net
+          PUBLISH_USER: $reviewportal-frontend
+          PUBLISH_PASSWORD: P4b7RkxfMxbWokqNZRJRMrzt6HfqhCGDt1JropjCEQuFc8e6TaWA6jEumnf7
+        run: |
+          curl -X POST \
+            -u "$PUBLISH_USER:$PUBLISH_PASSWORD" \
+            --data-binary @deploy.zip \
+            https://$PUBLISH_URL/api/zipdeploy
