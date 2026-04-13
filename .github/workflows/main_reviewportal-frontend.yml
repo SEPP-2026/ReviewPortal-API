@@ -1,6 +1,6 @@
 # GitHub Actions workflow for Frontend Deployment
 # Deploys Next.js frontend to Azure App Service
-# Triggers after CI passes on main branc
+# Triggers after CI passes on main branch
 
 name: Frontend Deploy
 
