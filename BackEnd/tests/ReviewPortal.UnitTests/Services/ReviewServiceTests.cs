@@ -16,7 +16,7 @@ public class ReviewServiceTests
         var tool = CreateTool(7, category, isActive: true);
         var reviewRepository = new InMemoryReviewRepository();
         var unitOfWork = new FakeUnitOfWork();
-        var service = CreateService(reviewRepository, unitOfWork, tools: [tool]);
+        var service = CreateService(reviewRepository: reviewRepository, unitOfWork: unitOfWork, tools: [tool]);
 
         var request = new CreateReviewRequest(
             "  Sam Customer  ",
@@ -57,7 +57,7 @@ public class ReviewServiceTests
         };
 
         var reviewRepository = new InMemoryReviewRepository();
-        var service = CreateService(reviewRepository, new FakeUnitOfWork(), tools: [tool], users: [user]);
+        var service = CreateService(reviewRepository: reviewRepository, unitOfWork: new FakeUnitOfWork(), tools: [tool], users: [user]);
 
         var request = new CreateReviewRequest(
             "",
@@ -335,8 +335,192 @@ public class ReviewServiceTests
         Assert.Equal("Page must be greater than or equal to 1.", result.Error);
     }
 
+    [Fact]
+    public async Task AddCommentAsync_WhenRequestIsValid_SavesPendingComment()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var tool = CreateTool(9, category, isActive: true);
+        var review = CreateReview(
+            1,
+            tool,
+            "Ava",
+            ReviewStatus.Approved,
+            new DateTime(2026, 4, 1, 8, 0, 0, DateTimeKind.Utc),
+            5,
+            4,
+            4,
+            5,
+            5);
+        var commentRepository = new InMemoryRepository<ReviewComment>();
+        var unitOfWork = new FakeUnitOfWork();
+        var service = CreateService(
+            reviewRepository: new InMemoryReviewRepository([review]),
+            commentRepository: commentRepository,
+            unitOfWork: unitOfWork,
+            tools: [tool]);
+
+        var request = new CreateCommentRequest(
+            "  Sam Commenter  ",
+            "  We had a very similar experience and the team was brilliant.  ");
+
+        var result = await service.AddCommentAsync(review.Id, request);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Sam Commenter", result.Value!.CommenterName);
+        Assert.Equal("We had a very similar experience and the team was brilliant.", result.Value.CommentText);
+        Assert.Equal(1, unitOfWork.SaveChangesCallCount);
+
+        var savedComment = Assert.Single(commentRepository.Items);
+        Assert.Equal(review.Id, savedComment.ReviewId);
+        Assert.Equal(ReviewStatus.Pending, savedComment.Status);
+        Assert.Equal("Sam Commenter", savedComment.CommenterName);
+    }
+
+    [Fact]
+    public async Task AddCommentAsync_WhenReviewDoesNotExist_ReturnsNotFound()
+    {
+        var service = CreateService();
+
+        var result = await service.AddCommentAsync(404, ValidCommentRequest());
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.FailureType);
+        Assert.Equal("Review with ID 404 not found.", result.Error);
+    }
+
+    [Fact]
+    public async Task AddCommentAsync_WhenReviewIsNotApproved_ReturnsNotFound()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var tool = CreateTool(9, category, isActive: true);
+        var review = CreateReview(
+            1,
+            tool,
+            "Ava",
+            ReviewStatus.Pending,
+            new DateTime(2026, 4, 1, 8, 0, 0, DateTimeKind.Utc),
+            5,
+            4,
+            4,
+            5,
+            5);
+        var service = CreateService(reviews: [review], tools: [tool]);
+
+        var result = await service.AddCommentAsync(review.Id, ValidCommentRequest());
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.FailureType);
+        Assert.Equal("Review with ID 1 not found.", result.Error);
+    }
+
+    [Fact]
+    public async Task AddCommentAsync_WhenCommentTextIsTooShort_ReturnsValidationFailure()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var tool = CreateTool(9, category, isActive: true);
+        var review = CreateReview(
+            1,
+            tool,
+            "Ava",
+            ReviewStatus.Approved,
+            new DateTime(2026, 4, 1, 8, 0, 0, DateTimeKind.Utc),
+            5,
+            4,
+            4,
+            5,
+            5);
+        var service = CreateService(reviews: [review], tools: [tool]);
+
+        var result = await service.AddCommentAsync(review.Id, ValidCommentRequest() with { CommentText = "too short" });
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Comment text must be at least 10 characters.", result.Error);
+    }
+
+    [Fact]
+    public async Task GetApprovedCommentsAsync_ReturnsApprovedCommentsOnlyInChronologicalOrder()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var tool = CreateTool(9, category, isActive: true);
+        var review = CreateReview(
+            1,
+            tool,
+            "Ava",
+            ReviewStatus.Approved,
+            new DateTime(2026, 4, 1, 8, 0, 0, DateTimeKind.Utc),
+            5,
+            4,
+            4,
+            5,
+            5);
+        review.Comments =
+        [
+            new ReviewComment
+            {
+                Id = 2,
+                ReviewId = review.Id,
+                CommenterName = "Pending commenter",
+                CommentText = "This should stay hidden.",
+                Status = ReviewStatus.Pending,
+                CreatedDate = new DateTime(2026, 4, 2, 8, 0, 0, DateTimeKind.Utc)
+            },
+            new ReviewComment
+            {
+                Id = 3,
+                ReviewId = review.Id,
+                CommenterName = "Later commenter",
+                CommentText = "We had the same result.",
+                Status = ReviewStatus.Approved,
+                CreatedDate = new DateTime(2026, 4, 3, 8, 0, 0, DateTimeKind.Utc)
+            },
+            new ReviewComment
+            {
+                Id = 1,
+                ReviewId = review.Id,
+                CommenterName = "Earlier commenter",
+                CommentText = "Helpful review, thanks for posting.",
+                Status = ReviewStatus.Approved,
+                CreatedDate = new DateTime(2026, 4, 1, 9, 0, 0, DateTimeKind.Utc)
+            }
+        ];
+
+        var service = CreateService(reviews: [review], tools: [tool]);
+
+        var result = await service.GetApprovedCommentsAsync(review.Id);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(["Earlier commenter", "Later commenter"], result.Value!.Select(comment => comment.CommenterName).ToArray());
+    }
+
+    [Fact]
+    public async Task GetApprovedCommentsAsync_WhenReviewIsNotApproved_ReturnsNotFound()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var tool = CreateTool(9, category, isActive: true);
+        var review = CreateReview(
+            1,
+            tool,
+            "Ava",
+            ReviewStatus.Pending,
+            new DateTime(2026, 4, 1, 8, 0, 0, DateTimeKind.Utc),
+            5,
+            4,
+            4,
+            5,
+            5);
+        var service = CreateService(reviews: [review], tools: [tool]);
+
+        var result = await service.GetApprovedCommentsAsync(review.Id);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.FailureType);
+        Assert.Equal("Review with ID 1 not found.", result.Error);
+    }
+
     private static ReviewService CreateService(
         InMemoryReviewRepository? reviewRepository = null,
+        InMemoryRepository<ReviewComment>? commentRepository = null,
         FakeUnitOfWork? unitOfWork = null,
         IEnumerable<Review>? reviews = null,
         IEnumerable<Tool>? tools = null,
@@ -344,6 +528,7 @@ public class ReviewServiceTests
     {
         return new ReviewService(
             reviewRepository ?? new InMemoryReviewRepository(reviews),
+            commentRepository ?? new InMemoryRepository<ReviewComment>(),
             new InMemoryToolRepository(tools),
             new InMemoryUserRepository(users),
             unitOfWork ?? new FakeUnitOfWork());
@@ -360,6 +545,13 @@ public class ReviewServiceTests
             4,
             5,
             4);
+    }
+
+    private static CreateCommentRequest ValidCommentRequest()
+    {
+        return new CreateCommentRequest(
+            "Alex Commenter",
+            "Helpful review and we found the same issue with the hire.");
     }
 
     private static Tool CreateTool(int id, Category category, bool isActive)

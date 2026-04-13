@@ -12,21 +12,26 @@ public class ReviewService : IReviewService
 {
     private const int DefaultMaxPageSize = 100;
     private const string NoReviewsMessage = "No reviews yet - be the first to share your experience";
+    private const int MinCommentLength = 10;
+    private const int MaxCommentLength = 1000;
     private const int MinReviewLength = 20;
     private const int MaxReviewLength = 2000;
 
     private readonly IReviewRepository _reviewRepository;
+    private readonly IRepository<ReviewComment> _reviewCommentRepository;
     private readonly IToolRepository _toolRepository;
     private readonly IUserRepository _userRepository;
     private readonly IUnitOfWork _unitOfWork;
 
     public ReviewService(
         IReviewRepository reviewRepository,
+        IRepository<ReviewComment> reviewCommentRepository,
         IToolRepository toolRepository,
         IUserRepository userRepository,
         IUnitOfWork unitOfWork)
     {
         _reviewRepository = reviewRepository;
+        _reviewCommentRepository = reviewCommentRepository;
         _toolRepository = toolRepository;
         _userRepository = userRepository;
         _unitOfWork = unitOfWork;
@@ -119,9 +124,50 @@ public class ReviewService : IReviewService
             pagedReviews));
     }
 
-    public Task<Result<ReviewCommentDto>> AddCommentAsync(int reviewId, CreateCommentRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result<ReviewCommentDto>> AddCommentAsync(int reviewId, CreateCommentRequest request, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(Result<ReviewCommentDto>.Failure("Review comments are not implemented in this slice."));
+        var validationError = ValidateCommentRequest(request);
+        if (validationError is not null)
+        {
+            return Result<ReviewCommentDto>.Failure(validationError);
+        }
+
+        var review = await _reviewRepository.GetByIdAsync(reviewId, cancellationToken);
+        if (review is null || review.Status != ReviewStatus.Approved)
+        {
+            return Result<ReviewCommentDto>.NotFound($"Review with ID {reviewId} not found.");
+        }
+
+        var comment = new ReviewComment
+        {
+            ReviewId = reviewId,
+            CommenterName = request.CommenterName.Trim(),
+            CommentText = request.CommentText.Trim(),
+            Status = ReviewStatus.Pending
+        };
+
+        await _reviewCommentRepository.AddAsync(comment, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result<ReviewCommentDto>.Success(MapComment(comment));
+    }
+
+    public async Task<Result<IReadOnlyList<ReviewCommentDto>>> GetApprovedCommentsAsync(int reviewId, CancellationToken cancellationToken = default)
+    {
+        var review = await _reviewRepository.GetByIdWithDetailsAsync(reviewId, cancellationToken);
+        if (review is null || review.Status != ReviewStatus.Approved)
+        {
+            return Result<IReadOnlyList<ReviewCommentDto>>.NotFound($"Review with ID {reviewId} not found.");
+        }
+
+        var approvedComments = review.Comments
+            .Where(comment => comment.Status == ReviewStatus.Approved)
+            .OrderBy(comment => comment.CreatedDate)
+            .ThenBy(comment => comment.Id)
+            .Select(MapComment)
+            .ToList();
+
+        return Result<IReadOnlyList<ReviewCommentDto>>.Success(approvedComments);
     }
 
     public Task<Result<CompanyResponseDto>> AddCompanyResponseAsync(int reviewId, CreateCompanyResponseRequest request, int staffUserId, CancellationToken cancellationToken = default)
@@ -208,6 +254,42 @@ public class ReviewService : IReviewService
             ?? ValidateRating(request.ValueForMoneyRating, "Value for money rating");
     }
 
+    private static string? ValidateCommentRequest(CreateCommentRequest request)
+    {
+        if (request is null)
+        {
+            return "Comment request is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(request.CommenterName))
+        {
+            return "Commenter name is required.";
+        }
+
+        if (request.CommenterName.Trim().Length > 100)
+        {
+            return "Commenter name must be 100 characters or fewer.";
+        }
+
+        if (string.IsNullOrWhiteSpace(request.CommentText))
+        {
+            return "Comment text is required.";
+        }
+
+        var commentText = request.CommentText.Trim();
+        if (commentText.Length < MinCommentLength)
+        {
+            return $"Comment text must be at least {MinCommentLength} characters.";
+        }
+
+        if (commentText.Length > MaxCommentLength)
+        {
+            return $"Comment text must be {MaxCommentLength} characters or fewer.";
+        }
+
+        return null;
+    }
+
     private static string? ValidateRating(int rating, string fieldName)
     {
         if (rating is < 1 or > 5)
@@ -264,11 +346,7 @@ public class ReviewService : IReviewService
             .Where(comment => comment.Status == ReviewStatus.Approved)
             .OrderBy(comment => comment.CreatedDate)
             .ThenBy(comment => comment.Id)
-            .Select(comment => new ReviewCommentDto(
-                comment.Id,
-                comment.CommenterName,
-                comment.CommentText,
-                comment.CreatedDate))
+            .Select(MapComment)
             .ToList();
 
         var companyResponse = review.CompanyResponse is null
@@ -297,5 +375,14 @@ public class ReviewService : IReviewService
             review.CreatedDate,
             approvedComments,
             companyResponse);
+    }
+
+    private static ReviewCommentDto MapComment(ReviewComment comment)
+    {
+        return new ReviewCommentDto(
+            comment.Id,
+            comment.CommenterName,
+            comment.CommentText,
+            comment.CreatedDate);
     }
 }

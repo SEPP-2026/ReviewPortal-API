@@ -219,6 +219,11 @@ internal sealed class InMemoryReviewRepository : IReviewRepository
                 .ThenByDescending(review => review.Id)
                 .ToList());
     }
+
+    public Task<Review?> GetByIdWithDetailsAsync(int reviewId, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(_reviews.SingleOrDefault(review => review.Id == reviewId));
+    }
 }
 
 internal sealed class InMemoryRepository<T> : IRepository<T> where T : BaseEntity

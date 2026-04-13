@@ -24,4 +24,12 @@ public class ReviewRepository : Repository<Review>, IReviewRepository
             .ThenByDescending(review => review.Id)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<Review?> GetByIdWithDetailsAsync(int reviewId, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .Include(review => review.Comments)
+            .FirstOrDefaultAsync(review => review.Id == reviewId, cancellationToken);
+    }
 }
