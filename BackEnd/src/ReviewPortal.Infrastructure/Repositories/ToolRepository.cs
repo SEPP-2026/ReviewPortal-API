@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ReviewPortal.Domain.Entities;
+using ReviewPortal.Domain.Enums;
 using ReviewPortal.Domain.Interfaces;
 using ReviewPortal.Infrastructure.Data;
 
@@ -17,6 +18,7 @@ public class ToolRepository : Repository<Tool>, IToolRepository
             .AsNoTracking()
             .Include(tool => tool.Category)
             .Include(tool => tool.Images)
+            .Include(tool => tool.Reviews.Where(review => review.Status == ReviewStatus.Approved))
             .Where(tool => tool.IsActive && tool.CategoryId == categoryId)
             .ToListAsync(cancellationToken);
     }
@@ -27,6 +29,7 @@ public class ToolRepository : Repository<Tool>, IToolRepository
             .AsNoTracking()
             .Include(tool => tool.Category)
             .Include(tool => tool.Images)
+            .Include(tool => tool.Reviews.Where(review => review.Status == ReviewStatus.Approved))
             .Where(tool => tool.IsActive)
             .ToListAsync(cancellationToken);
     }
@@ -37,6 +40,7 @@ public class ToolRepository : Repository<Tool>, IToolRepository
             .AsNoTracking()
             .Include(tool => tool.Category)
             .Include(tool => tool.Images)
+            .Include(tool => tool.Reviews.Where(review => review.Status == ReviewStatus.Approved))
             .FirstOrDefaultAsync(tool => tool.Id == id, cancellationToken);
     }
 }

@@ -1,0 +1,59 @@
+# GitHub Actions workflow for Frontend Deployment
+# Deploys Next.js frontend to Azure App Service
+# Triggers after CI passes on main branch
+
+name: Frontend Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '22'
+  AZURE_WEBAPP_NAME: 'reviewportal-frontend' # Change this to your Azure App Service name
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.webapp-url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL || 'https://reviewportal-api-escdb3f2epg8eeha.southeastasia-01.azurewebsites.net' }}
+
+      - name: Prepare deployment
+        run: |
+          cp -r frontend/.next/static frontend/.next/standalone/.next/static
+          cp -r frontend/public frontend/.next/standalone/public
+
+      - name: Deploy to Azure Web App
+        id: deploy
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_FRONTEND }}
+          package: frontend/.next/standalone

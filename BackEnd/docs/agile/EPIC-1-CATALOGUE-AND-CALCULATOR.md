@@ -286,6 +286,43 @@ This epic covers everything a customer interacts with when they land on the site
 
 ---
 
+## Implementation Status
+
+Updated: 2026-04-10
+
+Backend implementation for Epic 1 is complete for the catalogue and rental calculator API slice.
+
+Implemented API endpoints:
+- `GET /api/categories` for homepage/category listing data
+- `GET /api/categories/featured` for featured homepage categories
+- `GET /api/categories/{id}` for category details
+- `GET /api/categories/{id}/tools?page=&pageSize=&sortBy=&sortOrder=&minPrice=&maxPrice=` for category browsing, sorting, pagination, and daily-rate price filtering
+- `GET /api/tools/search?q=&page=&pageSize=` for case-insensitive tool search across tool name, description, and category
+- `GET /api/tools/{id}` for full tool detail data including category, images, hire rates, special notes, deposit data, and rating summary
+- `POST /api/tools/{id}/rental-calculation` for rental cost calculation using the cheapest hourly, daily, and weekly rate combination
+
+Implemented backend components:
+- `CategoryService.GetAllCategoriesAsync` and `GetFeaturedCategoriesAsync` support US-1.1 homepage category data.
+- `ToolService.GetToolsByCategoryAsync` supports US-1.2 category browsing with active tools, thumbnail mapping, starting price, sort options, empty results, and pagination.
+- `ToolService.GetToolByIdAsync` supports US-1.3 detail page data.
+- `ToolService.SearchToolsAsync` supports US-1.4 search.
+- `ToolService.CalculateRentalCostAsync` supports US-1.5 date validation and rental breakdown calculation.
+- `ToolService.FilterByPriceRangeAsync` supports US-1.6 daily-rate min/max filtering.
+
+Implemented data support:
+- EF Core migration `20260409234000_SeedEpic1CatalogueData` seeds Epic 1 categories, tools, and tool images.
+- `SeedFullTestData.sql` includes linked test data across all current tables and includes at least three categories with four tools each.
+
+Implemented tests and verification:
+- Unit tests cover controller success and error paths for Epic 1 endpoints.
+- Unit tests cover category and tool service logic for sorting, pagination, search, price filtering, detail lookup, rental calculation, and validation.
+- Seed tests verify the full seed script and Epic 1 seed migration include the expected catalogue data.
+- Latest verified result: 88 unit tests passing.
+- Filtered Epic 1 service coverage for `CategoryService` and `ToolService`: 100% line coverage and 100% branch coverage.
+- Full solution build verified with `dotnet build ReviewPortal.slnx --no-restore --disable-build-servers -p:MSBuildEnableWorkloadResolver=false -m:1 -v:minimal`.
+
+Frontend implementation tasks for layout, navigation, responsive pages, and dynamic UI controls remain tracked in the frontend-owned tasks above.
+
 ## Summary for Sprint Planning
 
 | Sprint | Stories | Total Points |

@@ -1,6 +1,7 @@
 using ReviewPortal.Application.Common;
 using ReviewPortal.Application.Services;
 using ReviewPortal.Domain.Entities;
+using ReviewPortal.Domain.Enums;
 using ReviewPortal.UnitTests.TestDoubles;
 
 namespace ReviewPortal.UnitTests.Services;
@@ -72,6 +73,136 @@ public class ToolServiceTests
     }
 
     [Fact]
+    public async Task GetToolsByCategoryAsync_NameSortDescending_ReturnsReverseAlphabeticalTools()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var service = CreateService(
+            categories: [category],
+            tools:
+            [
+                CreateTool(1, category, "Access Platform", hourlyRate: 15m),
+                CreateTool(2, category, "Tower Scaffold", hourlyRate: 20m),
+                CreateTool(3, category, "Boom Lift", hourlyRate: 18m)
+            ]);
+
+        var result = await service.GetToolsByCategoryAsync(1, 1, 12, "name_desc");
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(["Tower Scaffold", "Boom Lift", "Access Platform"], result.Value!.Items.Select(item => item.Name).ToArray());
+    }
+
+    [Fact]
+    public async Task GetToolsByCategoryAsync_PriceSortAscending_AcceptsStartingPriceAlias()
+    {
+        var category = new Category { Id = 1, Name = "Building & Construction" };
+        var service = CreateService(
+            categories: [category],
+            tools:
+            [
+                CreateTool(1, category, "Concrete Saw", hourlyRate: 18m, dailyRate: 65m, weeklyRate: 220m),
+                CreateTool(2, category, "Acrow Prop", hourlyRate: 6m, dailyRate: 20m, weeklyRate: 65m),
+                CreateTool(3, category, "Floor Sander", hourlyRate: 17m, dailyRate: 63m, weeklyRate: 210m)
+            ]);
+
+        var result = await service.GetToolsByCategoryAsync(1, 1, 12, "starting-price");
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(["Acrow Prop", "Floor Sander", "Concrete Saw"], result.Value!.Items.Select(item => item.Name).ToArray());
+    }
+
+    [Fact]
+    public async Task GetToolsByCategoryAsync_RatingSortsByHighestRatingFirst()
+    {
+        var category = new Category { Id = 1, Name = "Cleaning & Maintenance" };
+        var pressureWasher = CreateTool(1, category, "Pressure Washer", hourlyRate: 14m);
+        pressureWasher.OverallRating = 1m;
+        pressureWasher.Reviews =
+        [
+            CreateApprovedReview(1, pressureWasher, 5, 5, 5, 5, 4),
+            CreateApprovedReview(2, pressureWasher, 5, 4, 5, 4, 5)
+        ];
+        var wetVacuum = CreateTool(2, category, "Wet Vacuum", hourlyRate: 9m);
+        wetVacuum.OverallRating = 5m;
+        wetVacuum.Reviews =
+        [
+            CreateApprovedReview(3, wetVacuum, 4, 4, 3, 4, 3),
+            CreateApprovedReview(4, wetVacuum, 3, 4, 4, 3, 4)
+        ];
+        var scrubber = CreateTool(3, category, "Floor Scrubber", hourlyRate: 18m);
+        scrubber.Reviews =
+        [
+            CreateApprovedReview(5, scrubber, 5, 5, 5, 5, 5)
+        ];
+
+        var service = CreateService(categories: [category], tools: [wetVacuum, scrubber, pressureWasher]);
+
+        var result = await service.GetToolsByCategoryAsync(1, 1, 12, "rating");
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(["Pressure Washer", "Wet Vacuum", "Floor Scrubber"], result.Value!.Items.Select(item => item.Name).ToArray());
+        Assert.Equal([4.7m, 3.6m, null], result.Value.Items.Select(item => item.OverallRating).ToArray());
+    }
+
+    [Fact]
+    public async Task GetToolsByCategoryAsync_RatingAscendingSortsUnratedToolsFirst()
+    {
+        var category = new Category { Id = 1, Name = "Cleaning & Maintenance" };
+        var pressureWasher = CreateTool(1, category, "Pressure Washer", hourlyRate: 14m);
+        pressureWasher.Reviews =
+        [
+            CreateApprovedReview(1, pressureWasher, 5, 5, 5, 5, 4),
+            CreateApprovedReview(2, pressureWasher, 5, 4, 5, 4, 5)
+        ];
+        var wetVacuum = CreateTool(2, category, "Wet Vacuum", hourlyRate: 9m);
+        wetVacuum.Reviews =
+        [
+            CreateApprovedReview(3, wetVacuum, 4, 4, 3, 4, 3),
+            CreateApprovedReview(4, wetVacuum, 3, 4, 4, 3, 4)
+        ];
+        var scrubber = CreateTool(3, category, "Floor Scrubber", hourlyRate: 18m);
+        scrubber.Reviews =
+        [
+            CreateApprovedReview(5, scrubber, 5, 5, 5, 5, 5)
+        ];
+
+        var service = CreateService(categories: [category], tools: [wetVacuum, scrubber, pressureWasher]);
+
+        var result = await service.GetToolsByCategoryAsync(1, 1, 12, "rating_asc");
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(["Floor Scrubber", "Wet Vacuum", "Pressure Washer"], result.Value!.Items.Select(item => item.Name).ToArray());
+    }
+
+    [Theory]
+    [InlineData("price")]
+    [InlineData("price_asc")]
+    [InlineData("starting_price_desc")]
+    [InlineData("rating_desc")]
+    public async Task GetToolsByCategoryAsync_SortAliasesAreAccepted(string sortBy)
+    {
+        var category = new Category { Id = 1, Name = "Cleaning & Maintenance" };
+        var pressureWasher = CreateTool(1, category, "Pressure Washer", hourlyRate: 14m);
+        pressureWasher.Reviews =
+        [
+            CreateApprovedReview(1, pressureWasher, 5, 5, 5, 5, 4),
+            CreateApprovedReview(2, pressureWasher, 5, 4, 5, 4, 5)
+        ];
+        var wetVacuum = CreateTool(2, category, "Wet Vacuum", hourlyRate: 9m);
+        wetVacuum.Reviews =
+        [
+            CreateApprovedReview(3, wetVacuum, 4, 4, 3, 4, 3),
+            CreateApprovedReview(4, wetVacuum, 3, 4, 4, 3, 4)
+        ];
+
+        var service = CreateService(categories: [category], tools: [wetVacuum, pressureWasher]);
+
+        var result = await service.GetToolsByCategoryAsync(1, 1, 12, sortBy);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Value!.TotalCount);
+    }
+
+    [Fact]
     public async Task GetToolsByCategoryAsync_Pagination_ReturnsSecondPageWithTotalCount()
     {
         var category = new Category { Id = 1, Name = "Cleaning & Maintenance" };
@@ -112,6 +243,27 @@ public class ToolServiceTests
     }
 
     [Fact]
+    public async Task GetToolsByCategoryAsync_WhenToolHasFewerThanTwoApprovedReviews_ReturnsNullOverallRatingWithApprovedCount()
+    {
+        var category = new Category { Id = 1, Name = "Garden & Landscaping" };
+        var tool = CreateTool(1, category, "Rotavator", hourlyRate: 14m);
+        tool.Reviews =
+        [
+            CreateApprovedReview(1, tool, 5, 4, 4, 5, 4),
+            CreateReview(2, tool, ReviewStatus.Pending, 1, 1, 1, 1, 1)
+        ];
+
+        var service = CreateService(categories: [category], tools: [tool]);
+
+        var result = await service.GetToolsByCategoryAsync(1, 1, 12);
+
+        Assert.True(result.IsSuccess);
+        var item = Assert.Single(result.Value!.Items);
+        Assert.Null(item.OverallRating);
+        Assert.Equal(1, item.ReviewCount);
+    }
+
+    [Fact]
     public async Task GetToolsByCategoryAsync_InvalidSortValue_ReturnsValidationFailure()
     {
         var category = new Category { Id = 1, Name = "Painting & Decorating" };
@@ -132,6 +284,18 @@ public class ToolServiceTests
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorType.NotFound, result.FailureType);
+    }
+
+    [Fact]
+    public async Task GetToolsByCategoryAsync_WhenPageIsInvalid_ReturnsValidationFailure()
+    {
+        var service = CreateService();
+
+        var result = await service.GetToolsByCategoryAsync(1, 0, 12);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Page must be greater than or equal to 1.", result.Error);
     }
 
     [Fact]
@@ -177,6 +341,51 @@ public class ToolServiceTests
     }
 
     [Fact]
+    public async Task FilterByPriceRangeAsync_WhenOnlyMinimumPriceProvided_ReturnsToolsAtOrAboveMinimum()
+    {
+        var category = new Category { Id = 1, Name = "Garden & Landscaping" };
+        var service = CreateService(
+            categories: [category],
+            tools:
+            [
+                CreateTool(1, category, "Hedge Trimmer", hourlyRate: 12m, dailyRate: 44m),
+                CreateTool(2, category, "Turf Cutter", hourlyRate: 19m, dailyRate: 72m)
+            ]);
+
+        var result = await service.FilterByPriceRangeAsync(1, minPrice: 50m, maxPrice: null, page: 1, pageSize: 12);
+
+        Assert.True(result.IsSuccess);
+        var item = Assert.Single(result.Value!.Items);
+        Assert.Equal("Turf Cutter", item.Name);
+    }
+
+    [Fact]
+    public async Task FilterByPriceRangeAsync_WhenPageSizeIsTooLarge_ReturnsValidationFailure()
+    {
+        var service = CreateService();
+
+        var result = await service.FilterByPriceRangeAsync(1, minPrice: null, maxPrice: null, page: 1, pageSize: 101);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Page size must not exceed 100.", result.Error);
+    }
+
+    [Fact]
+    public async Task FilterByPriceRangeAsync_WhenSortIsInvalid_ReturnsValidationFailure()
+    {
+        var category = new Category { Id = 1, Name = "Electrical & Heating" };
+        var service = CreateService(
+            categories: [category],
+            tools: [CreateTool(1, category, "50L Dehumidifier", hourlyRate: 11m, dailyRate: 40m)]);
+
+        var result = await service.FilterByPriceRangeAsync(1, minPrice: 10m, maxPrice: 80m, page: 1, pageSize: 12, sortBy: "popularity");
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+    }
+
+    [Fact]
     public async Task FilterByPriceRangeAsync_WhenPriceRangeIsInvalid_ReturnsValidationFailure()
     {
         var category = new Category { Id = 1, Name = "Garden & Landscaping" };
@@ -210,8 +419,12 @@ public class ToolServiceTests
         tool.SpecialNotes = "Keep clear of walls for best airflow.";
         tool.DepositRequired = true;
         tool.DepositAmount = 60m;
-        tool.OverallRating = 4.6m;
-        tool.ReviewCount = 1;
+        tool.Reviews =
+        [
+            CreateApprovedReview(1, tool, 5, 5, 5, 4, 4),
+            CreateApprovedReview(2, tool, 5, 5, 5, 4, 4),
+            CreateReview(3, tool, ReviewStatus.Pending, 1, 1, 1, 1, 1)
+        ];
         tool.Images =
         [
             new ToolImage { Id = 2, ToolId = 7, ImageUrl = "second.jpg", DisplayOrder = 2 },
@@ -231,7 +444,27 @@ public class ToolServiceTests
         Assert.True(result.Value.DepositRequired);
         Assert.Equal(60m, result.Value.DepositAmount);
         Assert.Equal(4.6m, result.Value.OverallRating);
+        Assert.Equal(2, result.Value.ReviewCount);
         Assert.Equal(["first.jpg", "second.jpg"], result.Value.Images.Select(image => image.ImageUrl).ToArray());
+    }
+
+    [Fact]
+    public async Task GetToolByIdAsync_WhenToolHasOnlyOneApprovedReview_ReturnsNullOverallRating()
+    {
+        var category = new Category { Id = 1, Name = "Electrical & Heating" };
+        var tool = CreateTool(7, category, "50L Dehumidifier", hourlyRate: 11m, dailyRate: 40m, weeklyRate: 135m);
+        tool.Reviews =
+        [
+            CreateApprovedReview(1, tool, 5, 5, 5, 4, 4)
+        ];
+
+        var service = CreateService(categories: [category], tools: [tool]);
+
+        var result = await service.GetToolByIdAsync(7);
+
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Value!.OverallRating);
+        Assert.Equal(1, result.Value.ReviewCount);
     }
 
     [Fact]
@@ -284,6 +517,28 @@ public class ToolServiceTests
         Assert.Equal("Breaking & Drilling", item.CategoryName);
         Assert.Equal(15m, item.StartingPrice);
         Assert.Equal("sds-drill.jpg", item.ThumbnailUrl);
+    }
+
+    [Fact]
+    public async Task SearchToolsAsync_MapsComputedRatingAndApprovedReviewCount()
+    {
+        var category = new Category { Id = 1, Name = "Breaking & Drilling" };
+        var matchingTool = CreateTool(1, category, "SDS Max Drill", hourlyRate: 15m);
+        matchingTool.Reviews =
+        [
+            CreateApprovedReview(1, matchingTool, 5, 4, 5, 4, 4),
+            CreateApprovedReview(2, matchingTool, 4, 4, 4, 4, 4),
+            CreateReview(3, matchingTool, ReviewStatus.Pending, 1, 1, 1, 1, 1)
+        ];
+
+        var service = CreateService(categories: [category], tools: [matchingTool]);
+
+        var result = await service.SearchToolsAsync("sds", 1, 12);
+
+        Assert.True(result.IsSuccess);
+        var item = Assert.Single(result.Value!.Items);
+        Assert.Equal(4.2m, item.OverallRating);
+        Assert.Equal(2, item.ReviewCount);
     }
 
     [Fact]
@@ -355,6 +610,45 @@ public class ToolServiceTests
     }
 
     [Fact]
+    public async Task SearchToolsAsync_WhenPageSizeIsInvalid_ReturnsValidationFailure()
+    {
+        var service = CreateService();
+
+        var result = await service.SearchToolsAsync("drill", 1, 0);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Page size must be greater than or equal to 1.", result.Error);
+    }
+
+    [Fact]
+    public async Task SearchToolsAsync_WhenQueryIsTooLong_ReturnsValidationFailure()
+    {
+        var service = CreateService();
+
+        var result = await service.SearchToolsAsync(new string('x', 201), 1, 12);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Search query must be 200 characters or fewer.", result.Error);
+    }
+
+    [Fact]
+    public async Task SearchToolsAsync_WhenQueryContainsSpecialCharacters_ReturnsMatchingTool()
+    {
+        var category = new Category { Id = 1, Name = "Breaking & Drilling" };
+        var service = CreateService(
+            categories: [category],
+            tools: [CreateTool(1, category, "SDS+ Drill", hourlyRate: 15m)]);
+
+        var result = await service.SearchToolsAsync("sds+", 1, 12);
+
+        Assert.True(result.IsSuccess);
+        var item = Assert.Single(result.Value!.Items);
+        Assert.Equal("SDS+ Drill", item.Name);
+    }
+
+    [Fact]
     public async Task CalculateRentalCostAsync_WhenHoursOnlyIsCheapest_ReturnsHourlyCost()
     {
         var category = new Category { Id = 1, Name = "Breaking & Drilling" };
@@ -420,6 +714,38 @@ public class ToolServiceTests
     }
 
     [Fact]
+    public async Task CalculateRentalCostAsync_WhenHourlyAndDailyCostsTie_PrefersExactCoverage()
+    {
+        var category = new Category { Id = 1, Name = "Breaking & Drilling" };
+        var tool = CreateTool(1, category, "SDS Max Drill", hourlyRate: 10m, dailyRate: 10m, weeklyRate: 500m);
+        var service = CreateService(categories: [category], tools: [tool]);
+        var start = new DateTime(2026, 1, 1, 9, 0, 0, DateTimeKind.Utc);
+        var end = start.AddHours(1);
+
+        var result = await service.CalculateRentalCostAsync(1, new(start, end));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(10m, result.Value!.TotalCost);
+        Assert.Equal("1 hour x 10.00/hour = 10.00", result.Value.Breakdown);
+    }
+
+    [Fact]
+    public async Task CalculateRentalCostAsync_WhenCostsTieForExactCoverage_PrefersFewerUnits()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var tool = CreateTool(1, category, "Platform Ladder", hourlyRate: 10m, dailyRate: 240m, weeklyRate: 2000m);
+        var service = CreateService(categories: [category], tools: [tool]);
+        var start = new DateTime(2026, 1, 1, 9, 0, 0, DateTimeKind.Utc);
+        var end = start.AddDays(1);
+
+        var result = await service.CalculateRentalCostAsync(1, new(start, end));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(240m, result.Value!.TotalCost);
+        Assert.Equal("1 day x 240.00/day = 240.00", result.Value.Breakdown);
+    }
+
+    [Fact]
     public async Task CalculateRentalCostAsync_WhenEndDateTimeIsNotAfterStartDateTime_ReturnsValidationFailure()
     {
         var service = CreateService();
@@ -430,6 +756,49 @@ public class ToolServiceTests
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorType.Validation, result.FailureType);
         Assert.Equal("End date/time must be after the start date/time.", result.Error);
+    }
+
+    [Fact]
+    public async Task CalculateRentalCostAsync_WhenToolDoesNotExist_ReturnsNotFound()
+    {
+        var service = CreateService();
+        var start = new DateTime(2026, 1, 1, 9, 0, 0, DateTimeKind.Utc);
+
+        var result = await service.CalculateRentalCostAsync(404, new(start, start.AddHours(1)));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.FailureType);
+    }
+
+    [Fact]
+    public async Task CalculateRentalCostAsync_WhenToolIsInactive_ReturnsNotFound()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var tool = CreateTool(8, category, "Material Hoist", hourlyRate: 20m, isActive: false);
+        var service = CreateService(categories: [category], tools: [tool]);
+        var start = new DateTime(2026, 1, 1, 9, 0, 0, DateTimeKind.Utc);
+
+        var result = await service.CalculateRentalCostAsync(8, new(start, start.AddHours(1)));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.FailureType);
+    }
+
+    [Fact]
+    public async Task ToolMutationMethods_WhenNotImplemented_ReturnValidationFailures()
+    {
+        var service = CreateService();
+
+        var createResult = await service.CreateToolAsync(null!);
+        var updateResult = await service.UpdateToolAsync(1, null!);
+        var statusResult = await service.SetToolStatusAsync(1, true);
+
+        Assert.False(createResult.IsSuccess);
+        Assert.False(updateResult.IsSuccess);
+        Assert.False(statusResult.IsSuccess);
+        Assert.Equal("Tool creation is not implemented in this slice.", createResult.Error);
+        Assert.Equal("Tool updates are not implemented in this slice.", updateResult.Error);
+        Assert.Equal("Tool status changes are not implemented in this slice.", statusResult.Error);
     }
 
     private static ToolService CreateService(
@@ -463,5 +832,55 @@ public class ToolServiceTests
             IsActive = isActive,
             Images = []
         };
+    }
+
+    private static Review CreateApprovedReview(
+        int id,
+        Tool tool,
+        int equipmentRating,
+        int customerServiceRating,
+        int technicalSupportRating,
+        int afterSalesRating,
+        int valueForMoneyRating)
+    {
+        return CreateReview(
+            id,
+            tool,
+            ReviewStatus.Approved,
+            equipmentRating,
+            customerServiceRating,
+            technicalSupportRating,
+            afterSalesRating,
+            valueForMoneyRating);
+    }
+
+    private static Review CreateReview(
+        int id,
+        Tool tool,
+        ReviewStatus status,
+        int equipmentRating,
+        int customerServiceRating,
+        int technicalSupportRating,
+        int afterSalesRating,
+        int valueForMoneyRating)
+    {
+        var review = new Review
+        {
+            Id = id,
+            ToolId = tool.Id,
+            Tool = tool,
+            ReviewerName = $"Reviewer {id}",
+            ReviewerEmail = $"reviewer{id}@example.com",
+            ReviewText = $"Review {id} contains enough detail to satisfy the minimum length rule.",
+            EquipmentRating = equipmentRating,
+            CustomerServiceRating = customerServiceRating,
+            TechnicalSupportRating = technicalSupportRating,
+            AfterSalesRating = afterSalesRating,
+            ValueForMoneyRating = valueForMoneyRating,
+            Status = status
+        };
+
+        review.CalculateOverallRating();
+        return review;
     }
 }

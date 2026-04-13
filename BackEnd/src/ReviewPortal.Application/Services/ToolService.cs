@@ -3,6 +3,7 @@ using ReviewPortal.Application.Common;
 using ReviewPortal.Application.DTOs.Tools;
 using ReviewPortal.Application.Interfaces;
 using ReviewPortal.Domain.Entities;
+using ReviewPortal.Domain.Enums;
 using ReviewPortal.Domain.Interfaces;
 
 namespace ReviewPortal.Application.Services;
@@ -12,6 +13,7 @@ public class ToolService : IToolService
     private const int MaxPageSize = 100;
     private const int HoursInDay = 24;
     private const int HoursInWeek = 168;
+    private const int MinimumReviewsRequiredForRating = 2;
 
     private readonly IToolRepository _toolRepository;
     private readonly ICategoryRepository _categoryRepository;
@@ -42,7 +44,8 @@ public class ToolService : IToolService
         }
 
         var tools = await _toolRepository.GetActiveByCategoryAsync(categoryId, cancellationToken);
-        var sortedTools = ApplySort(tools, sortBy, out validationError);
+        var rankedTools = ApplyRatingMetrics(tools);
+        var sortedTools = ApplySort(rankedTools, sortBy, out validationError);
         if (validationError is not null)
         {
             return Result<PagedList<ToolSummaryDto>>.Failure(validationError);
@@ -66,7 +69,8 @@ public class ToolService : IToolService
 
         var normalizedQuery = query.Trim();
         var tools = await _toolRepository.GetAllActiveWithDetailsAsync(cancellationToken);
-        var matchingTools = tools
+        var rankedTools = ApplyRatingMetrics(tools);
+        var matchingTools = rankedTools
             .Where(tool =>
                 ContainsIgnoreCase(tool.Name, normalizedQuery) ||
                 ContainsIgnoreCase(tool.Description, normalizedQuery) ||
@@ -99,7 +103,8 @@ public class ToolService : IToolService
         }
 
         var tools = await _toolRepository.GetActiveByCategoryAsync(categoryId, cancellationToken);
-        var filteredTools = tools.Where(tool =>
+        var rankedTools = ApplyRatingMetrics(tools);
+        var filteredTools = rankedTools.Where(tool =>
             (!minPrice.HasValue || tool.DailyRate >= minPrice.Value) &&
             (!maxPrice.HasValue || tool.DailyRate <= maxPrice.Value));
 
@@ -126,11 +131,6 @@ public class ToolService : IToolService
         }
 
         var rentalPeriod = request.EndDateTime - request.StartDateTime;
-        if (rentalPeriod.TotalHours > int.MaxValue)
-        {
-            return Result<RentalCalculationResponse>.Failure("Rental period is too long.");
-        }
-
         var billableHours = (int)Math.Ceiling(rentalPeriod.TotalHours);
         var cheapestCombination = FindCheapestRentalCombination(
             billableHours,
@@ -255,6 +255,44 @@ public class ToolService : IToolService
         return string.IsNullOrWhiteSpace(sortBy)
             ? "name"
             : sortBy.Trim().Replace("-", "_").ToLowerInvariant();
+    }
+
+    private static IReadOnlyList<Tool> ApplyRatingMetrics(IEnumerable<Tool> tools)
+    {
+        var toolList = tools.ToList();
+
+        foreach (var tool in toolList)
+        {
+            ApplyRatingMetrics(tool);
+        }
+
+        return toolList;
+    }
+
+    private static void ApplyRatingMetrics(Tool tool)
+    {
+        var approvedReviews = tool.Reviews
+            .Where(review => review.Status == ReviewStatus.Approved)
+            .ToList();
+
+        tool.ReviewCount = approvedReviews.Count;
+        tool.OverallRating = approvedReviews.Count < MinimumReviewsRequiredForRating
+            ? null
+            : CalculateOverallRating(approvedReviews);
+    }
+
+    private static decimal CalculateOverallRating(IReadOnlyCollection<Review> approvedReviews)
+    {
+        var averageEquipment = approvedReviews.Average(review => (decimal)review.EquipmentRating);
+        var averageCustomerService = approvedReviews.Average(review => (decimal)review.CustomerServiceRating);
+        var averageTechnicalSupport = approvedReviews.Average(review => (decimal)review.TechnicalSupportRating);
+        var averageAfterSales = approvedReviews.Average(review => (decimal)review.AfterSalesRating);
+        var averageValueForMoney = approvedReviews.Average(review => (decimal)review.ValueForMoneyRating);
+
+        return Math.Round(
+            (averageEquipment + averageCustomerService + averageTechnicalSupport + averageAfterSales + averageValueForMoney) / 5m,
+            2,
+            MidpointRounding.AwayFromZero);
     }
 
     private static ToolSummaryDto MapSummary(Tool tool)
@@ -387,6 +425,8 @@ public class ToolService : IToolService
         {
             return Result<ToolDto>.NotFound($"Tool with ID {id} not found.");
         }
+
+        ApplyRatingMetrics(tool);
 
         return Result<ToolDto>.Success(new ToolDto(
             tool.Id,

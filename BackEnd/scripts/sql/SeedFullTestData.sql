@@ -16,6 +16,9 @@
   - moderator.test@reviewportal.local / Moderator123!
 
   Intended for development and local testing on a fresh or disposable database.
+  Safe to run multiple times. Re-running refreshes the seeded records to the
+  canonical development state and clears any stored password reset tokens when
+  those columns exist.
 */
 
 SET NOCOUNT ON;
@@ -23,25 +26,57 @@ SET XACT_ABORT ON;
 
 BEGIN TRANSACTION;
 
+DECLARE @HasPasswordResetColumns bit = CASE
+    WHEN COL_LENGTH('dbo.Users', 'PasswordResetTokenHash') IS NOT NULL
+     AND COL_LENGTH('dbo.Users', 'PasswordResetTokenExpiryUtc') IS NOT NULL
+    THEN 1
+    ELSE 0
+END;
+
 SET IDENTITY_INSERT dbo.Users ON;
 
-MERGE dbo.Users AS target
-USING (VALUES
-    (1, N'Test Customer', N'customer.test@reviewportal.local', N'AQAAAAIAAYagAAAAEA0G/BQ4WPdNpKqAnK0Mam0BNoG560l4GFfcdOa4Xps8ZYyGiiH6yxH5EgC1llfMqQ==', N'Customer', CAST('2026-04-06T00:00:00' AS datetime2)),
-    (2, N'Test Admin', N'admin.test@reviewportal.local', N'AQAAAAIAAYagAAAAEOqaZaaWb29MnbnePdQNWq+wQO66MHMXfZh0ouwcBZjORmC3mllgI0zebkL9iOSFqQ==', N'Admin', CAST('2026-04-06T00:00:00' AS datetime2)),
-    (3, N'Test Moderator', N'moderator.test@reviewportal.local', N'AQAAAAIAAYagAAAAEMnrqmN8EAAHiVorrGMGoFopVvlvMBVCFw0pvQz9mgWzxZrB1RGNwUsqv+n41Wss/g==', N'Moderator', CAST('2026-04-06T00:00:00' AS datetime2))
-) AS source (Id, Name, Email, PasswordHash, Role, CreatedDate)
-ON target.Id = source.Id
-WHEN MATCHED THEN
-    UPDATE SET
-        Name = source.Name,
-        Email = source.Email,
-        PasswordHash = source.PasswordHash,
-        Role = source.Role,
-        CreatedDate = source.CreatedDate
-WHEN NOT MATCHED BY TARGET THEN
-    INSERT (Id, Name, Email, PasswordHash, Role, CreatedDate)
-    VALUES (source.Id, source.Name, source.Email, source.PasswordHash, source.Role, source.CreatedDate);
+IF @HasPasswordResetColumns = 1
+BEGIN
+    MERGE dbo.Users AS target
+    USING (VALUES
+        (1, N'Test Customer', N'customer.test@reviewportal.local', N'AQAAAAIAAYagAAAAEA0G/BQ4WPdNpKqAnK0Mam0BNoG560l4GFfcdOa4Xps8ZYyGiiH6yxH5EgC1llfMqQ==', CAST(NULL AS nvarchar(256)), CAST(NULL AS datetime2), N'Customer', CAST('2026-04-06T00:00:00' AS datetime2)),
+        (2, N'Test Admin', N'admin.test@reviewportal.local', N'AQAAAAIAAYagAAAAEOqaZaaWb29MnbnePdQNWq+wQO66MHMXfZh0ouwcBZjORmC3mllgI0zebkL9iOSFqQ==', CAST(NULL AS nvarchar(256)), CAST(NULL AS datetime2), N'Admin', CAST('2026-04-06T00:00:00' AS datetime2)),
+        (3, N'Test Moderator', N'moderator.test@reviewportal.local', N'AQAAAAIAAYagAAAAEMnrqmN8EAAHiVorrGMGoFopVvlvMBVCFw0pvQz9mgWzxZrB1RGNwUsqv+n41Wss/g==', CAST(NULL AS nvarchar(256)), CAST(NULL AS datetime2), N'Moderator', CAST('2026-04-06T00:00:00' AS datetime2))
+    ) AS source (Id, Name, Email, PasswordHash, PasswordResetTokenHash, PasswordResetTokenExpiryUtc, Role, CreatedDate)
+    ON target.Id = source.Id
+    WHEN MATCHED THEN
+        UPDATE SET
+            Name = source.Name,
+            Email = source.Email,
+            PasswordHash = source.PasswordHash,
+            PasswordResetTokenHash = source.PasswordResetTokenHash,
+            PasswordResetTokenExpiryUtc = source.PasswordResetTokenExpiryUtc,
+            Role = source.Role,
+            CreatedDate = source.CreatedDate
+    WHEN NOT MATCHED BY TARGET THEN
+        INSERT (Id, Name, Email, PasswordHash, PasswordResetTokenHash, PasswordResetTokenExpiryUtc, Role, CreatedDate)
+        VALUES (source.Id, source.Name, source.Email, source.PasswordHash, source.PasswordResetTokenHash, source.PasswordResetTokenExpiryUtc, source.Role, source.CreatedDate);
+END
+ELSE
+BEGIN
+    MERGE dbo.Users AS target
+    USING (VALUES
+        (1, N'Test Customer', N'customer.test@reviewportal.local', N'AQAAAAIAAYagAAAAEA0G/BQ4WPdNpKqAnK0Mam0BNoG560l4GFfcdOa4Xps8ZYyGiiH6yxH5EgC1llfMqQ==', N'Customer', CAST('2026-04-06T00:00:00' AS datetime2)),
+        (2, N'Test Admin', N'admin.test@reviewportal.local', N'AQAAAAIAAYagAAAAEOqaZaaWb29MnbnePdQNWq+wQO66MHMXfZh0ouwcBZjORmC3mllgI0zebkL9iOSFqQ==', N'Admin', CAST('2026-04-06T00:00:00' AS datetime2)),
+        (3, N'Test Moderator', N'moderator.test@reviewportal.local', N'AQAAAAIAAYagAAAAEMnrqmN8EAAHiVorrGMGoFopVvlvMBVCFw0pvQz9mgWzxZrB1RGNwUsqv+n41Wss/g==', N'Moderator', CAST('2026-04-06T00:00:00' AS datetime2))
+    ) AS source (Id, Name, Email, PasswordHash, Role, CreatedDate)
+    ON target.Id = source.Id
+    WHEN MATCHED THEN
+        UPDATE SET
+            Name = source.Name,
+            Email = source.Email,
+            PasswordHash = source.PasswordHash,
+            Role = source.Role,
+            CreatedDate = source.CreatedDate
+    WHEN NOT MATCHED BY TARGET THEN
+        INSERT (Id, Name, Email, PasswordHash, Role, CreatedDate)
+        VALUES (source.Id, source.Name, source.Email, source.PasswordHash, source.Role, source.CreatedDate);
+END;
 
 SET IDENTITY_INSERT dbo.Users OFF;
 
@@ -83,7 +118,13 @@ USING (VALUES
     (2009, 1005, N'Platform Ladder 3.6m', N'Professional platform ladder with guard rails for decorating, electrical, and maintenance work.', 10.00, 34.00, 112.00, N'Inspect feet and stabilisers before use on smooth surfaces.', 0, NULL, 1, 4.40, 1, CAST('2026-04-06T09:20:00' AS datetime2), CAST('2026-04-08T09:40:00' AS datetime2)),
     (2010, 1005, N'Material Hoist', N'Compact hoist for lifting plasterboard, ductwork, and awkward building materials into position.', 20.00, 74.00, 248.00, N'Assembly takes two people. Delivery is recommended for upper-floor work.', 1, 140.00, 1, NULL, 0, CAST('2026-04-06T09:30:00' AS datetime2), CAST('2026-04-08T09:45:00' AS datetime2)),
     (2011, 1006, N'SDS Max Drill', N'Heavy-duty SDS Max rotary hammer for concrete drilling, chiselling, and anchor preparation.', 15.00, 54.00, 180.00, N'Bits are hired separately and charged according to wear.', 0, NULL, 1, 4.00, 1, CAST('2026-04-06T09:40:00' AS datetime2), CAST('2026-04-08T09:50:00' AS datetime2)),
-    (2012, 1006, N'Hydraulic Breaker', N'Powerful breaker for slabs, reinforced concrete, and tough demolition work on site.', 22.00, 79.00, 265.00, N'Use with suitable hydraulic pack and trained operator guidance.', 1, 180.00, 1, NULL, 0, CAST('2026-04-06T09:50:00' AS datetime2), CAST('2026-04-08T09:55:00' AS datetime2))
+    (2012, 1006, N'Hydraulic Breaker', N'Powerful breaker for slabs, reinforced concrete, and tough demolition work on site.', 22.00, 79.00, 265.00, N'Use with suitable hydraulic pack and trained operator guidance.', 1, 180.00, 1, NULL, 0, CAST('2026-04-06T09:50:00' AS datetime2), CAST('2026-04-08T09:55:00' AS datetime2)),
+    (2013, 1001, N'Floor Sander 240V', N'Heavy-duty floor sander for boards, site cabins, and timber surface preparation before finishing.', 17.00, 63.00, 210.00, N'Dust bags are available separately. Use suitable hearing protection.', 1, 100.00, 1, NULL, 0, CAST('2026-04-06T10:00:00' AS datetime2), CAST('2026-04-08T10:00:00' AS datetime2)),
+    (2014, 1001, N'Acrow Prop No. 2', N'Adjustable steel support prop for temporary structural support during building and renovation work.', 6.00, 20.00, 65.00, N'Load calculations must be confirmed by a competent person before use.', 0, NULL, 1, NULL, 0, CAST('2026-04-06T10:10:00' AS datetime2), CAST('2026-04-08T10:05:00' AS datetime2)),
+    (2015, 1002, N'Carpet Cleaner Pro', N'Commercial carpet cleaner for offices, rentals, and site accommodation deep-clean work.', 10.00, 38.00, 125.00, N'Cleaning solution is sold separately and should match the surface type.', 0, NULL, 1, NULL, 0, CAST('2026-04-06T10:20:00' AS datetime2), CAST('2026-04-08T10:10:00' AS datetime2)),
+    (2016, 1002, N'Floor Scrubber Dryer', N'Walk-behind scrubber dryer for warehouses, workshops, and large hard-floor areas.', 18.00, 68.00, 230.00, N'Check battery charge before longer cleaning sessions.', 1, 120.00, 1, NULL, 0, CAST('2026-04-06T10:30:00' AS datetime2), CAST('2026-04-08T10:15:00' AS datetime2)),
+    (2017, 1003, N'Hedge Trimmer Long Reach', N'Long-reach hedge trimmer for tall hedges, boundary work, and awkward landscaping cuts.', 12.00, 44.00, 145.00, N'Eye protection and gloves are recommended during operation.', 0, NULL, 1, NULL, 0, CAST('2026-04-06T10:40:00' AS datetime2), CAST('2026-04-08T10:20:00' AS datetime2)),
+    (2018, 1003, N'Turf Cutter', N'Petrol turf cutter for lifting lawns cleanly before relaying, landscaping, or groundworks.', 19.00, 72.00, 240.00, N'Best used after light watering if ground conditions are very dry.', 1, 110.00, 1, NULL, 0, CAST('2026-04-06T10:50:00' AS datetime2), CAST('2026-04-08T10:25:00' AS datetime2))
 ) AS source (Id, CategoryId, Name, Description, HourlyRate, DailyRate, WeeklyRate, SpecialNotes, DepositRequired, DepositAmount, IsActive, OverallRating, ReviewCount, CreatedDate, UpdatedDate)
 ON target.Id = source.Id
 WHEN MATCHED THEN
@@ -135,7 +176,19 @@ USING (VALUES
     (3021, 2011, N'https://cdn.reviewportal.local/tools/sds-max-drill-1.jpg', 1, CAST('2026-04-06T10:20:00' AS datetime2)),
     (3022, 2011, N'https://cdn.reviewportal.local/tools/sds-max-drill-2.jpg', 2, CAST('2026-04-06T10:21:00' AS datetime2)),
     (3023, 2012, N'https://cdn.reviewportal.local/tools/hydraulic-breaker-1.jpg', 1, CAST('2026-04-06T10:22:00' AS datetime2)),
-    (3024, 2012, N'https://cdn.reviewportal.local/tools/hydraulic-breaker-2.jpg', 2, CAST('2026-04-06T10:23:00' AS datetime2))
+    (3024, 2012, N'https://cdn.reviewportal.local/tools/hydraulic-breaker-2.jpg', 2, CAST('2026-04-06T10:23:00' AS datetime2)),
+    (3025, 2013, N'https://cdn.reviewportal.local/tools/floor-sander-1.jpg', 1, CAST('2026-04-06T10:24:00' AS datetime2)),
+    (3026, 2013, N'https://cdn.reviewportal.local/tools/floor-sander-2.jpg', 2, CAST('2026-04-06T10:25:00' AS datetime2)),
+    (3027, 2014, N'https://cdn.reviewportal.local/tools/acrow-prop-1.jpg', 1, CAST('2026-04-06T10:26:00' AS datetime2)),
+    (3028, 2014, N'https://cdn.reviewportal.local/tools/acrow-prop-2.jpg', 2, CAST('2026-04-06T10:27:00' AS datetime2)),
+    (3029, 2015, N'https://cdn.reviewportal.local/tools/carpet-cleaner-1.jpg', 1, CAST('2026-04-06T10:28:00' AS datetime2)),
+    (3030, 2015, N'https://cdn.reviewportal.local/tools/carpet-cleaner-2.jpg', 2, CAST('2026-04-06T10:29:00' AS datetime2)),
+    (3031, 2016, N'https://cdn.reviewportal.local/tools/floor-scrubber-1.jpg', 1, CAST('2026-04-06T10:30:00' AS datetime2)),
+    (3032, 2016, N'https://cdn.reviewportal.local/tools/floor-scrubber-2.jpg', 2, CAST('2026-04-06T10:31:00' AS datetime2)),
+    (3033, 2017, N'https://cdn.reviewportal.local/tools/hedge-trimmer-1.jpg', 1, CAST('2026-04-06T10:32:00' AS datetime2)),
+    (3034, 2017, N'https://cdn.reviewportal.local/tools/hedge-trimmer-2.jpg', 2, CAST('2026-04-06T10:33:00' AS datetime2)),
+    (3035, 2018, N'https://cdn.reviewportal.local/tools/turf-cutter-1.jpg', 1, CAST('2026-04-06T10:34:00' AS datetime2)),
+    (3036, 2018, N'https://cdn.reviewportal.local/tools/turf-cutter-2.jpg', 2, CAST('2026-04-06T10:35:00' AS datetime2))
 ) AS source (Id, ToolId, ImageUrl, DisplayOrder, UploadedDate)
 ON target.Id = source.Id
 WHEN MATCHED THEN

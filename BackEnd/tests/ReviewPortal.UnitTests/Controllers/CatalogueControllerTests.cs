@@ -49,6 +49,22 @@ public class CatalogueControllerTests
     }
 
     [Fact]
+    public async Task CategoriesGetById_ReturnsCategory()
+    {
+        var category = new CategoryDto(6, "Breaking & Drilling", "Core drilling tools.", "breaking.jpg", 4);
+        var categoryService = new FakeCategoryService
+        {
+            CategoryByIdResult = Result<CategoryDto>.Success(category)
+        };
+        var controller = new CategoriesController(categoryService, new FakeToolService());
+
+        var result = await controller.GetById(6, CancellationToken.None);
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Same(category, okResult.Value);
+    }
+
+    [Fact]
     public async Task CategoriesGetById_WhenCategoryDoesNotExist_ReturnsNotFoundProblem()
     {
         var categoryService = new FakeCategoryService
@@ -81,6 +97,38 @@ public class CatalogueControllerTests
         Assert.Equal(2, toolService.LastCategoryPage);
         Assert.Equal(12, toolService.LastCategoryPageSize);
         Assert.Equal("price_desc", toolService.LastCategorySortBy);
+    }
+
+    [Fact]
+    public async Task CategoriesGetTools_WhenSortOrderIsMissing_PassesSortByOnly()
+    {
+        var pagedTools = CreatePagedTools("SDS Max Drill");
+        var toolService = new FakeToolService
+        {
+            CategoryToolsResult = Result<PagedList<ToolSummaryDto>>.Success(pagedTools)
+        };
+        var controller = new CategoriesController(new FakeCategoryService(), toolService);
+
+        var result = await controller.GetTools(6, sortBy: "rating", sortOrder: null, cancellationToken: CancellationToken.None);
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Same(pagedTools, okResult.Value);
+        Assert.Equal("rating", toolService.LastCategorySortBy);
+    }
+
+    [Fact]
+    public async Task CategoriesGetTools_WhenCategoryDoesNotExist_ReturnsNotFoundProblem()
+    {
+        var toolService = new FakeToolService
+        {
+            CategoryToolsResult = Result<PagedList<ToolSummaryDto>>.NotFound("Category with ID 404 not found.")
+        };
+        var controller = new CategoriesController(new FakeCategoryService(), toolService);
+
+        var result = await controller.GetTools(404, cancellationToken: CancellationToken.None);
+
+        var problemResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status404NotFound, problemResult.StatusCode);
     }
 
     [Fact]
@@ -153,6 +201,22 @@ public class CatalogueControllerTests
     }
 
     [Fact]
+    public async Task ToolsSearch_WhenNoMatches_ReturnsEmptyPagedResult()
+    {
+        var emptyPage = new PagedList<ToolSummaryDto>([], 1, 12, 0);
+        var toolService = new FakeToolService
+        {
+            SearchToolsResult = Result<PagedList<ToolSummaryDto>>.Success(emptyPage)
+        };
+        var controller = new ToolsController(toolService);
+
+        var result = await controller.Search("excavator", page: 1, pageSize: 12, cancellationToken: CancellationToken.None);
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Same(emptyPage, okResult.Value);
+    }
+
+    [Fact]
     public async Task ToolsSearch_WhenQueryIsNull_PassesEmptyQueryToService()
     {
         var toolService = new FakeToolService
@@ -183,6 +247,21 @@ public class CatalogueControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Same(toolDetail, okResult.Value);
         Assert.Equal(11, toolService.LastToolId);
+    }
+
+    [Fact]
+    public async Task ToolsGetById_WhenToolDoesNotExist_ReturnsNotFoundProblem()
+    {
+        var toolService = new FakeToolService
+        {
+            ToolByIdResult = Result<ToolDto>.NotFound("Tool with ID 404 not found.")
+        };
+        var controller = new ToolsController(toolService);
+
+        var result = await controller.GetById(404, CancellationToken.None);
+
+        var problemResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status404NotFound, problemResult.StatusCode);
     }
 
     [Fact]
@@ -227,6 +306,24 @@ public class CatalogueControllerTests
 
         var problemResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(StatusCodes.Status400BadRequest, problemResult.StatusCode);
+    }
+
+    [Fact]
+    public async Task ToolsCalculateRentalCost_WhenToolDoesNotExist_ReturnsNotFoundProblem()
+    {
+        var request = new RentalCalculationRequest(
+            new DateTime(2026, 1, 1, 9, 0, 0, DateTimeKind.Utc),
+            new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc));
+        var toolService = new FakeToolService
+        {
+            RentalCalculationResult = Result<RentalCalculationResponse>.NotFound("Tool with ID 404 not found.")
+        };
+        var controller = new ToolsController(toolService);
+
+        var result = await controller.CalculateRentalCost(404, request, CancellationToken.None);
+
+        var problemResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status404NotFound, problemResult.StatusCode);
     }
 
     private static PagedList<ToolSummaryDto> CreatePagedTools(string toolName)

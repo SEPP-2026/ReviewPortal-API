@@ -1,15 +1,31 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #0a0a0a;
+@theme {
+  --color-primary: #FFFFFF;
+  --color-primary-dark: #E5E5E5;
+  --color-accent: #F8A000;
+  --color-accent-dark: #C97F00;
+  --color-black: #111111;
+  --color-dark: #1A1A1A;
+  --color-gray: #666666;
+  --color-light-gray: #E5E5E5;
+  --color-white: #FFFFFF;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --background: #F2F2F2;
+  --foreground: #111111;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+:root {
+  --background: #111111;
+  --foreground: #FFFFFF;
 }
 
 body {

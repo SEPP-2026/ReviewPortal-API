@@ -28,6 +28,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IToolRepository, ToolRepository>();
+        services.AddScoped<IReviewRepository, ReviewRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
@@ -43,6 +44,7 @@ public static class ServiceCollectionExtensions
         // Application services will be registered here as they are implemented
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IToolService, ToolService>();
+        services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IAuthService, AuthService>();
 
         return services;

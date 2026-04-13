@@ -2,6 +2,7 @@ using ReviewPortal.Application.Common;
 using ReviewPortal.Application.Interfaces;
 using ReviewPortal.Domain.Common;
 using ReviewPortal.Domain.Entities;
+using ReviewPortal.Domain.Enums;
 using ReviewPortal.Domain.Interfaces;
 
 namespace ReviewPortal.UnitTests.TestDoubles;
@@ -166,6 +167,103 @@ internal sealed class InMemoryToolRepository : IToolRepository
     public Task<Tool?> GetByIdWithDetailsAsync(int id, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(_tools.SingleOrDefault(tool => tool.Id == id));
+    }
+}
+
+internal sealed class InMemoryReviewRepository : IReviewRepository
+{
+    private readonly List<Review> _reviews;
+
+    public InMemoryReviewRepository(IEnumerable<Review>? reviews = null)
+    {
+        _reviews = reviews?.ToList() ?? [];
+    }
+
+    public IReadOnlyList<Review> Items => _reviews;
+
+    public Task<Review?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(_reviews.SingleOrDefault(review => review.Id == id));
+    }
+
+    public Task<IReadOnlyList<Review>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<IReadOnlyList<Review>>(_reviews);
+    }
+
+    public Task<Review> AddAsync(Review entity, CancellationToken cancellationToken = default)
+    {
+        entity.Id = _reviews.Count == 0 ? 1 : _reviews.Max(review => review.Id) + 1;
+        _reviews.Add(entity);
+
+        return Task.FromResult(entity);
+    }
+
+    public Task UpdateAsync(Review entity, CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteAsync(Review entity, CancellationToken cancellationToken = default)
+    {
+        _reviews.Remove(entity);
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<Review>> GetApprovedByToolIdWithDetailsAsync(int toolId, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<IReadOnlyList<Review>>(
+            _reviews
+                .Where(review => review.ToolId == toolId && review.Status == ReviewStatus.Approved)
+                .OrderByDescending(review => review.CreatedDate)
+                .ThenByDescending(review => review.Id)
+                .ToList());
+    }
+
+    public Task<Review?> GetByIdWithDetailsAsync(int reviewId, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(_reviews.SingleOrDefault(review => review.Id == reviewId));
+    }
+}
+
+internal sealed class InMemoryRepository<T> : IRepository<T> where T : BaseEntity
+{
+    private readonly List<T> _entities;
+
+    public InMemoryRepository(IEnumerable<T>? entities = null)
+    {
+        _entities = entities?.ToList() ?? [];
+    }
+
+    public IReadOnlyList<T> Items => _entities;
+
+    public Task<T?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(_entities.SingleOrDefault(entity => entity.Id == id));
+    }
+
+    public Task<IReadOnlyList<T>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<IReadOnlyList<T>>(_entities);
+    }
+
+    public Task<T> AddAsync(T entity, CancellationToken cancellationToken = default)
+    {
+        entity.Id = _entities.Count == 0 ? 1 : _entities.Max(existing => existing.Id) + 1;
+        _entities.Add(entity);
+
+        return Task.FromResult(entity);
+    }
+
+    public Task UpdateAsync(T entity, CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteAsync(T entity, CancellationToken cancellationToken = default)
+    {
+        _entities.Remove(entity);
+        return Task.CompletedTask;
     }
 }
 

@@ -32,6 +32,79 @@ public class CategoryServiceTests
     }
 
     [Fact]
+    public async Task GetCategoryByIdAsync_WhenCategoryDoesNotExist_ReturnsNotFound()
+    {
+        var service = CreateService();
+
+        var result = await service.GetCategoryByIdAsync(404);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.FailureType);
+    }
+
+    [Fact]
+    public async Task GetCategoryByIdAsync_WhenToolsCollectionIsMissing_ReturnsZeroToolCount()
+    {
+        var service = CreateService(new InMemoryCategoryRepository(
+        [
+            new Category
+            {
+                Id = 4,
+                Name = "Seasonal",
+                Tools = null!
+            }
+        ]));
+
+        var result = await service.GetCategoryByIdAsync(4);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(0, result.Value!.ToolCount);
+    }
+
+    [Fact]
+    public async Task CreateCategoryAsync_WithValidRequest_TrimsOptionalValuesAndSaves()
+    {
+        var repository = new InMemoryCategoryRepository();
+        var unitOfWork = new FakeUnitOfWork();
+        var service = CreateService(repository, unitOfWork);
+
+        var result = await service.CreateCategoryAsync(new CreateCategoryRequest(
+            " Building & Construction ",
+            " Site equipment ",
+            " building.jpg "));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Building & Construction", result.Value!.Name);
+        Assert.Equal("Site equipment", result.Value.Description);
+        Assert.Equal("building.jpg", result.Value.ImageUrl);
+        Assert.Equal(1, unitOfWork.SaveChangesCallCount);
+    }
+
+    [Fact]
+    public async Task CreateCategoryAsync_WhenNameIsBlank_ReturnsValidationFailure()
+    {
+        var service = CreateService();
+
+        var result = await service.CreateCategoryAsync(new CreateCategoryRequest(" ", null, null));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Category name is required.", result.Error);
+    }
+
+    [Fact]
+    public async Task CreateCategoryAsync_WhenNameIsTooLong_ReturnsValidationFailure()
+    {
+        var service = CreateService();
+
+        var result = await service.CreateCategoryAsync(new CreateCategoryRequest(new string('A', 101), null, null));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Category name must be 100 characters or fewer.", result.Error);
+    }
+
+    [Fact]
     public async Task CreateCategoryAsync_WhenNameAlreadyExists_ReturnsConflict()
     {
         var service = CreateService(new InMemoryCategoryRepository(
@@ -63,6 +136,108 @@ public class CategoryServiceTests
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorType.Conflict, result.FailureType);
+    }
+
+    [Fact]
+    public async Task UpdateCategoryAsync_WithValidRequest_UpdatesCategoryAndSaves()
+    {
+        var category = new Category { Id = 10, Name = "Old Name" };
+        var repository = new InMemoryCategoryRepository([category]);
+        var unitOfWork = new FakeUnitOfWork();
+        var service = CreateService(repository, unitOfWork);
+
+        var result = await service.UpdateCategoryAsync(10, new UpdateCategoryRequest(
+            " Access & Lifting ",
+            " Work at height ",
+            " access.jpg "));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Access & Lifting", result.Value!.Name);
+        Assert.Equal("Work at height", category.Description);
+        Assert.Equal("access.jpg", category.ImageUrl);
+        Assert.Equal(1, unitOfWork.SaveChangesCallCount);
+    }
+
+    [Fact]
+    public async Task UpdateCategoryAsync_WhenCategoryDoesNotExist_ReturnsNotFound()
+    {
+        var service = CreateService();
+
+        var result = await service.UpdateCategoryAsync(404, new UpdateCategoryRequest("Access", null, null));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.FailureType);
+    }
+
+    [Fact]
+    public async Task UpdateCategoryAsync_WhenNameIsBlank_ReturnsValidationFailure()
+    {
+        var service = CreateService();
+
+        var result = await service.UpdateCategoryAsync(1, new UpdateCategoryRequest(" ", null, null));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Category name is required.", result.Error);
+    }
+
+    [Fact]
+    public async Task UpdateCategoryAsync_WhenToolsCollectionIsMissing_ReturnsZeroToolCount()
+    {
+        var category = new Category
+        {
+            Id = 10,
+            Name = "Old Name",
+            Tools = null!
+        };
+        var service = CreateService(new InMemoryCategoryRepository([category]));
+
+        var result = await service.UpdateCategoryAsync(10, new UpdateCategoryRequest("New Name", null, null));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(0, result.Value!.ToolCount);
+    }
+
+    [Fact]
+    public async Task UpdateCategoryAsync_WhenNameAlreadyExists_ReturnsConflict()
+    {
+        var service = CreateService(new InMemoryCategoryRepository(
+        [
+            new Category { Id = 1, Name = "Access" },
+            new Category { Id = 2, Name = "Building" }
+        ]));
+
+        var result = await service.UpdateCategoryAsync(2, new UpdateCategoryRequest("access", null, null));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Conflict, result.FailureType);
+        Assert.Equal("A category named 'access' already exists.", result.Error);
+    }
+
+    [Fact]
+    public async Task DeleteCategoryAsync_WhenCategoryDoesNotExist_ReturnsNotFound()
+    {
+        var service = CreateService();
+
+        var result = await service.DeleteCategoryAsync(404);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.FailureType);
+    }
+
+    [Fact]
+    public async Task DeleteCategoryAsync_WhenCategoryHasNoTools_DeletesAndSaves()
+    {
+        var category = new Category { Id = 6, Name = "Seasonal" };
+        var repository = new InMemoryCategoryRepository([category]);
+        var unitOfWork = new FakeUnitOfWork();
+        var service = CreateService(repository, unitOfWork);
+
+        var result = await service.DeleteCategoryAsync(6);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(1, unitOfWork.SaveChangesCallCount);
+        Assert.Null(await repository.GetByIdAsync(6));
     }
 
     [Fact]
@@ -104,11 +279,11 @@ public class CategoryServiceTests
         Assert.Equal(1, category.ToolCount);
     }
 
-    private static CategoryService CreateService(InMemoryCategoryRepository? repository = null)
+    private static CategoryService CreateService(InMemoryCategoryRepository? repository = null, FakeUnitOfWork? unitOfWork = null)
     {
         return new CategoryService(
             repository ?? new InMemoryCategoryRepository(),
-            new FakeUnitOfWork());
+            unitOfWork ?? new FakeUnitOfWork());
     }
 
     private static Tool CreateTool(int id, string name)
