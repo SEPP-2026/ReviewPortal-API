@@ -1,6 +1,7 @@
 using ReviewPortal.Application.Common;
 using ReviewPortal.Application.Services;
 using ReviewPortal.Domain.Entities;
+using ReviewPortal.Domain.Enums;
 using ReviewPortal.UnitTests.TestDoubles;
 
 namespace ReviewPortal.UnitTests.Services;
@@ -114,10 +115,24 @@ public class ToolServiceTests
     {
         var category = new Category { Id = 1, Name = "Cleaning & Maintenance" };
         var pressureWasher = CreateTool(1, category, "Pressure Washer", hourlyRate: 14m);
-        pressureWasher.OverallRating = 4.8m;
+        pressureWasher.OverallRating = 1m;
+        pressureWasher.Reviews =
+        [
+            CreateApprovedReview(1, pressureWasher, 5, 5, 5, 5, 4),
+            CreateApprovedReview(2, pressureWasher, 5, 4, 5, 4, 5)
+        ];
         var wetVacuum = CreateTool(2, category, "Wet Vacuum", hourlyRate: 9m);
-        wetVacuum.OverallRating = 3.5m;
+        wetVacuum.OverallRating = 5m;
+        wetVacuum.Reviews =
+        [
+            CreateApprovedReview(3, wetVacuum, 4, 4, 3, 4, 3),
+            CreateApprovedReview(4, wetVacuum, 3, 4, 4, 3, 4)
+        ];
         var scrubber = CreateTool(3, category, "Floor Scrubber", hourlyRate: 18m);
+        scrubber.Reviews =
+        [
+            CreateApprovedReview(5, scrubber, 5, 5, 5, 5, 5)
+        ];
 
         var service = CreateService(categories: [category], tools: [wetVacuum, scrubber, pressureWasher]);
 
@@ -125,6 +140,7 @@ public class ToolServiceTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(["Pressure Washer", "Wet Vacuum", "Floor Scrubber"], result.Value!.Items.Select(item => item.Name).ToArray());
+        Assert.Equal([4.7m, 3.6m, null], result.Value.Items.Select(item => item.OverallRating).ToArray());
     }
 
     [Fact]
@@ -132,10 +148,22 @@ public class ToolServiceTests
     {
         var category = new Category { Id = 1, Name = "Cleaning & Maintenance" };
         var pressureWasher = CreateTool(1, category, "Pressure Washer", hourlyRate: 14m);
-        pressureWasher.OverallRating = 4.8m;
+        pressureWasher.Reviews =
+        [
+            CreateApprovedReview(1, pressureWasher, 5, 5, 5, 5, 4),
+            CreateApprovedReview(2, pressureWasher, 5, 4, 5, 4, 5)
+        ];
         var wetVacuum = CreateTool(2, category, "Wet Vacuum", hourlyRate: 9m);
-        wetVacuum.OverallRating = 3.5m;
+        wetVacuum.Reviews =
+        [
+            CreateApprovedReview(3, wetVacuum, 4, 4, 3, 4, 3),
+            CreateApprovedReview(4, wetVacuum, 3, 4, 4, 3, 4)
+        ];
         var scrubber = CreateTool(3, category, "Floor Scrubber", hourlyRate: 18m);
+        scrubber.Reviews =
+        [
+            CreateApprovedReview(5, scrubber, 5, 5, 5, 5, 5)
+        ];
 
         var service = CreateService(categories: [category], tools: [wetVacuum, scrubber, pressureWasher]);
 
@@ -154,9 +182,17 @@ public class ToolServiceTests
     {
         var category = new Category { Id = 1, Name = "Cleaning & Maintenance" };
         var pressureWasher = CreateTool(1, category, "Pressure Washer", hourlyRate: 14m);
-        pressureWasher.OverallRating = 4.8m;
+        pressureWasher.Reviews =
+        [
+            CreateApprovedReview(1, pressureWasher, 5, 5, 5, 5, 4),
+            CreateApprovedReview(2, pressureWasher, 5, 4, 5, 4, 5)
+        ];
         var wetVacuum = CreateTool(2, category, "Wet Vacuum", hourlyRate: 9m);
-        wetVacuum.OverallRating = 3.5m;
+        wetVacuum.Reviews =
+        [
+            CreateApprovedReview(3, wetVacuum, 4, 4, 3, 4, 3),
+            CreateApprovedReview(4, wetVacuum, 3, 4, 4, 3, 4)
+        ];
 
         var service = CreateService(categories: [category], tools: [wetVacuum, pressureWasher]);
 
@@ -204,6 +240,27 @@ public class ToolServiceTests
         Assert.Equal(14m, item.StartingPrice);
         Assert.Equal("hour", item.StartingPriceUnit);
         Assert.Equal("first.jpg", item.ThumbnailUrl);
+    }
+
+    [Fact]
+    public async Task GetToolsByCategoryAsync_WhenToolHasFewerThanTwoApprovedReviews_ReturnsNullOverallRatingWithApprovedCount()
+    {
+        var category = new Category { Id = 1, Name = "Garden & Landscaping" };
+        var tool = CreateTool(1, category, "Rotavator", hourlyRate: 14m);
+        tool.Reviews =
+        [
+            CreateApprovedReview(1, tool, 5, 4, 4, 5, 4),
+            CreateReview(2, tool, ReviewStatus.Pending, 1, 1, 1, 1, 1)
+        ];
+
+        var service = CreateService(categories: [category], tools: [tool]);
+
+        var result = await service.GetToolsByCategoryAsync(1, 1, 12);
+
+        Assert.True(result.IsSuccess);
+        var item = Assert.Single(result.Value!.Items);
+        Assert.Null(item.OverallRating);
+        Assert.Equal(1, item.ReviewCount);
     }
 
     [Fact]
@@ -362,8 +419,12 @@ public class ToolServiceTests
         tool.SpecialNotes = "Keep clear of walls for best airflow.";
         tool.DepositRequired = true;
         tool.DepositAmount = 60m;
-        tool.OverallRating = 4.6m;
-        tool.ReviewCount = 1;
+        tool.Reviews =
+        [
+            CreateApprovedReview(1, tool, 5, 5, 5, 4, 4),
+            CreateApprovedReview(2, tool, 5, 5, 5, 4, 4),
+            CreateReview(3, tool, ReviewStatus.Pending, 1, 1, 1, 1, 1)
+        ];
         tool.Images =
         [
             new ToolImage { Id = 2, ToolId = 7, ImageUrl = "second.jpg", DisplayOrder = 2 },
@@ -383,7 +444,27 @@ public class ToolServiceTests
         Assert.True(result.Value.DepositRequired);
         Assert.Equal(60m, result.Value.DepositAmount);
         Assert.Equal(4.6m, result.Value.OverallRating);
+        Assert.Equal(2, result.Value.ReviewCount);
         Assert.Equal(["first.jpg", "second.jpg"], result.Value.Images.Select(image => image.ImageUrl).ToArray());
+    }
+
+    [Fact]
+    public async Task GetToolByIdAsync_WhenToolHasOnlyOneApprovedReview_ReturnsNullOverallRating()
+    {
+        var category = new Category { Id = 1, Name = "Electrical & Heating" };
+        var tool = CreateTool(7, category, "50L Dehumidifier", hourlyRate: 11m, dailyRate: 40m, weeklyRate: 135m);
+        tool.Reviews =
+        [
+            CreateApprovedReview(1, tool, 5, 5, 5, 4, 4)
+        ];
+
+        var service = CreateService(categories: [category], tools: [tool]);
+
+        var result = await service.GetToolByIdAsync(7);
+
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Value!.OverallRating);
+        Assert.Equal(1, result.Value.ReviewCount);
     }
 
     [Fact]
@@ -436,6 +517,28 @@ public class ToolServiceTests
         Assert.Equal("Breaking & Drilling", item.CategoryName);
         Assert.Equal(15m, item.StartingPrice);
         Assert.Equal("sds-drill.jpg", item.ThumbnailUrl);
+    }
+
+    [Fact]
+    public async Task SearchToolsAsync_MapsComputedRatingAndApprovedReviewCount()
+    {
+        var category = new Category { Id = 1, Name = "Breaking & Drilling" };
+        var matchingTool = CreateTool(1, category, "SDS Max Drill", hourlyRate: 15m);
+        matchingTool.Reviews =
+        [
+            CreateApprovedReview(1, matchingTool, 5, 4, 5, 4, 4),
+            CreateApprovedReview(2, matchingTool, 4, 4, 4, 4, 4),
+            CreateReview(3, matchingTool, ReviewStatus.Pending, 1, 1, 1, 1, 1)
+        ];
+
+        var service = CreateService(categories: [category], tools: [matchingTool]);
+
+        var result = await service.SearchToolsAsync("sds", 1, 12);
+
+        Assert.True(result.IsSuccess);
+        var item = Assert.Single(result.Value!.Items);
+        Assert.Equal(4.2m, item.OverallRating);
+        Assert.Equal(2, item.ReviewCount);
     }
 
     [Fact]
@@ -729,5 +832,55 @@ public class ToolServiceTests
             IsActive = isActive,
             Images = []
         };
+    }
+
+    private static Review CreateApprovedReview(
+        int id,
+        Tool tool,
+        int equipmentRating,
+        int customerServiceRating,
+        int technicalSupportRating,
+        int afterSalesRating,
+        int valueForMoneyRating)
+    {
+        return CreateReview(
+            id,
+            tool,
+            ReviewStatus.Approved,
+            equipmentRating,
+            customerServiceRating,
+            technicalSupportRating,
+            afterSalesRating,
+            valueForMoneyRating);
+    }
+
+    private static Review CreateReview(
+        int id,
+        Tool tool,
+        ReviewStatus status,
+        int equipmentRating,
+        int customerServiceRating,
+        int technicalSupportRating,
+        int afterSalesRating,
+        int valueForMoneyRating)
+    {
+        var review = new Review
+        {
+            Id = id,
+            ToolId = tool.Id,
+            Tool = tool,
+            ReviewerName = $"Reviewer {id}",
+            ReviewerEmail = $"reviewer{id}@example.com",
+            ReviewText = $"Review {id} contains enough detail to satisfy the minimum length rule.",
+            EquipmentRating = equipmentRating,
+            CustomerServiceRating = customerServiceRating,
+            TechnicalSupportRating = technicalSupportRating,
+            AfterSalesRating = afterSalesRating,
+            ValueForMoneyRating = valueForMoneyRating,
+            Status = status
+        };
+
+        review.CalculateOverallRating();
+        return review;
     }
 }
