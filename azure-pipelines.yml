@@ -2,49 +2,49 @@ trigger:
 - main
 
 pool:
-  vmImage: 'windows-latest'
+  vmImage: "windows-latest"
 
 variables:
-  buildConfiguration: 'Release'
+  buildConfiguration: "Release"
 
 steps:
 - task: UseDotNet@2
   inputs:
-    packageType: 'sdk'
-    version: '8.x'
+    packageType: "sdk"
+    version: "8.x"
 
 - task: DotNetCoreCLI@2
-  displayName: 'Restore'
+  displayName: "Restore"
   inputs:
-    command: 'restore'
-    projects: '**/*.sln'
+    command: "restore"
+    projects: "ReviewPortal.slnx"
 
 - task: DotNetCoreCLI@2
-  displayName: 'Build'
+  displayName: "Build"
   inputs:
-    command: 'build'
-    projects: '**/*.sln'
-    arguments: '--configuration $(buildConfiguration)'
+    command: "build"
+    projects: "ReviewPortal.slnx"
+    arguments: "--configuration $(buildConfiguration) --no-restore"
 
 - task: DotNetCoreCLI@2
-  displayName: 'Test'
+  displayName: "Test"
   inputs:
-    command: 'test'
-    projects: 'Test/**/*.csproj'
-    arguments: '--configuration $(buildConfiguration)'
+    command: "test"
+    projects: "ReviewPortal.slnx"
+    arguments: "--configuration $(buildConfiguration) --no-build"
 
 - task: DotNetCoreCLI@2
-  displayName: 'Publish API'
+  displayName: "Publish API"
   inputs:
-    command: 'publish'
+    command: "publish"
     publishWebProjects: false
-    projects: 'ReviewPortal.API/ReviewPortal.API.csproj'
-    arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+    projects: "src/ReviewPortal.API/ReviewPortal.API.csproj"
+    arguments: "--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory) --no-build"
     zipAfterPublish: true
 
 - task: PublishBuildArtifacts@1
-  displayName: 'Publish Artifact'
+  displayName: "Publish Artifact"
   inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'drop'
-    publishLocation: 'Container'
+    PathtoPublish: "$(Build.ArtifactStagingDirectory)"
+    ArtifactName: "drop"
+    publishLocation: "Container"
