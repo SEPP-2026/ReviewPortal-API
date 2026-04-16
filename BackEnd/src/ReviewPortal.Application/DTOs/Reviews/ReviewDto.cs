@@ -23,6 +23,7 @@ public record ReviewCommentDto(
     int Id,
     string CommenterName,
     string CommentText,
+    string Status,
     DateTime CreatedDate
 );
 
@@ -36,10 +37,12 @@ public record CompanyResponseDto(
 
 public record ReviewSummaryDto(
     int Id,
+    int ToolId,
     string ToolName,
-    string ReviewerName,
+    string ReviewTextSnippet,
     decimal OverallRating,
     string Status,
     string? RejectionReason,
-    DateTime CreatedDate
+    DateTime CreatedDate,
+    bool HasCompanyResponse
 );

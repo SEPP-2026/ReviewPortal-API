@@ -12,6 +12,30 @@ public class ReviewRepository : Repository<Review>, IReviewRepository
     {
     }
 
+    public async Task<IReadOnlyList<Review>> GetByUserIdWithDetailsAsync(
+        int userId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Where(review => review.UserId == userId)
+            .OrderByDescending(review => review.CreatedDate)
+            .ThenByDescending(review => review.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Include(review => review.Tool)
+            .Include(review => review.CompanyResponse)
+            .ToListAsync(cancellationToken);
+    }
+
+    public Task<int> CountByUserIdAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return _dbSet.CountAsync(review => review.UserId == userId, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Review>> GetApprovedByToolIdWithDetailsAsync(
         int toolId,
         int page,
@@ -51,7 +75,10 @@ public class ReviewRepository : Repository<Review>, IReviewRepository
     {
         return await _dbSet
             .AsNoTracking()
+            .AsSplitQuery()
             .Include(review => review.Comments)
+            .Include(review => review.CompanyResponse)
+                .ThenInclude(response => response!.StaffUser)
             .FirstOrDefaultAsync(review => review.Id == reviewId, cancellationToken);
     }
 }

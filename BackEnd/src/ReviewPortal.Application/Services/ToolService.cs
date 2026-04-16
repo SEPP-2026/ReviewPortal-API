@@ -14,6 +14,7 @@ public class ToolService : IToolService
     private const int HoursInDay = 24;
     private const int HoursInWeek = 168;
     private const int MinimumReviewsRequiredForRating = 2;
+    private const string NotEnoughReviewsMessage = "Not enough reviews to rate";
 
     private readonly IToolRepository _toolRepository;
     private readonly ICategoryRepository _categoryRepository;
@@ -298,6 +299,7 @@ public class ToolService : IToolService
     private static ToolSummaryDto MapSummary(Tool tool)
     {
         var (startingPrice, startingPriceUnit) = GetStartingPrice(tool);
+        var (hasEnoughReviewsToRate, ratingMessage) = GetRatingDisplayState(tool);
 
         return new ToolSummaryDto(
             tool.Id,
@@ -308,6 +310,8 @@ public class ToolService : IToolService
             tool.DailyRate,
             tool.OverallRating,
             tool.ReviewCount,
+            hasEnoughReviewsToRate,
+            ratingMessage,
             tool.Images
                 .OrderBy(image => image.DisplayOrder)
                 .ThenBy(image => image.Id)
@@ -427,6 +431,7 @@ public class ToolService : IToolService
         }
 
         ApplyRatingMetrics(tool);
+        var (hasEnoughReviewsToRate, ratingMessage) = GetRatingDisplayState(tool);
 
         return Result<ToolDto>.Success(new ToolDto(
             tool.Id,
@@ -443,6 +448,8 @@ public class ToolService : IToolService
             tool.IsActive,
             tool.OverallRating,
             tool.ReviewCount,
+            hasEnoughReviewsToRate,
+            ratingMessage,
             tool.Images
                 .OrderBy(image => image.DisplayOrder)
                 .ThenBy(image => image.Id)
@@ -450,6 +457,15 @@ public class ToolService : IToolService
                 .ToList(),
             tool.CreatedDate,
             tool.UpdatedDate));
+    }
+
+    private static (bool HasEnoughReviewsToRate, string? RatingMessage) GetRatingDisplayState(Tool tool)
+    {
+        var hasEnoughReviewsToRate = tool.ReviewCount >= MinimumReviewsRequiredForRating && tool.OverallRating.HasValue;
+
+        return (
+            hasEnoughReviewsToRate,
+            hasEnoughReviewsToRate ? null : NotEnoughReviewsMessage);
     }
 
     private static (decimal Price, string Unit) GetStartingPrice(Tool tool)

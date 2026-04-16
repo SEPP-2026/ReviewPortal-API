@@ -52,8 +52,9 @@ This project uses **Clean Architecture** with 4 layers. Read `CLAUDE.md` for the
 1. Read `CLAUDE.md` for coding conventions and architecture rules
 2. Check `docs/ERD.md` for the data model
 3. Ensure your changes follow Clean Architecture (no layer violations)
-4. Run `dotnet build` to verify compilation
-5. Run `dotnet test` to verify no regressions
+4. If you change the EF Core model or persisted seed data, add a migration, generate a SQL script in `scripts/sql/`, and run `dotnet ef database update`
+5. Run `dotnet build` to verify compilation
+6. Run `dotnet test` to verify no regressions
 
 ## Code Style
 
@@ -63,6 +64,21 @@ This project uses **Clean Architecture** with 4 layers. Read `CLAUDE.md` for the
 - Fluent API for EF Core configuration (not data annotations)
 - DTOs for all API request/response models (never expose entities)
 - Result pattern for service returns
+
+## Database Changes
+
+If a task changes the database schema or persisted EF Core seed data, you must complete the full database workflow in the same change:
+
+1. Create a migration:
+   `dotnet ef migrations add <MigrationName> --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API`
+2. Generate a SQL deployment script:
+   `dotnet ef migrations script <PreviousMigration> <MigrationName> --idempotent --output scripts/sql/<MigrationName>.sql --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API`
+3. Apply the migration locally:
+   `dotnet ef database update --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API`
+4. Update schema documentation such as `docs/ERD.md` when the data model changes.
+5. Include the migration files and SQL script in the same change.
+
+If EF Core reports that there are no pending model changes, do not add an empty migration. Record that no migration was required.
 
 ## Testing
 

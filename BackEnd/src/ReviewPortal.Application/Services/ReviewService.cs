@@ -12,12 +12,15 @@ public class ReviewService : IReviewService
 {
     private const int DefaultMaxPageSize = 100;
     private const string NoReviewsMessage = "No reviews yet - be the first to share your experience";
+    private const int ReviewSnippetLength = 140;
     private const int MinCommentLength = 10;
     private const int MaxCommentLength = 1000;
+    private const int MaxCompanyResponseLength = 2000;
     private const int MinReviewLength = 20;
     private const int MaxReviewLength = 2000;
 
     private readonly IReviewRepository _reviewRepository;
+    private readonly IRepository<CompanyResponse> _companyResponseRepository;
     private readonly IRepository<ReviewComment> _reviewCommentRepository;
     private readonly IToolRepository _toolRepository;
     private readonly IUserRepository _userRepository;
@@ -25,12 +28,14 @@ public class ReviewService : IReviewService
 
     public ReviewService(
         IReviewRepository reviewRepository,
+        IRepository<CompanyResponse> companyResponseRepository,
         IRepository<ReviewComment> reviewCommentRepository,
         IToolRepository toolRepository,
         IUserRepository userRepository,
         IUnitOfWork unitOfWork)
     {
         _reviewRepository = reviewRepository;
+        _companyResponseRepository = companyResponseRepository;
         _reviewCommentRepository = reviewCommentRepository;
         _toolRepository = toolRepository;
         _userRepository = userRepository;
@@ -126,9 +131,13 @@ public class ReviewService : IReviewService
             pagedReviews));
     }
 
-    public async Task<Result<ReviewCommentDto>> AddCommentAsync(int reviewId, CreateCommentRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result<ReviewCommentDto>> AddCommentAsync(
+        int reviewId,
+        CreateCommentRequest request,
+        int? userId = null,
+        CancellationToken cancellationToken = default)
     {
-        var validationError = ValidateCommentRequest(request);
+        var validationError = ValidateCommentRequest(request, userId);
         if (validationError is not null)
         {
             return Result<ReviewCommentDto>.Failure(validationError);
@@ -140,10 +149,19 @@ public class ReviewService : IReviewService
             return Result<ReviewCommentDto>.NotFound($"Review with ID {reviewId} not found.");
         }
 
+        var commenterNameResult = await ResolveCommenterNameAsync(request, userId, cancellationToken);
+        if (!commenterNameResult.IsSuccess)
+        {
+            return Result<ReviewCommentDto>.Failure(
+                commenterNameResult.Error!,
+                commenterNameResult.FailureType ?? ErrorType.Validation);
+        }
+
         var comment = new ReviewComment
         {
             ReviewId = reviewId,
-            CommenterName = request.CommenterName.Trim(),
+            UserId = userId,
+            CommenterName = commenterNameResult.Value!,
             CommentText = request.CommentText.Trim(),
             Status = ReviewStatus.Pending
         };
@@ -172,14 +190,158 @@ public class ReviewService : IReviewService
         return Result<IReadOnlyList<ReviewCommentDto>>.Success(approvedComments);
     }
 
-    public Task<Result<CompanyResponseDto>> AddCompanyResponseAsync(int reviewId, CreateCompanyResponseRequest request, int staffUserId, CancellationToken cancellationToken = default)
+    public async Task<Result<CompanyResponseDto>> AddCompanyResponseAsync(
+        int reviewId,
+        CreateCompanyResponseRequest request,
+        int staffUserId,
+        CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(Result<CompanyResponseDto>.Failure("Company responses are not implemented in this slice."));
+        var validationError = ValidateCompanyResponseRequest(request);
+        if (validationError is not null)
+        {
+            return Result<CompanyResponseDto>.Failure(validationError);
+        }
+
+        var staffUserResult = await ResolveStaffUserAsync(staffUserId, cancellationToken);
+        if (!staffUserResult.IsSuccess)
+        {
+            return Result<CompanyResponseDto>.Failure(
+                staffUserResult.Error!,
+                staffUserResult.FailureType ?? ErrorType.Validation);
+        }
+
+        var review = await _reviewRepository.GetByIdWithDetailsAsync(reviewId, cancellationToken);
+        if (review is null)
+        {
+            return Result<CompanyResponseDto>.NotFound($"Review with ID {reviewId} not found.");
+        }
+
+        if (review.CompanyResponse is not null)
+        {
+            return Result<CompanyResponseDto>.Conflict($"A company response already exists for review with ID {reviewId}.");
+        }
+
+        var utcNow = DateTime.UtcNow;
+        var companyResponse = new CompanyResponse
+        {
+            ReviewId = reviewId,
+            StaffUserId = staffUserId,
+            StaffUser = staffUserResult.Value!,
+            ResponseText = request.ResponseText.Trim(),
+            CreatedDate = utcNow,
+            UpdatedDate = utcNow
+        };
+
+        await _companyResponseRepository.AddAsync(companyResponse, cancellationToken);
+        review.CompanyResponse = companyResponse;
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result<CompanyResponseDto>.Success(MapCompanyResponse(companyResponse));
     }
 
-    public Task<Result<PagedList<ReviewSummaryDto>>> GetUserReviewsAsync(int userId, int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<Result<CompanyResponseDto>> UpdateCompanyResponseAsync(
+        int reviewId,
+        CreateCompanyResponseRequest request,
+        int staffUserId,
+        CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(Result<PagedList<ReviewSummaryDto>>.Failure("User review retrieval is not implemented in this slice."));
+        var validationError = ValidateCompanyResponseRequest(request);
+        if (validationError is not null)
+        {
+            return Result<CompanyResponseDto>.Failure(validationError);
+        }
+
+        var staffUserResult = await ResolveStaffUserAsync(staffUserId, cancellationToken);
+        if (!staffUserResult.IsSuccess)
+        {
+            return Result<CompanyResponseDto>.Failure(
+                staffUserResult.Error!,
+                staffUserResult.FailureType ?? ErrorType.Validation);
+        }
+
+        var review = await _reviewRepository.GetByIdWithDetailsAsync(reviewId, cancellationToken);
+        if (review is null)
+        {
+            return Result<CompanyResponseDto>.NotFound($"Review with ID {reviewId} not found.");
+        }
+
+        if (review.CompanyResponse is null)
+        {
+            return Result<CompanyResponseDto>.NotFound($"Company response for review with ID {reviewId} not found.");
+        }
+
+        review.CompanyResponse.ResponseText = request.ResponseText.Trim();
+        review.CompanyResponse.StaffUserId = staffUserId;
+        review.CompanyResponse.StaffUser = staffUserResult.Value!;
+        review.CompanyResponse.UpdatedDate = DateTime.UtcNow;
+
+        await _companyResponseRepository.UpdateAsync(review.CompanyResponse, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result<CompanyResponseDto>.Success(MapCompanyResponse(review.CompanyResponse));
+    }
+
+    public async Task<Result<bool>> DeleteCompanyResponseAsync(
+        int reviewId,
+        int staffUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var staffUserResult = await ResolveStaffUserAsync(staffUserId, cancellationToken);
+        if (!staffUserResult.IsSuccess)
+        {
+            return Result<bool>.Failure(
+                staffUserResult.Error!,
+                staffUserResult.FailureType ?? ErrorType.Validation);
+        }
+
+        var review = await _reviewRepository.GetByIdWithDetailsAsync(reviewId, cancellationToken);
+        if (review is null)
+        {
+            return Result<bool>.NotFound($"Review with ID {reviewId} not found.");
+        }
+
+        if (review.CompanyResponse is null)
+        {
+            return Result<bool>.NotFound($"Company response for review with ID {reviewId} not found.");
+        }
+
+        await _companyResponseRepository.DeleteAsync(review.CompanyResponse, cancellationToken);
+        review.CompanyResponse = null;
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result<bool>.Success(true);
+    }
+
+    public async Task<Result<PagedList<ReviewSummaryDto>>> GetUserReviewsAsync(
+        int userId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var validationError = ValidatePaging(page, pageSize);
+        if (validationError is not null)
+        {
+            return Result<PagedList<ReviewSummaryDto>>.Failure(validationError);
+        }
+
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+        if (user is null)
+        {
+            return Result<PagedList<ReviewSummaryDto>>.Unauthorized("Authenticated user account could not be found.");
+        }
+
+        var totalReviews = await _reviewRepository.CountByUserIdAsync(userId, cancellationToken);
+        var reviews = totalReviews == 0
+            ? Array.Empty<Review>()
+            : await _reviewRepository.GetByUserIdWithDetailsAsync(userId, page, pageSize, cancellationToken);
+
+        var pagedReviews = new PagedList<ReviewSummaryDto>(
+            reviews.Select(MapReviewSummary).ToList(),
+            page,
+            pageSize,
+            totalReviews);
+
+        return Result<PagedList<ReviewSummaryDto>>.Success(pagedReviews);
     }
 
     public Task<Result<PagedList<ReviewDto>>> GetPendingReviewsAsync(int page, int pageSize, CancellationToken cancellationToken = default)
@@ -256,19 +418,19 @@ public class ReviewService : IReviewService
             ?? ValidateRating(request.ValueForMoneyRating, "Value for money rating");
     }
 
-    private static string? ValidateCommentRequest(CreateCommentRequest request)
+    private static string? ValidateCommentRequest(CreateCommentRequest request, int? userId)
     {
         if (request is null)
         {
             return "Comment request is required.";
         }
 
-        if (string.IsNullOrWhiteSpace(request.CommenterName))
+        if (!userId.HasValue && string.IsNullOrWhiteSpace(request.CommenterName))
         {
             return "Commenter name is required.";
         }
 
-        if (request.CommenterName.Trim().Length > 100)
+        if (!string.IsNullOrWhiteSpace(request.CommenterName) && request.CommenterName.Trim().Length > 100)
         {
             return "Commenter name must be 100 characters or fewer.";
         }
@@ -287,6 +449,26 @@ public class ReviewService : IReviewService
         if (commentText.Length > MaxCommentLength)
         {
             return $"Comment text must be {MaxCommentLength} characters or fewer.";
+        }
+
+        return null;
+    }
+
+    private static string? ValidateCompanyResponseRequest(CreateCompanyResponseRequest request)
+    {
+        if (request is null)
+        {
+            return "Company response request is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(request.ResponseText))
+        {
+            return "Response text is required.";
+        }
+
+        if (request.ResponseText.Trim().Length > MaxCompanyResponseLength)
+        {
+            return $"Response text must be {MaxCompanyResponseLength} characters or fewer.";
         }
 
         return null;
@@ -342,6 +524,41 @@ public class ReviewService : IReviewService
         return Result<(string ReviewerName, string ReviewerEmail)>.Success((user.Name, user.Email));
     }
 
+    private async Task<Result<string>> ResolveCommenterNameAsync(
+        CreateCommentRequest request,
+        int? userId,
+        CancellationToken cancellationToken)
+    {
+        if (!userId.HasValue)
+        {
+            return Result<string>.Success(request.CommenterName.Trim());
+        }
+
+        var user = await _userRepository.GetByIdAsync(userId.Value, cancellationToken);
+        if (user is null)
+        {
+            return Result<string>.Unauthorized("Authenticated user account could not be found.");
+        }
+
+        return Result<string>.Success(user.Name);
+    }
+
+    private async Task<Result<User>> ResolveStaffUserAsync(int staffUserId, CancellationToken cancellationToken)
+    {
+        var user = await _userRepository.GetByIdAsync(staffUserId, cancellationToken);
+        if (user is null)
+        {
+            return Result<User>.Unauthorized("Authenticated user account could not be found.");
+        }
+
+        if (user.Role is not UserRole.Admin and not UserRole.Moderator)
+        {
+            return Result<User>.Forbidden("Only staff users can manage company responses.");
+        }
+
+        return Result<User>.Success(user);
+    }
+
     private static ReviewDto MapReview(Review review, string toolName)
     {
         var approvedComments = review.Comments
@@ -379,12 +596,48 @@ public class ReviewService : IReviewService
             companyResponse);
     }
 
+    private static ReviewSummaryDto MapReviewSummary(Review review)
+    {
+        return new ReviewSummaryDto(
+            review.Id,
+            review.ToolId,
+            review.Tool.Name,
+            BuildReviewSnippet(review.ReviewText),
+            review.OverallRating,
+            review.Status.ToString(),
+            review.RejectionReason,
+            review.CreatedDate,
+            review.CompanyResponse is not null);
+    }
+
+    private static string BuildReviewSnippet(string reviewText)
+    {
+        var trimmedReviewText = reviewText.Trim();
+        if (trimmedReviewText.Length <= ReviewSnippetLength)
+        {
+            return trimmedReviewText;
+        }
+
+        return $"{trimmedReviewText[..(ReviewSnippetLength - 3)].TrimEnd()}...";
+    }
+
     private static ReviewCommentDto MapComment(ReviewComment comment)
     {
         return new ReviewCommentDto(
             comment.Id,
             comment.CommenterName,
             comment.CommentText,
+            comment.Status.ToString(),
             comment.CreatedDate);
+    }
+
+    private static CompanyResponseDto MapCompanyResponse(CompanyResponse companyResponse)
+    {
+        return new CompanyResponseDto(
+            companyResponse.Id,
+            companyResponse.ResponseText,
+            companyResponse.StaffUser?.Name ?? string.Empty,
+            companyResponse.CreatedDate,
+            companyResponse.UpdatedDate);
     }
 }

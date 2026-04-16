@@ -4,6 +4,14 @@ namespace ReviewPortal.Domain.Interfaces;
 
 public interface IReviewRepository : IRepository<Review>
 {
+    Task<IReadOnlyList<Review>> GetByUserIdWithDetailsAsync(
+        int userId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default);
+
+    Task<int> CountByUserIdAsync(int userId, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Review>> GetApprovedByToolIdWithDetailsAsync(
         int toolId,
         int page,

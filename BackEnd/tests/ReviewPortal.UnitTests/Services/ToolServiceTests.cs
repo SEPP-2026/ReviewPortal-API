@@ -141,6 +141,8 @@ public class ToolServiceTests
         Assert.True(result.IsSuccess);
         Assert.Equal(["Pressure Washer", "Wet Vacuum", "Floor Scrubber"], result.Value!.Items.Select(item => item.Name).ToArray());
         Assert.Equal([4.7m, 3.6m, null], result.Value.Items.Select(item => item.OverallRating).ToArray());
+        Assert.Equal([true, true, false], result.Value.Items.Select(item => item.HasEnoughReviewsToRate).ToArray());
+        Assert.Equal([null, null, "Not enough reviews to rate"], result.Value.Items.Select(item => item.RatingMessage).ToArray());
     }
 
     [Fact]
@@ -261,6 +263,8 @@ public class ToolServiceTests
         var item = Assert.Single(result.Value!.Items);
         Assert.Null(item.OverallRating);
         Assert.Equal(1, item.ReviewCount);
+        Assert.False(item.HasEnoughReviewsToRate);
+        Assert.Equal("Not enough reviews to rate", item.RatingMessage);
     }
 
     [Fact]
@@ -445,6 +449,8 @@ public class ToolServiceTests
         Assert.Equal(60m, result.Value.DepositAmount);
         Assert.Equal(4.6m, result.Value.OverallRating);
         Assert.Equal(2, result.Value.ReviewCount);
+        Assert.True(result.Value.HasEnoughReviewsToRate);
+        Assert.Null(result.Value.RatingMessage);
         Assert.Equal(["first.jpg", "second.jpg"], result.Value.Images.Select(image => image.ImageUrl).ToArray());
     }
 
@@ -465,6 +471,8 @@ public class ToolServiceTests
         Assert.True(result.IsSuccess);
         Assert.Null(result.Value!.OverallRating);
         Assert.Equal(1, result.Value.ReviewCount);
+        Assert.False(result.Value.HasEnoughReviewsToRate);
+        Assert.Equal("Not enough reviews to rate", result.Value.RatingMessage);
     }
 
     [Fact]
@@ -539,6 +547,30 @@ public class ToolServiceTests
         var item = Assert.Single(result.Value!.Items);
         Assert.Equal(4.2m, item.OverallRating);
         Assert.Equal(2, item.ReviewCount);
+        Assert.True(item.HasEnoughReviewsToRate);
+        Assert.Null(item.RatingMessage);
+    }
+
+    [Fact]
+    public async Task SearchToolsAsync_WhenToolHasOneApprovedReview_ReturnsThresholdMessage()
+    {
+        var category = new Category { Id = 1, Name = "Breaking & Drilling" };
+        var matchingTool = CreateTool(1, category, "SDS Max Drill", hourlyRate: 15m);
+        matchingTool.Reviews =
+        [
+            CreateApprovedReview(1, matchingTool, 5, 4, 5, 4, 4)
+        ];
+
+        var service = CreateService(categories: [category], tools: [matchingTool]);
+
+        var result = await service.SearchToolsAsync("sds", 1, 12);
+
+        Assert.True(result.IsSuccess);
+        var item = Assert.Single(result.Value!.Items);
+        Assert.Null(item.OverallRating);
+        Assert.Equal(1, item.ReviewCount);
+        Assert.False(item.HasEnoughReviewsToRate);
+        Assert.Equal("Not enough reviews to rate", item.RatingMessage);
     }
 
     [Fact]
