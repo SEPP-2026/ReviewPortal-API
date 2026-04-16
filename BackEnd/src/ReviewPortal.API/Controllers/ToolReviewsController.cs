@@ -49,7 +49,8 @@ public class ToolReviewsController : ControllerBase
 
     private int? GetAuthenticatedUserId()
     {
-        var claimValue = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        var claimValue = User?.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User?.FindFirstValue("sub");
         return int.TryParse(claimValue, out var userId) ? userId : null;
     }
 }

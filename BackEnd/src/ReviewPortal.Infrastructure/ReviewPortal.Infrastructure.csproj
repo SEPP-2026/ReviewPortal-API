@@ -1,8 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <ItemGroup>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ReviewPortalDomainBinaryPath Condition="'$(ReviewPortalDomainBinaryPath)' == ''">..\ReviewPortal.Domain\bin\$(Configuration)\net8.0\ReviewPortal.Domain.dll</ReviewPortalDomainBinaryPath>
+    <ReviewPortalApplicationBinaryPath Condition="'$(ReviewPortalApplicationBinaryPath)' == ''">..\ReviewPortal.Application\bin\$(Configuration)\net8.0\ReviewPortal.Application.dll</ReviewPortalApplicationBinaryPath>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(UseBinaryProjectReferences)' != 'true'">
     <ProjectReference Include="..\ReviewPortal.Domain\ReviewPortal.Domain.csproj" />
     <ProjectReference Include="..\ReviewPortal.Application\ReviewPortal.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseBinaryProjectReferences)' == 'true'">
+    <Reference Include="ReviewPortal.Domain">
+      <HintPath>$(ReviewPortalDomainBinaryPath)</HintPath>
+    </Reference>
+    <Reference Include="ReviewPortal.Application">
+      <HintPath>$(ReviewPortalApplicationBinaryPath)</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
@@ -16,11 +33,5 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
 
 </Project>

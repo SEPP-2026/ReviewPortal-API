@@ -210,6 +210,27 @@ internal sealed class InMemoryReviewRepository : IReviewRepository
         return Task.CompletedTask;
     }
 
+    public Task<IReadOnlyList<Review>> GetByUserIdWithDetailsAsync(
+        int userId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<IReadOnlyList<Review>>(
+            _reviews
+                .Where(review => review.UserId == userId)
+                .OrderByDescending(review => review.CreatedDate)
+                .ThenByDescending(review => review.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList());
+    }
+
+    public Task<int> CountByUserIdAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(_reviews.Count(review => review.UserId == userId));
+    }
+
     public Task<IReadOnlyList<Review>> GetApprovedByToolIdWithDetailsAsync(
         int toolId,
         int page,

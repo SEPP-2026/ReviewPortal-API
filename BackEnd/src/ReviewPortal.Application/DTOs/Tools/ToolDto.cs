@@ -15,6 +15,8 @@ public record ToolDto(
     bool IsActive,
     decimal? OverallRating,
     int ReviewCount,
+    bool HasEnoughReviewsToRate,
+    string? RatingMessage,
     List<ToolImageDto> Images,
     DateTime CreatedDate,
     DateTime UpdatedDate
@@ -35,5 +37,7 @@ public record ToolSummaryDto(
     decimal DailyRate,
     decimal? OverallRating,
     int ReviewCount,
+    bool HasEnoughReviewsToRate,
+    string? RatingMessage,
     string? ThumbnailUrl
 );

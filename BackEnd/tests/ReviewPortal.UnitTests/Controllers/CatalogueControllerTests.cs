@@ -247,6 +247,8 @@ public class CatalogueControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Same(toolDetail, okResult.Value);
         Assert.Equal(11, toolService.LastToolId);
+        Assert.False(toolDetail.HasEnoughReviewsToRate);
+        Assert.Equal("Not enough reviews to rate", toolDetail.RatingMessage);
     }
 
     [Fact]
@@ -329,7 +331,7 @@ public class CatalogueControllerTests
     private static PagedList<ToolSummaryDto> CreatePagedTools(string toolName)
     {
         return new PagedList<ToolSummaryDto>(
-            [new ToolSummaryDto(1, toolName, "Breaking & Drilling", 15m, "hour", 54m, 4m, 1, "tool.jpg")],
+            [new ToolSummaryDto(1, toolName, "Breaking & Drilling", 15m, "hour", 54m, null, 1, false, "Not enough reviews to rate", "tool.jpg")],
             1,
             12,
             1);
@@ -350,8 +352,10 @@ public class CatalogueControllerTests
             false,
             null,
             true,
-            4m,
+            null,
             1,
+            false,
+            "Not enough reviews to rate",
             [new ToolImageDto(1, "sds-max-drill.jpg", 1)],
             new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc));
