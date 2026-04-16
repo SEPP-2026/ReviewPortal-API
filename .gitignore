@@ -1,5 +1,81 @@
-## Repository-wide IDE state
+## .NET / Visual Studio
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+## Visual Studio
 .vs/
 *.vsidx
+*.rsuser
 slnx.sqlite
 
+## NuGet
+**/packages/
+project.nuget.cache
+*.nupkg
+**/[Pp]ackages/*
+
+## Build results
+[Dd]ebugPublic/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Ll]og/
+[Ll]ogs/
+*.log
+msbuild.log
+msbuild.err
+msbuild.wrn
+
+## Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+*.coverage
+*.coveragexml
+
+## User-specific
+*.csproj.user
+*.dbmdl
+*.jfm
+*.pfx
+*.publishsettings
+
+## OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+## Secrets / environment
+appsettings.Production.json
+*.env
+.env.*
+
+## Node / Next.js (frontend)
+node_modules/
+.next/
+out/
+.turbo/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+## JetBrains Rider
+.idea/
+*.sln.iml
+
+## Misc
+*.swp
+*.bak
+*.tmp
+*.orig
+codex-*/

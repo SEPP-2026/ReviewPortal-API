@@ -1,1 +1,0 @@
-export { EquipmentCatalogue } from "./EquipmentCatalogue";
