@@ -98,29 +98,31 @@ public class ReviewService : IReviewService
             return Result<ToolReviewsDto>.NotFound($"Tool with ID {toolId} not found.");
         }
 
-        var approvedReviews = await _reviewRepository.GetApprovedByToolIdWithDetailsAsync(toolId, cancellationToken);
-        var mappedReviews = approvedReviews
-            .Select(review => MapReview(review, tool.Name))
-            .ToList();
-
+        var totalApprovedReviews = await _reviewRepository.CountApprovedByToolIdAsync(toolId, cancellationToken);
+        var averageOverallRating = totalApprovedReviews == 0
+            ? null
+            : await _reviewRepository.GetAverageOverallRatingByToolIdAsync(toolId, cancellationToken);
+        var approvedReviews = totalApprovedReviews == 0
+            ? Array.Empty<Review>()
+            : await _reviewRepository.GetApprovedByToolIdWithDetailsAsync(toolId, page, pageSize, cancellationToken);
         var pagedReviews = new PagedList<ReviewDto>(
-            mappedReviews
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
+            approvedReviews
+                .Select(review => MapReview(review, tool.Name))
                 .ToList(),
             page,
             pageSize,
-            mappedReviews.Count);
+            totalApprovedReviews);
 
-        decimal? averageOverallRating = mappedReviews.Count == 0
-            ? null
-            : Math.Round(mappedReviews.Average(review => review.OverallRating), 2, MidpointRounding.AwayFromZero);
+        if (averageOverallRating.HasValue)
+        {
+            averageOverallRating = Math.Round(averageOverallRating.Value, 2, MidpointRounding.AwayFromZero);
+        }
 
         return Result<ToolReviewsDto>.Success(new ToolReviewsDto(
             toolId,
             averageOverallRating,
-            mappedReviews.Count,
-            mappedReviews.Count == 0 ? NoReviewsMessage : null,
+            totalApprovedReviews,
+            totalApprovedReviews == 0 ? NoReviewsMessage : null,
             pagedReviews));
     }
 

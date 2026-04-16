@@ -66,6 +66,21 @@ public class ToolReviewsControllerTests
     }
 
     [Fact]
+    public async Task GetApproved_WhenToolDoesNotExist_ReturnsNotFoundProblem()
+    {
+        var reviewService = new FakeReviewService
+        {
+            GetApprovedReviewsResult = Result<ToolReviewsDto>.NotFound("Tool with ID 404 not found.")
+        };
+        var controller = new ToolReviewsController(reviewService);
+
+        var result = await controller.GetApproved(404, page: 1, pageSize: 10, cancellationToken: CancellationToken.None);
+
+        var problemResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status404NotFound, problemResult.StatusCode);
+    }
+
+    [Fact]
     public async Task Create_WhenReviewIsSubmitted_ReturnsCreatedResponse()
     {
         var review = CreateReviewDto();

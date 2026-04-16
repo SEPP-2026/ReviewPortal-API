@@ -336,6 +336,72 @@ public class ReviewServiceTests
     }
 
     [Fact]
+    public async Task GetApprovedReviewsAsync_WhenPageSizeExceedsMaximum_ReturnsValidationFailure()
+    {
+        var category = new Category { Id = 1, Name = "Electrical & Heating" };
+        var tool = CreateTool(6, category, isActive: true);
+        var service = CreateService(tools: [tool]);
+
+        var result = await service.GetApprovedReviewsAsync(tool.Id, page: 1, pageSize: 101);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Page size must not exceed 100.", result.Error);
+    }
+
+    [Fact]
+    public async Task GetApprovedReviewsAsync_RoundsAverageAcrossAllApprovedReviews()
+    {
+        var category = new Category { Id = 1, Name = "Cleaning & Maintenance" };
+        var tool = CreateTool(12, category, isActive: true);
+        var reviews =
+            new[]
+            {
+                CreateReview(
+                    1,
+                    tool,
+                    "Reviewer One",
+                    ReviewStatus.Approved,
+                    new DateTime(2026, 4, 1, 8, 0, 0, DateTimeKind.Utc),
+                    5,
+                    4,
+                    4,
+                    4,
+                    4),
+                CreateReview(
+                    2,
+                    tool,
+                    "Reviewer Two",
+                    ReviewStatus.Approved,
+                    new DateTime(2026, 4, 2, 8, 0, 0, DateTimeKind.Utc),
+                    4,
+                    4,
+                    4,
+                    4,
+                    4),
+                CreateReview(
+                    3,
+                    tool,
+                    "Reviewer Three",
+                    ReviewStatus.Approved,
+                    new DateTime(2026, 4, 3, 8, 0, 0, DateTimeKind.Utc),
+                    4,
+                    4,
+                    4,
+                    4,
+                    4)
+            };
+        var service = CreateService(reviews: reviews, tools: [tool]);
+
+        var result = await service.GetApprovedReviewsAsync(tool.Id, page: 1, pageSize: 2);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(3, result.Value!.TotalApprovedReviews);
+        Assert.Equal(4.07m, result.Value.AverageOverallRating);
+        Assert.Equal(2, result.Value.Reviews.Items.Count);
+    }
+
+    [Fact]
     public async Task AddCommentAsync_WhenRequestIsValid_SavesPendingComment()
     {
         var category = new Category { Id = 1, Name = "Access & Lifting" };
