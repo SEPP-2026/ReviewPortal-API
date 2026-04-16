@@ -19,7 +19,7 @@ Production URL:
 
 This workflow is configured to use a publish profile secret named `AZURE_WEBAPP_PUBLISH_PROFILE`.
 
-That is the simplest setup for your current app service, because your Azure portal already exposes the **Download publish profile** option.
+That is the simplest setup for your current app service, because your Azure portal already exposes the `Download publish profile` option.
 
 ## Azure setup steps
 
@@ -46,16 +46,23 @@ In Azure Portal:
 
 ## GitHub setup steps
 
-### Option A: Recommended if available - environment secret
+### Option A: Environment secret and approval gate used by this project
 
 In GitHub:
 
 1. Open your repository
 2. Go to `Settings -> Environments`
 3. Create an environment named `production`
-4. In that environment, add a secret named `AZURE_WEBAPP_PUBLISH_PROFILE`
-5. Paste the full contents of the downloaded publish profile
-6. Under deployment branches, restrict the environment to branch `main`
+4. Under `Deployment protection rules`, enable `Required reviewers`
+5. Add yourself or the people who are allowed to approve production deployments
+6. Recommended: turn on `Prevent self-review` if you want a second person to approve production releases
+7. Under deployment branches, restrict the environment to branch `main`
+8. In that same environment, add a secret named `AZURE_WEBAPP_PUBLISH_PROFILE`
+9. Paste the full contents of the downloaded publish profile
+
+This is the setup used by this project.
+
+When the workflow reaches the `Deploy To Azure App Service` job, GitHub will pause the run and wait for approval before deployment starts.
 
 ### Option B: Simpler fallback - repository secret
 
@@ -74,40 +81,44 @@ Deployment only publishes code. Your Azure App Service still needs runtime confi
 
 In Azure Portal, go to:
 
-`reviewportal-api -> Settings -> Configuration`
+`reviewportal-api -> Settings -> Environment variables`
 
-Add these values:
+or `Configuration`, depending on the Azure portal view.
 
-- `Jwt__Secret`
-- `Jwt__Issuer`
-- `Jwt__Audience`
+Add these application settings:
 
-For the database, use one of these approaches:
+- `ASPNETCORE_ENVIRONMENT = Production`
+- `Jwt__Secret = <strong-random-secret>`
+- `Jwt__Issuer = ReviewPortalAPI`
+- `Jwt__Audience = ReviewPortalClient`
+- `Jwt__ExpiryMinutes = 60`
 
-- Add a connection string named `DefaultConnection` in the `Connection strings` tab
-- Or add an application setting named `ConnectionStrings__DefaultConnection`
+For the database, recommended:
+
+- `ConnectionStrings__DefaultConnection = Server=tcp:reviewportal.database.windows.net,1433;Initial Catalog=ReviewPortal;Persist Security Info=False;User ID=CB018407;Password=<password>;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;`
+
+Alternative:
+
+- Add a connection string named `DefaultConnection` in the `Connection strings` section.
 
 Optional if you have a frontend calling this API:
 
-- `Cors__AllowedOrigins__0`
-- `Cors__AllowedOrigins__1`
+- `Cors__AllowedOrigins__0 = https://reviewportal-frontend-dccvarataff4a8hg.southeastasia-01.azurewebsites.net`
+- `Cors__AllowedOrigins__1 = http://localhost:3000`
 
-Example values:
-
-- `Jwt__Issuer = ReviewPortalAPI`
-- `Jwt__Audience = ReviewPortalClient`
-- `Cors__AllowedOrigins__0 = https://your-frontend-domain`
-
-After saving configuration, restart the app service.
+After saving configuration, restart the App Service.
 
 ## First deployment steps
 
 1. Commit and push this workflow to GitHub
-2. Add the publish profile secret
-3. Add Azure application settings and connection string
-4. Push a commit to `main`
-5. Open the `Actions` tab in GitHub and watch the `CI-CD` workflow
-6. After deployment completes, browse:
+2. Create the `production` environment in GitHub
+3. Add required reviewers to the `production` environment
+4. Add the `AZURE_WEBAPP_PUBLISH_PROFILE` environment secret
+5. Add Azure application settings and connection string
+6. Push a commit to `main`
+7. Open the `Actions` tab in GitHub and watch the `CI-CD` workflow
+8. When the workflow reaches `Deploy To Azure App Service`, approve the deployment
+9. After deployment completes, browse:
    `https://reviewportal-api-escdb3f2epg8eeha.southeastasia-01.azurewebsites.net`
 
 ## What to expect in GitHub Actions
@@ -119,6 +130,12 @@ The workflow has three jobs:
 - `Deploy To Azure App Service`
 
 `Deploy To Azure App Service` will only run if the earlier jobs succeed.
+
+If required reviewers are configured on the `production` environment, the deploy job will sit in a waiting state until someone approves it.
+
+## GitHub approval note
+
+GitHub's current documentation says environment protection rules and required reviewers are available for all current plans on public repositories, but for private repositories they depend on plan level. If your repository is private and the required-reviewer option is missing, check your GitHub plan first.
 
 ## Common issues
 
@@ -142,6 +159,15 @@ Check Azure configuration values:
 ### API starts but frontend calls fail
 
 Check your production CORS settings and add your frontend domain as `Cors__AllowedOrigins__0`, `Cors__AllowedOrigins__1`, and so on.
+
+### Deploy job does not wait for approval
+
+Check:
+
+- the deploy job still references the `production` environment in `.github/workflows/ci.yml`
+- the `production` environment exists in GitHub
+- `Required reviewers` is enabled on that environment
+- your repository plan supports environment protection rules for its visibility level
 
 ## Security note
 
