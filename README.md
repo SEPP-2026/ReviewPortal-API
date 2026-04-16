@@ -148,6 +148,7 @@ dotnet ef database update --project src/ReviewPortal.Infrastructure --startup-pr
 | Requirements specification | [`docs/REQUIREMENTS-SPECIFICATION.md`](docs/REQUIREMENTS-SPECIFICATION.md) |
 | Non-functional requirements | [`docs/NON-FUNCTIONAL-REQUIREMENTS.md`](docs/NON-FUNCTIONAL-REQUIREMENTS.md) |
 | Testing strategy | [`docs/TESTING-STRATEGY.md`](docs/TESTING-STRATEGY.md) |
+| Azure deployment guide | [`docs/DEPLOYMENT-TO-AZURE-APP-SERVICE.md`](docs/DEPLOYMENT-TO-AZURE-APP-SERVICE.md) |
 | Agile backlog and sprint artefacts | [`docs/agile/`](docs/agile/) |
 | SQL script usage notes | [`scripts/sql/README.md`](scripts/sql/README.md) |
 
