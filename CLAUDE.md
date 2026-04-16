@@ -1,237 +1,206 @@
-# CLAUDE.md – Shelton Tool-Hire Review Portal (Back End)
+# CLAUDE.md - Shelton Tool-Hire Review Portal API
 
 ## Project Overview
 
-This is the **back-end** component of the **Shelton Tool-Hire Review Portal** — a web application where customers browse hire equipment, calculate rental costs, and leave reviews. Staff manage the catalogue and moderate content from a back-office admin area.
+This repository contains the backend-only MSc submission package for the Shelton Tool-Hire Review Portal.
 
-> **Monorepo layout:** The repository root contains `BackEnd/` (this project) and `FrontEnd/` (the client application). All paths in this document are relative to the `BackEnd/` directory.
+- Backend: ASP.NET Core Web API on .NET 8 with Clean Architecture
+- Database: Microsoft SQL Server with EF Core code-first migrations
+- Authentication: ASP.NET Identity with JWT bearer tokens
+- Testing: xUnit with unit and integration coverage
+- Documentation: ERD, requirements, non-functional requirements, testing strategy, and agile artefacts
 
-- **Backend:** ASP.NET Core Web API (.NET 8) with Clean Architecture
-- **Frontend:** Lives in the sibling `../FrontEnd/` directory (separate from this .NET solution)
-- **Database:** Microsoft SQL Server with EF Core (Code-First migrations)
-- **Auth:** ASP.NET Identity with JWT bearer tokens
-- **Testing:** xUnit (unit + integration), Playwright (E2E)
-- **CI/CD:** GitHub Actions
+The original project planning described a separate frontend client, but that frontend is no longer part of this repository. All active code, tests, scripts, and automation here relate to the backend deliverable.
 
----
+## Solution Structure
 
-## Solution Structure (Clean Architecture)
-
-```
-BackEnd/                           # ← You are here
-├── src/
-│   ├── ReviewPortal.Domain/           # Entities, Enums, Value Objects, Domain Interfaces
-│   ├── ReviewPortal.Application/      # Use Cases, DTOs, Service Interfaces, Validators
-│   ├── ReviewPortal.Infrastructure/   # EF Core DbContext, Repositories, External Services
-│   └── ReviewPortal.API/              # Controllers, Middleware, DI Configuration
-├── tests/
-│   ├── ReviewPortal.UnitTests/        # Unit tests for Application + Domain
-│   └── ReviewPortal.IntegrationTests/ # Integration tests with test database
-├── docs/                              # Project documentation & agile artefacts
-├── ReviewPortal.slnx                  # .NET solution file
-├── CLAUDE.md                          # This file
-└── AGENTS.md                          # AI agent instructions
-
-FrontEnd/                          # Sibling directory (client app)
+```text
+ReviewPortal-API/
+|-- src/
+|   |-- ReviewPortal.Domain/           # Entities, enums, value objects, domain interfaces
+|   |-- ReviewPortal.Application/      # Use cases, DTOs, service interfaces, validators
+|   |-- ReviewPortal.Infrastructure/   # EF Core DbContext, repositories, auth providers, migrations
+|   `-- ReviewPortal.API/              # Controllers, middleware, DI configuration
+|-- tests/
+|   |-- ReviewPortal.UnitTests/        # Application, domain, infrastructure, and controller tests
+|   `-- ReviewPortal.IntegrationTests/ # Authentication and DbContext integration tests
+|-- docs/                              # Academic and project documentation
+|-- scripts/sql/                       # Migration and seed SQL scripts
+|-- ReviewPortal.slnx                  # .NET solution
+|-- README.md                          # Submission-oriented repository guide
+|-- AGENTS.md                          # AI agent instructions
+`-- .github/workflows/ci.yml           # Build and test automation
 ```
 
-### Dependency Rule (STRICT)
+### Dependency Rule
 
+```text
+Domain <- Application <- Infrastructure
+                     <- API
 ```
-Domain ← Application ← Infrastructure
-                      ← API
-```
 
-- **Domain** has ZERO project references. No NuGet packages except pure utilities.
-- **Application** references only Domain. No EF Core, no ASP.NET.
-- **Infrastructure** references Application and Domain. This is where EF Core lives.
-- **API** references Application and Infrastructure. Wires up DI.
+- Domain has zero project references.
+- Application references only Domain.
+- Infrastructure references Application and Domain.
+- API references Application and Infrastructure.
 
-> ⚠️ NEVER add EF Core or ASP.NET references to Domain or Application projects.
+Never add EF Core or ASP.NET dependencies to Domain or Application.
 
----
+## Domain Model
 
-## Entities (Domain Layer)
-
-There are 7 domain entities. See `/docs/ERD.md` for the full field-level diagram.
+There are seven core domain entities. See `docs/ERD.md` for the field-level diagram.
 
 | Entity | Key Relationships |
 |--------|-------------------|
-| `User` | Writes reviews, authors company responses |
+| `User` | Writes reviews and authors company responses |
 | `Category` | Has many tools |
-| `Tool` | Belongs to category, has images and reviews |
+| `Tool` | Belongs to a category and has images and reviews |
 | `ToolImage` | Belongs to a tool |
-| `Review` | Belongs to tool + user, has comments and company response |
+| `Review` | Belongs to a tool and user; has comments and a company response |
 | `ReviewComment` | Belongs to a review |
-| `CompanyResponse` | One-to-one with review, authored by staff |
+| `CompanyResponse` | One-to-one with a review and authored by staff |
 
 ### Entity Rules
 
-- All entities inherit from `BaseEntity` which provides `Id` (int, auto-increment)
-- Entities with timestamps inherit from `AuditableEntity` (adds `CreatedDate`, `UpdatedDate`)
-- Use private setters on entity properties; mutate through domain methods
-- Enums: `ReviewStatus` (Pending, Approved, Rejected), `UserRole` (Customer, Admin, Moderator)
-
----
+- All entities inherit from `BaseEntity` which provides the integer `Id`
+- Timestamped entities inherit from `AuditableEntity`
+- Prefer private setters and domain methods for state changes
+- Enums include `ReviewStatus` and `UserRole`
 
 ## Coding Conventions
 
-### C# / .NET
+### C# and .NET
 
-- Use **file-scoped namespaces** (`namespace X;` not `namespace X { }`)
-- Use **primary constructors** where appropriate (.NET 8)
-- Use **records** for DTOs and value objects
-- Use `readonly` and `required` properties on entities where appropriate
-- Async all the way — all service and repository methods return `Task<T>`
-- Name async methods with `Async` suffix (e.g., `GetToolByIdAsync`)
-- Use `CancellationToken` on all async methods
-- Return `Result<T>` pattern from Application services, not exceptions for business logic
-- Use **FluentValidation** for request validation in the Application layer
-- Controllers should be thin — delegate to Application services immediately
-- Use `ILogger<T>` for logging, never `Console.WriteLine`
+- Use file-scoped namespaces
+- Use async all the way and include `CancellationToken`
+- Name async methods with the `Async` suffix
+- Use records for DTOs where appropriate
+- Keep controllers thin and delegate to application services
+- Return `Result<T>` for business outcomes instead of using exceptions as control flow
+- Use `ILogger<T>` for logging
+- Use `DateTime.UtcNow` or an injected time provider, never `DateTime.Now`
 
-### Naming
+### Validation and Mapping
 
-- Entities: singular (`Tool`, not `Tools`)
-- DbSets: plural (`public DbSet<Tool> Tools { get; set; }`)
-- Interfaces: `I` prefix (`IToolRepository`, `IReviewService`)
-- DTOs: suffixed (`ToolDto`, `CreateReviewRequest`, `ReviewResponse`)
-- Service implementations: no suffix (`ToolService` implements `IToolService`)
+- Use FluentValidation in the Application layer
+- Keep mapping between entities and DTOs in the Application layer
+- Never expose EF Core entities directly from API endpoints
 
 ### Project Organisation
 
-Each project follows this folder structure:
+Each project follows a consistent structure:
 
-**Domain:**
-```
-Entities/        # Tool.cs, Review.cs, etc.
-Enums/           # ReviewStatus.cs, UserRole.cs
-Interfaces/      # IRepository.cs (generic), IUnitOfWork.cs
-Common/          # BaseEntity.cs, AuditableEntity.cs
-```
+**Domain**
 
-**Application:**
-```
-Common/          # Result.cs, PagedList.cs, MappingProfiles
-DTOs/            # Organised by feature: Tools/, Reviews/, Users/
-Interfaces/      # IToolService.cs, IReviewService.cs, etc.
-Services/        # ToolService.cs, ReviewService.cs, etc.
-Validators/      # FluentValidation validators
+```text
+Common/
+Entities/
+Enums/
+Interfaces/
 ```
 
-**Infrastructure:**
-```
-Data/            # AppDbContext.cs, Migrations/
-Repositories/    # ToolRepository.cs, ReviewRepository.cs, etc.
-Configuration/   # EF entity type configurations (Fluent API)
-Identity/        # JWT service, token generation
+**Application**
+
+```text
+Common/
+DTOs/
+Interfaces/
+Services/
+Validators/
 ```
 
-**API:**
-```
-Controllers/     # ToolsController.cs, ReviewsController.cs, etc.
-Middleware/       # ExceptionHandling, etc.
-Extensions/      # ServiceCollectionExtensions for DI registration
+**Infrastructure**
+
+```text
+Authentication/
+Configuration/
+Data/
+Migrations/
+Repositories/
 ```
 
----
+**API**
+
+```text
+Controllers/
+Extensions/
+Middleware/
+Properties/
+```
 
 ## API Conventions
 
-- RESTful routes: `/api/tools`, `/api/tools/{id}`, `/api/tools/{toolId}/reviews`
-- Admin routes: `/api/admin/tools`, `/api/admin/moderation/pending`
-- All admin endpoints require `[Authorize(Roles = "Admin")]` or `"Admin,Moderator"`
+- Use RESTful routes such as `/api/tools` and `/api/tools/{id}`
+- Keep admin concerns behind role-based authorisation
 - Return `ActionResult<T>` from controllers
-- Use `CreatedAtAction` for POST responses (201)
-- Use `Problem()` for error responses with ProblemDetails
-- Pagination: `?page=1&pageSize=10` — return `PagedList<T>` with metadata
+- Use `CreatedAtAction` for successful POST responses
+- Use `ProblemDetails` for consistent error responses
+- Support pagination using query parameters and `PagedList<T>`
 
----
+## Database and EF Core
 
-## Database / EF Core
+- Use Fluent API configuration, not data annotations
+- Keep one `IEntityTypeConfiguration<T>` per entity
+- Store migrations in `src/ReviewPortal.Infrastructure/Migrations/`
+- Store generated SQL scripts in `scripts/sql/`
+- Update `docs/ERD.md` whenever the schema meaningfully changes
 
-- Use **Fluent API** for entity configuration, not data annotations
-- Each entity gets its own `IEntityTypeConfiguration<T>` class
-- Seed data: at least 3 categories with 4–5 tools each (defined in configurations)
-- Connection string: `appsettings.Development.json` (never commit production secrets)
-- Whenever a change affects the database schema or persisted EF Core seed data, also add a migration, generate a SQL script in `scripts/sql/`, run `dotnet ef database update`, and update schema docs such as `docs/ERD.md`
-- If EF Core reports no pending model changes, do not create an empty migration
-- Migration commands run from the API project:
-  ```bash
-  dotnet ef migrations add <Name> --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
-  dotnet ef database update --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
-  dotnet ef migrations script <FromMigration> <ToMigration> --idempotent --output scripts/sql/<ToMigration>.sql --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
-  ```
-
----
-
-## Authentication & Authorisation
-
-- ASP.NET Identity for user management
-- JWT bearer tokens for API authentication
-- Roles: `Customer`, `Admin`, `Moderator`
-- Token includes claims: `sub` (userId), `email`, `role`
-- Token expiry: 60 minutes with refresh token support
-- Password policy: minimum 8 chars, at least 1 uppercase, 1 number
-
----
-
-## Testing
-
-- **Unit tests:** Test Application services with mocked repositories
-- **Integration tests:** Use `WebApplicationFactory<Program>` with a test SQL Server database
-- Test naming: `MethodName_StateUnderTest_ExpectedBehaviour`
-- Use `FluentAssertions` for readable assertions
-- Use `Bogus` for test data generation
-
----
-
-## Common Commands
-
-> All commands below should be run from the `BackEnd/` directory.
+Migration workflow:
 
 ```bash
-# Build the solution
-dotnet build
-
-# Run tests
-dotnet test
-
-# Run the API
-dotnet run --project src/ReviewPortal.API
-
-# Add a migration
-dotnet ef migrations add <MigrationName> --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
-
-# Generate a SQL script for a migration
+dotnet ef migrations add <Name> --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
 dotnet ef migrations script <FromMigration> <ToMigration> --idempotent --output scripts/sql/<ToMigration>.sql --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
-
-# Update database
 dotnet ef database update --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
 ```
 
----
+If EF Core reports no pending model changes, do not create an empty migration.
+
+## Authentication and Authorisation
+
+- ASP.NET Identity is used for user management and password hashing
+- JWT bearer tokens secure authenticated endpoints
+- Supported roles are `Customer`, `Admin`, and `Moderator`
+- Tokens include user and role claims
+- Passwords require at least eight characters, one uppercase letter, and one number
+
+## Testing
+
+- Unit tests live in `tests/ReviewPortal.UnitTests/`
+- Integration tests live in `tests/ReviewPortal.IntegrationTests/`
+- Test names follow `MethodName_StateUnderTest_ExpectedBehaviour`
+- Use FluentAssertions for readable assertions
+- Use Bogus for generated test data where useful
+
+## Common Commands
+
+Run all commands from the repository root.
+
+```bash
+dotnet build ReviewPortal.slnx
+dotnet test ReviewPortal.slnx
+dotnet run --project src/ReviewPortal.API
+dotnet ef migrations add <MigrationName> --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
+dotnet ef migrations script <FromMigration> <ToMigration> --idempotent --output scripts/sql/<MigrationName>.sql --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
+dotnet ef database update --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
+```
 
 ## Review Ratings
 
-When implementing the review system, each review has 5 individual ratings (1–5 stars):
+Each review stores five rating dimensions:
 
-1. **EquipmentRating** — Equipment Performance
-2. **CustomerServiceRating** — Booking & Customer Service
-3. **TechnicalSupportRating** — Technical Support & Guidance
-4. **AfterSalesRating** — After-Sales & Breakdown Support
-5. **ValueForMoneyRating** — Value for Money
+1. `EquipmentRating`
+2. `CustomerServiceRating`
+3. `TechnicalSupportRating`
+4. `AfterSalesRating`
+5. `ValueForMoneyRating`
 
-The `OverallRating` is the arithmetic average of all five.
+`OverallRating` is the arithmetic average of the five category ratings.
 
----
+## What Not To Do
 
-## What NOT to Do
-
-- ❌ Do NOT put business logic in controllers
-- ❌ Do NOT reference EF Core in Domain or Application
-- ❌ Do NOT use `DateTime.Now` — use `DateTime.UtcNow` or inject `IDateTimeProvider`
-- ❌ Do NOT hard-delete records — use soft-delete (`IsActive = false`)
-- ❌ Do NOT return entity objects from API endpoints — always map to DTOs
-- ❌ Do NOT put connection strings or secrets in `appsettings.json` — use User Secrets or env vars
-- ❌ Do NOT skip CancellationToken on async methods
+- Do not put business logic in controllers
+- Do not reference EF Core from Domain or Application
+- Do not return entity objects from API endpoints
+- Do not hard-code secrets into `appsettings.json`
+- Do not skip `CancellationToken` on async methods
+- Do not create schema changes without the matching migration and SQL script workflow

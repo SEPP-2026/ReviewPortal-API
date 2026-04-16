@@ -1,12 +1,12 @@
-# AGENTS.md – AI Agent Instructions (Back End)
+# AGENTS.md - AI Agent Instructions
 
-> This file is read by AI coding agents (Codex, Devin, Copilot Workspace, etc.) to understand how to work in the **back-end** portion of this repository.
-> All paths below are relative to the `BackEnd/` directory.
+> This file is read by AI coding agents working in the repository root.
+> All paths below are relative to the repository root.
 
 ## Quick Start
 
 ```bash
-# Restore and build (run from BackEnd/)
+# Restore and build
 dotnet build ReviewPortal.slnx
 
 # Run the API (default: https://localhost:5001)
@@ -18,7 +18,7 @@ dotnet test ReviewPortal.slnx
 
 ## Architecture
 
-This project uses **Clean Architecture** with 4 layers. Read `CLAUDE.md` for the full guide.
+This project uses Clean Architecture with four layers. Read `CLAUDE.md` for the full guide.
 
 | Layer | Project | Dependencies |
 |-------|---------|-------------|
@@ -27,7 +27,7 @@ This project uses **Clean Architecture** with 4 layers. Read `CLAUDE.md` for the
 | Infrastructure | `ReviewPortal.Infrastructure` | Domain, Application |
 | Presentation | `ReviewPortal.API` | Application, Infrastructure |
 
-**The dependency rule is absolute:** inner layers must never reference outer layers.
+The dependency rule is absolute: inner layers must never reference outer layers.
 
 ## Key Files
 
@@ -49,25 +49,25 @@ This project uses **Clean Architecture** with 4 layers. Read `CLAUDE.md` for the
 
 ## Before Making Changes
 
-1. Read `CLAUDE.md` for coding conventions and architecture rules
-2. Check `docs/ERD.md` for the data model
-3. Ensure your changes follow Clean Architecture (no layer violations)
-4. If you change the EF Core model or persisted seed data, add a migration, generate a SQL script in `scripts/sql/`, and run `dotnet ef database update`
-5. Run `dotnet build` to verify compilation
-6. Run `dotnet test` to verify no regressions
+1. Read `CLAUDE.md` for coding conventions and architecture rules.
+2. Check `docs/ERD.md` for the data model.
+3. Ensure your changes follow Clean Architecture with no layer violations.
+4. If you change the EF Core model or persisted seed data, add a migration, generate a SQL script in `scripts/sql/`, and run `dotnet ef database update`.
+5. Run `dotnet build` to verify compilation.
+6. Run `dotnet test` to verify no regressions.
 
 ## Code Style
 
 - File-scoped namespaces
-- Async/await with CancellationToken
+- Async/await with `CancellationToken`
 - FluentValidation for input validation
-- Fluent API for EF Core configuration (not data annotations)
-- DTOs for all API request/response models (never expose entities)
+- Fluent API for EF Core configuration, not data annotations
+- DTOs for all API request and response models
 - Result pattern for service returns
 
 ## Database Changes
 
-If a task changes the database schema or persisted EF Core seed data, you must complete the full database workflow in the same change:
+If a task changes the database schema or persisted EF Core seed data, complete the full database workflow in the same change:
 
 1. Create a migration:
    `dotnet ef migrations add <MigrationName> --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API`
