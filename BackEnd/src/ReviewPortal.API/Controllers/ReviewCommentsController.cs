@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using ReviewPortal.API.Extensions;
 using ReviewPortal.Application.DTOs.Reviews;
@@ -29,9 +30,21 @@ public class ReviewCommentsController : ControllerBase
         [FromBody] CreateCommentRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await _reviewService.AddCommentAsync(reviewId, request, cancellationToken);
+        var result = await _reviewService.AddCommentAsync(
+            reviewId,
+            request,
+            GetAuthenticatedUserId(),
+            cancellationToken);
+
         return this.ToActionResult(
             result,
             comment => Created($"/api/reviews/{reviewId}/comments/{comment.Id}", comment));
+    }
+
+    private int? GetAuthenticatedUserId()
+    {
+        var claimValue = User?.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User?.FindFirstValue("sub");
+        return int.TryParse(claimValue, out var userId) ? userId : null;
     }
 }

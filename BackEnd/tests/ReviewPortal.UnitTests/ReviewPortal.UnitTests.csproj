@@ -7,6 +7,8 @@
 
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <ReviewPortalDomainBinaryPath Condition="'$(ReviewPortalDomainBinaryPath)' == ''">..\..\src\ReviewPortal.Domain\bin\$(Configuration)\net8.0\ReviewPortal.Domain.dll</ReviewPortalDomainBinaryPath>
+    <ReviewPortalApplicationBinaryPath Condition="'$(ReviewPortalApplicationBinaryPath)' == ''">..\..\src\ReviewPortal.Application\bin\$(Configuration)\net8.0\ReviewPortal.Application.dll</ReviewPortalApplicationBinaryPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,8 +30,10 @@
     <Compile Include="..\..\src\ReviewPortal.API\Controllers\AuthController.cs" Link="Controllers\AuthController.cs" />
     <Compile Include="..\..\src\ReviewPortal.API\Controllers\CategoriesController.cs" Link="Controllers\CategoriesController.cs" />
     <Compile Include="..\..\src\ReviewPortal.API\Controllers\ReviewCommentsController.cs" Link="Controllers\ReviewCommentsController.cs" />
+    <Compile Include="..\..\src\ReviewPortal.API\Controllers\ReviewResponsesController.cs" Link="Controllers\ReviewResponsesController.cs" />
     <Compile Include="..\..\src\ReviewPortal.API\Controllers\ToolReviewsController.cs" Link="Controllers\ToolReviewsController.cs" />
     <Compile Include="..\..\src\ReviewPortal.API\Controllers\ToolsController.cs" Link="Controllers\ToolsController.cs" />
+    <Compile Include="..\..\src\ReviewPortal.API\Controllers\UserReviewsController.cs" Link="Controllers\UserReviewsController.cs" />
     <Compile Include="..\..\src\ReviewPortal.API\Extensions\ControllerBaseExtensions.cs" Link="Extensions\ControllerBaseExtensions.cs" />
   </ItemGroup>
 
@@ -40,10 +44,10 @@
 
   <ItemGroup Condition="'$(UseBinaryProjectReferences)' == 'true'">
     <Reference Include="ReviewPortal.Domain">
-      <HintPath>..\..\src\ReviewPortal.Domain\bin\$(Configuration)\net8.0\ReviewPortal.Domain.dll</HintPath>
+      <HintPath>$(ReviewPortalDomainBinaryPath)</HintPath>
     </Reference>
     <Reference Include="ReviewPortal.Application">
-      <HintPath>..\..\src\ReviewPortal.Application\bin\$(Configuration)\net8.0\ReviewPortal.Application.dll</HintPath>
+      <HintPath>$(ReviewPortalApplicationBinaryPath)</HintPath>
     </Reference>
   </ItemGroup>
 

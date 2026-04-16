@@ -154,10 +154,13 @@ Extensions/      # ServiceCollectionExtensions for DI registration
 - Each entity gets its own `IEntityTypeConfiguration<T>` class
 - Seed data: at least 3 categories with 4–5 tools each (defined in configurations)
 - Connection string: `appsettings.Development.json` (never commit production secrets)
+- Whenever a change affects the database schema or persisted EF Core seed data, also add a migration, generate a SQL script in `scripts/sql/`, run `dotnet ef database update`, and update schema docs such as `docs/ERD.md`
+- If EF Core reports no pending model changes, do not create an empty migration
 - Migration commands run from the API project:
   ```bash
   dotnet ef migrations add <Name> --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
   dotnet ef database update --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
+  dotnet ef migrations script <FromMigration> <ToMigration> --idempotent --output scripts/sql/<ToMigration>.sql --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
   ```
 
 ---
@@ -199,6 +202,9 @@ dotnet run --project src/ReviewPortal.API
 
 # Add a migration
 dotnet ef migrations add <MigrationName> --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
+
+# Generate a SQL script for a migration
+dotnet ef migrations script <FromMigration> <ToMigration> --idempotent --output scripts/sql/<ToMigration>.sql --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
 
 # Update database
 dotnet ef database update --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API

@@ -5,6 +5,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>ReviewPortal-BackEnd-API-3f2d1fe4-fb06-4cff-b665-1ef7c6edc3ec</UserSecretsId>
+    <ReviewPortalApplicationBinaryPath Condition="'$(ReviewPortalApplicationBinaryPath)' == ''">..\ReviewPortal.Application\bin\$(Configuration)\net8.0\ReviewPortal.Application.dll</ReviewPortalApplicationBinaryPath>
+    <ReviewPortalInfrastructureBinaryPath Condition="'$(ReviewPortalInfrastructureBinaryPath)' == ''">..\ReviewPortal.Infrastructure\bin\$(Configuration)\net8.0\ReviewPortal.Infrastructure.dll</ReviewPortalInfrastructureBinaryPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,9 +18,18 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(UseBinaryProjectReferences)' != 'true'">
     <ProjectReference Include="..\ReviewPortal.Application\ReviewPortal.Application.csproj" />
     <ProjectReference Include="..\ReviewPortal.Infrastructure\ReviewPortal.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseBinaryProjectReferences)' == 'true'">
+    <Reference Include="ReviewPortal.Application">
+      <HintPath>$(ReviewPortalApplicationBinaryPath)</HintPath>
+    </Reference>
+    <Reference Include="ReviewPortal.Infrastructure">
+      <HintPath>$(ReviewPortalInfrastructureBinaryPath)</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

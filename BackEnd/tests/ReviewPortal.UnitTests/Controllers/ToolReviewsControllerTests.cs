@@ -66,6 +66,21 @@ public class ToolReviewsControllerTests
     }
 
     [Fact]
+    public async Task GetApproved_WhenToolDoesNotExist_ReturnsNotFoundProblem()
+    {
+        var reviewService = new FakeReviewService
+        {
+            GetApprovedReviewsResult = Result<ToolReviewsDto>.NotFound("Tool with ID 404 not found.")
+        };
+        var controller = new ToolReviewsController(reviewService);
+
+        var result = await controller.GetApproved(404, page: 1, pageSize: 10, cancellationToken: CancellationToken.None);
+
+        var problemResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status404NotFound, problemResult.StatusCode);
+    }
+
+    [Fact]
     public async Task Create_WhenReviewIsSubmitted_ReturnsCreatedResponse()
     {
         var review = CreateReviewDto();
@@ -110,6 +125,32 @@ public class ToolReviewsControllerTests
         await controller.Create(7, CreateRequest(), CancellationToken.None);
 
         Assert.Equal(42, reviewService.LastUserId);
+    }
+
+    [Fact]
+    public async Task Create_WhenSubClaimIsPresent_PassesUserIdToService()
+    {
+        var reviewService = new FakeReviewService
+        {
+            CreateReviewResult = Result<ReviewDto>.Success(CreateReviewDto())
+        };
+        var controller = new ToolReviewsController(reviewService)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(
+                    [
+                        new Claim("sub", "84")
+                    ], "TestAuth"))
+                }
+            }
+        };
+
+        await controller.Create(7, CreateRequest(), CancellationToken.None);
+
+        Assert.Equal(84, reviewService.LastUserId);
     }
 
     [Fact]
@@ -197,7 +238,7 @@ public class ToolReviewsControllerTests
             return Task.FromResult(GetApprovedReviewsResult);
         }
 
-        public Task<Result<ReviewCommentDto>> AddCommentAsync(int reviewId, CreateCommentRequest request, CancellationToken cancellationToken = default)
+        public Task<Result<ReviewCommentDto>> AddCommentAsync(int reviewId, CreateCommentRequest request, int? userId = null, CancellationToken cancellationToken = default)
         {
             throw new NotSupportedException();
         }
@@ -208,6 +249,16 @@ public class ToolReviewsControllerTests
         }
 
         public Task<Result<CompanyResponseDto>> AddCompanyResponseAsync(int reviewId, CreateCompanyResponseRequest request, int staffUserId, CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task<Result<CompanyResponseDto>> UpdateCompanyResponseAsync(int reviewId, CreateCompanyResponseRequest request, int staffUserId, CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task<Result<bool>> DeleteCompanyResponseAsync(int reviewId, int staffUserId, CancellationToken cancellationToken = default)
         {
             throw new NotSupportedException();
         }

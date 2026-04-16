@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using ReviewPortal.API.Controllers;
 using ReviewPortal.Application.Common;
 using ReviewPortal.Application.DTOs.Reviews;
@@ -14,7 +15,7 @@ public class ReviewCommentsControllerTests
     {
         var comments = new[]
         {
-            new ReviewCommentDto(11, "Sam", "Helpful review and we saw the same thing.", new DateTime(2026, 4, 13, 10, 0, 0, DateTimeKind.Utc))
+            new ReviewCommentDto(11, "Sam", "Helpful review and we saw the same thing.", "Approved", new DateTime(2026, 4, 13, 10, 0, 0, DateTimeKind.Utc))
         };
         var reviewService = new FakeReviewService
         {
@@ -47,7 +48,7 @@ public class ReviewCommentsControllerTests
     [Fact]
     public async Task Create_WhenCommentIsSubmitted_ReturnsCreatedResponse()
     {
-        var comment = new ReviewCommentDto(15, "Sam", "Helpful review and we saw the same thing.", new DateTime(2026, 4, 13, 10, 0, 0, DateTimeKind.Utc));
+        var comment = new ReviewCommentDto(15, "Sam", "Helpful review and we saw the same thing.", "Pending", new DateTime(2026, 4, 13, 10, 0, 0, DateTimeKind.Utc));
         var reviewService = new FakeReviewService
         {
             AddCommentResult = Result<ReviewCommentDto>.Success(comment)
@@ -62,6 +63,52 @@ public class ReviewCommentsControllerTests
         Assert.Same(comment, createdResult.Value);
         Assert.Equal(7, reviewService.LastCommentReviewId);
         Assert.Equal(request, reviewService.LastCommentRequest);
+    }
+
+    [Fact]
+    public async Task Create_WhenAuthenticatedUserIsPresent_PassesUserIdToService()
+    {
+        var reviewService = new FakeReviewService();
+        var controller = new ReviewCommentsController(reviewService)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(
+                    [
+                        new Claim(ClaimTypes.NameIdentifier, "42")
+                    ], "TestAuth"))
+                }
+            }
+        };
+
+        await controller.Create(7, new CreateCommentRequest(string.Empty, "Helpful review and we saw the same thing."), CancellationToken.None);
+
+        Assert.Equal(42, reviewService.LastCommentUserId);
+    }
+
+    [Fact]
+    public async Task Create_WhenSubClaimIsPresent_PassesUserIdToService()
+    {
+        var reviewService = new FakeReviewService();
+        var controller = new ReviewCommentsController(reviewService)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(
+                    [
+                        new Claim("sub", "84")
+                    ], "TestAuth"))
+                }
+            }
+        };
+
+        await controller.Create(7, new CreateCommentRequest(string.Empty, "Helpful review and we saw the same thing."), CancellationToken.None);
+
+        Assert.Equal(84, reviewService.LastCommentUserId);
     }
 
     [Fact]
@@ -85,10 +132,12 @@ public class ReviewCommentsControllerTests
 
         public CreateCommentRequest? LastCommentRequest { get; private set; }
 
+        public int? LastCommentUserId { get; private set; }
+
         public int? LastGetCommentsReviewId { get; private set; }
 
         public Result<ReviewCommentDto> AddCommentResult { get; set; } =
-            Result<ReviewCommentDto>.Success(new ReviewCommentDto(1, "Default", "Default approved comment text.", DateTime.UtcNow));
+            Result<ReviewCommentDto>.Success(new ReviewCommentDto(1, "Default", "Default approved comment text.", "Pending", DateTime.UtcNow));
 
         public Result<IReadOnlyList<ReviewCommentDto>> ApprovedCommentsResult { get; set; } =
             Result<IReadOnlyList<ReviewCommentDto>>.Success([]);
@@ -103,10 +152,11 @@ public class ReviewCommentsControllerTests
             throw new NotSupportedException();
         }
 
-        public Task<Result<ReviewCommentDto>> AddCommentAsync(int reviewId, CreateCommentRequest request, CancellationToken cancellationToken = default)
+        public Task<Result<ReviewCommentDto>> AddCommentAsync(int reviewId, CreateCommentRequest request, int? userId = null, CancellationToken cancellationToken = default)
         {
             LastCommentReviewId = reviewId;
             LastCommentRequest = request;
+            LastCommentUserId = userId;
             return Task.FromResult(AddCommentResult);
         }
 
@@ -117,6 +167,16 @@ public class ReviewCommentsControllerTests
         }
 
         public Task<Result<CompanyResponseDto>> AddCompanyResponseAsync(int reviewId, CreateCompanyResponseRequest request, int staffUserId, CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task<Result<CompanyResponseDto>> UpdateCompanyResponseAsync(int reviewId, CreateCompanyResponseRequest request, int staffUserId, CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task<Result<bool>> DeleteCompanyResponseAsync(int reviewId, int staffUserId, CancellationToken cancellationToken = default)
         {
             throw new NotSupportedException();
         }
