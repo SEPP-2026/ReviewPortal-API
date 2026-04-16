@@ -1,14 +1,28 @@
-name: CI
+name: CI-CD
 
 on:
-  push:
-    branches: ["**"]
   pull_request:
-    branches: ["**"]
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: "8.0.x"
+  SOLUTION_PATH: "ReviewPortal.slnx"
+  UNIT_TEST_PROJECT: "tests/ReviewPortal.UnitTests/ReviewPortal.UnitTests.csproj"
+  API_PROJECT: "src/ReviewPortal.API/ReviewPortal.API.csproj"
+  PUBLISH_PATH: "${{ github.workspace }}/published-api"
+  AZURE_WEBAPP_NAME: "reviewportal-api"
+  AZURE_WEBAPP_URL: "https://reviewportal-api-escdb3f2epg8eeha.southeastasia-01.azurewebsites.net"
 
 jobs:
-  build-test:
-    name: Build and Test
+  unit-tests:
+    name: Unit Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -18,13 +32,68 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "8.0.x"
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Restore
-        run: dotnet restore ReviewPortal.slnx
+      - name: Restore solution
+        run: dotnet restore ${{ env.SOLUTION_PATH }}
 
-      - name: Build
-        run: dotnet build ReviewPortal.slnx --configuration Release --no-restore
+      - name: Build solution
+        run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
 
-      - name: Test
-        run: dotnet test ReviewPortal.slnx --configuration Release --no-build --collect:"XPlat Code Coverage"
+      - name: Run unit tests
+        run: dotnet test ${{ env.UNIT_TEST_PROJECT }} --configuration Release --no-build --logger "trx"
+
+  publish-api:
+    name: Publish API
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: unit-tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore API project
+        run: dotnet restore ${{ env.API_PROJECT }}
+
+      - name: Publish API package
+        run: dotnet publish ${{ env.API_PROJECT }} --configuration Release --output ${{ env.PUBLISH_PATH }} /p:UseAppHost=false
+
+      - name: Upload deployment artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: reviewportal-api-package
+          path: ${{ env.PUBLISH_PATH }}
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy-production:
+    name: Deploy To Azure App Service
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: publish-api
+    runs-on: ubuntu-latest
+    concurrency:
+      group: reviewportal-api-production
+      cancel-in-progress: false
+    environment:
+      name: production
+      url: ${{ env.AZURE_WEBAPP_URL }}
+
+    steps:
+      - name: Download deployment artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: reviewportal-api-package
+          path: ${{ env.PUBLISH_PATH }}
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ${{ env.PUBLISH_PATH }}
