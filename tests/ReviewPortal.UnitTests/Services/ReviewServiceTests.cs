@@ -1068,6 +1068,328 @@ public class ReviewServiceTests
         Assert.Equal("Review with ID 1 not found.", result.Error);
     }
 
+    [Fact]
+    public async Task GetPendingReviewsAsync_WhenQueueIsEmpty_ReturnsEmptyPagedList()
+    {
+        var service = CreateService();
+
+        var result = await service.GetPendingReviewsAsync(page: 1, pageSize: 10);
+
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.Value!.Items);
+        Assert.Equal(0, result.Value.TotalCount);
+        Assert.Equal(1, result.Value.Page);
+        Assert.Equal(10, result.Value.PageSize);
+    }
+
+    [Fact]
+    public async Task GetPendingReviewsAsync_WhenPendingReviewsExist_ReturnsOldestFirstWithPendingComments()
+    {
+        var category = new Category { Id = 1, Name = "Breaking & Drilling" };
+        var tool = CreateTool(12, category, isActive: true);
+        var newerPendingReview = CreateReview(
+            2,
+            tool,
+            "Newer Reviewer",
+            ReviewStatus.Pending,
+            new DateTime(2026, 4, 12, 8, 0, 0, DateTimeKind.Utc),
+            4,
+            4,
+            4,
+            4,
+            4);
+        var olderPendingReview = CreateReview(
+            1,
+            tool,
+            "Older Reviewer",
+            ReviewStatus.Pending,
+            new DateTime(2026, 4, 10, 8, 0, 0, DateTimeKind.Utc),
+            5,
+            4,
+            4,
+            5,
+            4);
+        olderPendingReview.Comments =
+        [
+            new ReviewComment
+            {
+                Id = 3,
+                ReviewId = olderPendingReview.Id,
+                CommenterName = "Already approved",
+                CommentText = "This approved comment should not appear in the moderation queue.",
+                Status = ReviewStatus.Approved,
+                CreatedDate = new DateTime(2026, 4, 11, 8, 0, 0, DateTimeKind.Utc)
+            },
+            new ReviewComment
+            {
+                Id = 4,
+                ReviewId = olderPendingReview.Id,
+                CommenterName = "Pending commenter",
+                CommentText = "This pending comment should appear for moderators.",
+                Status = ReviewStatus.Pending,
+                CreatedDate = new DateTime(2026, 4, 11, 9, 0, 0, DateTimeKind.Utc)
+            }
+        ];
+        var approvedReview = CreateReview(
+            3,
+            tool,
+            "Approved Reviewer",
+            ReviewStatus.Approved,
+            new DateTime(2026, 4, 9, 8, 0, 0, DateTimeKind.Utc),
+            5,
+            5,
+            5,
+            5,
+            5);
+        var service = CreateService(reviews: [newerPendingReview, olderPendingReview, approvedReview], tools: [tool]);
+
+        var result = await service.GetPendingReviewsAsync(page: 1, pageSize: 10);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Value!.TotalCount);
+        Assert.Equal(["Older Reviewer", "Newer Reviewer"], result.Value.Items.Select(review => review.ReviewerName).ToArray());
+        Assert.All(result.Value.Items, review => Assert.Equal("Pending", review.Status));
+        var pendingComment = Assert.Single(result.Value.Items.First().Comments);
+        Assert.Equal("Pending commenter", pendingComment.CommenterName);
+    }
+
+    [Fact]
+    public async Task GetPendingReviewsAsync_WhenPageIsRequested_ReturnsRequestedSlice()
+    {
+        var category = new Category { Id = 1, Name = "Cleaning & Maintenance" };
+        var tool = CreateTool(14, category, isActive: true);
+        var reviews = Enumerable.Range(1, 12)
+            .Select(index => CreateReview(
+                index,
+                tool,
+                $"Pending Reviewer {index}",
+                ReviewStatus.Pending,
+                new DateTime(2026, 4, 1, 8, 0, 0, DateTimeKind.Utc).AddDays(index),
+                4,
+                4,
+                4,
+                4,
+                4))
+            .ToArray();
+        var service = CreateService(reviews: reviews, tools: [tool]);
+
+        var result = await service.GetPendingReviewsAsync(page: 2, pageSize: 5);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(12, result.Value!.TotalCount);
+        Assert.Equal(3, result.Value.TotalPages);
+        Assert.Equal(["Pending Reviewer 6", "Pending Reviewer 7", "Pending Reviewer 8", "Pending Reviewer 9", "Pending Reviewer 10"], result.Value.Items.Select(review => review.ReviewerName).ToArray());
+    }
+
+    [Fact]
+    public async Task ModerateReviewAsync_WhenReviewDoesNotExist_ReturnsNotFound()
+    {
+        var service = CreateService();
+
+        var result = await service.ModerateReviewAsync(404, new ModerateReviewRequest(true, null));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.FailureType);
+        Assert.Equal("Review with ID 404 not found.", result.Error);
+    }
+
+    [Fact]
+    public async Task ModerateReviewAsync_WhenApprovingPendingReview_UpdatesStatusAndToolRating()
+    {
+        var category = new Category { Id = 1, Name = "Garden & Landscaping" };
+        var tool = CreateTool(16, category, isActive: true);
+        tool.ReviewCount = 1;
+        tool.OverallRating = 3.0m;
+        var pendingReview = CreateReview(
+            1,
+            tool,
+            "Pending Reviewer",
+            ReviewStatus.Pending,
+            new DateTime(2026, 4, 10, 8, 0, 0, DateTimeKind.Utc),
+            5,
+            4,
+            4,
+            5,
+            4);
+        pendingReview.RejectionReason = "Old reason";
+        var approvedReview = CreateReview(
+            2,
+            tool,
+            "Approved Reviewer",
+            ReviewStatus.Approved,
+            new DateTime(2026, 4, 9, 8, 0, 0, DateTimeKind.Utc),
+            3,
+            3,
+            3,
+            3,
+            3);
+        var unitOfWork = new FakeUnitOfWork();
+        var service = CreateService(reviews: [pendingReview, approvedReview], tools: [tool], unitOfWork: unitOfWork);
+
+        var result = await service.ModerateReviewAsync(pendingReview.Id, new ModerateReviewRequest(true, null));
+
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Value);
+        Assert.Equal(ReviewStatus.Approved, pendingReview.Status);
+        Assert.Null(pendingReview.RejectionReason);
+        Assert.Equal(2, tool.ReviewCount);
+        Assert.Equal(3.70m, tool.OverallRating);
+        Assert.Equal(1, unitOfWork.SaveChangesCallCount);
+    }
+
+    [Fact]
+    public async Task ModerateReviewAsync_WhenRejectingPendingReview_StoresTrimmedReason()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var tool = CreateTool(17, category, isActive: true);
+        var review = CreateReview(
+            1,
+            tool,
+            "Pending Reviewer",
+            ReviewStatus.Pending,
+            new DateTime(2026, 4, 10, 8, 0, 0, DateTimeKind.Utc),
+            4,
+            4,
+            4,
+            4,
+            4);
+        var unitOfWork = new FakeUnitOfWork();
+        var service = CreateService(reviews: [review], tools: [tool], unitOfWork: unitOfWork);
+
+        var result = await service.ModerateReviewAsync(review.Id, new ModerateReviewRequest(false, "  Contains personal details.  "));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(ReviewStatus.Rejected, review.Status);
+        Assert.Equal("Contains personal details.", review.RejectionReason);
+        Assert.Equal(0, tool.ReviewCount);
+        Assert.Null(tool.OverallRating);
+        Assert.Equal(1, unitOfWork.SaveChangesCallCount);
+    }
+
+    [Fact]
+    public async Task ModerateReviewAsync_WhenRejectingApprovedReview_RecalculatesToolRating()
+    {
+        var category = new Category { Id = 1, Name = "Building & Construction" };
+        var tool = CreateTool(18, category, isActive: true);
+        tool.ReviewCount = 2;
+        tool.OverallRating = 4.00m;
+        var highReview = CreateReview(
+            1,
+            tool,
+            "High Reviewer",
+            ReviewStatus.Approved,
+            new DateTime(2026, 4, 10, 8, 0, 0, DateTimeKind.Utc),
+            5,
+            5,
+            5,
+            5,
+            5);
+        var lowerReview = CreateReview(
+            2,
+            tool,
+            "Lower Reviewer",
+            ReviewStatus.Approved,
+            new DateTime(2026, 4, 9, 8, 0, 0, DateTimeKind.Utc),
+            3,
+            3,
+            3,
+            3,
+            3);
+        var service = CreateService(reviews: [highReview, lowerReview], tools: [tool]);
+
+        var result = await service.ModerateReviewAsync(highReview.Id, new ModerateReviewRequest(false, "No longer meets publication rules."));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(ReviewStatus.Rejected, highReview.Status);
+        Assert.Equal(1, tool.ReviewCount);
+        Assert.Equal(3.00m, tool.OverallRating);
+    }
+
+    [Fact]
+    public async Task ModerateReviewAsync_WhenRejectingWithoutReason_ReturnsValidationFailure()
+    {
+        var category = new Category { Id = 1, Name = "Building & Construction" };
+        var tool = CreateTool(19, category, isActive: true);
+        var review = CreateReview(
+            1,
+            tool,
+            "Pending Reviewer",
+            ReviewStatus.Pending,
+            new DateTime(2026, 4, 10, 8, 0, 0, DateTimeKind.Utc),
+            4,
+            4,
+            4,
+            4,
+            4);
+        var unitOfWork = new FakeUnitOfWork();
+        var service = CreateService(reviews: [review], tools: [tool], unitOfWork: unitOfWork);
+
+        var result = await service.ModerateReviewAsync(review.Id, new ModerateReviewRequest(false, "  "));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Rejection reason is required when rejecting.", result.Error);
+        Assert.Equal(ReviewStatus.Pending, review.Status);
+        Assert.Equal(0, unitOfWork.SaveChangesCallCount);
+    }
+
+    [Fact]
+    public async Task ModerateCommentAsync_WhenCommentDoesNotExist_ReturnsNotFound()
+    {
+        var service = CreateService();
+
+        var result = await service.ModerateCommentAsync(404, new ModerateReviewRequest(true, null));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.FailureType);
+        Assert.Equal("Comment with ID 404 not found.", result.Error);
+    }
+
+    [Fact]
+    public async Task ModerateCommentAsync_WhenApprovingComment_UpdatesStatusAndClearsReason()
+    {
+        var comment = new ReviewComment
+        {
+            Id = 7,
+            ReviewId = 1,
+            CommenterName = "Sam",
+            CommentText = "Helpful review and we had the same experience.",
+            Status = ReviewStatus.Pending,
+            RejectionReason = "Old reason"
+        };
+        var unitOfWork = new FakeUnitOfWork();
+        var service = CreateService(commentRepository: new InMemoryRepository<ReviewComment>([comment]), unitOfWork: unitOfWork);
+
+        var result = await service.ModerateCommentAsync(comment.Id, new ModerateReviewRequest(true, null));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(ReviewStatus.Approved, comment.Status);
+        Assert.Null(comment.RejectionReason);
+        Assert.Equal(1, unitOfWork.SaveChangesCallCount);
+    }
+
+    [Fact]
+    public async Task ModerateCommentAsync_WhenRejectingComment_StoresTrimmedReason()
+    {
+        var comment = new ReviewComment
+        {
+            Id = 7,
+            ReviewId = 1,
+            CommenterName = "Sam",
+            CommentText = "Helpful review and we had the same experience.",
+            Status = ReviewStatus.Pending
+        };
+        var unitOfWork = new FakeUnitOfWork();
+        var service = CreateService(commentRepository: new InMemoryRepository<ReviewComment>([comment]), unitOfWork: unitOfWork);
+
+        var result = await service.ModerateCommentAsync(comment.Id, new ModerateReviewRequest(false, "  Off-topic comment.  "));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(ReviewStatus.Rejected, comment.Status);
+        Assert.Equal("Off-topic comment.", comment.RejectionReason);
+        Assert.Equal(1, unitOfWork.SaveChangesCallCount);
+    }
+
     private static ReviewService CreateService(
         InMemoryReviewRepository? reviewRepository = null,
         InMemoryRepository<CompanyResponse>? companyResponseRepository = null,

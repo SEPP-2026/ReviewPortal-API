@@ -12,6 +12,8 @@ These scripts mirror the checked-in EF Core migrations and can be applied manual
   Adds the password-reset columns introduced by migration `20260412090000_AddUserPasswordResetFields`.
 - `SeedRemainingEpic1CatalogueData.sql`
   Applies the missing Painting & Decorating, Plumbing & Drainage, and Services catalogue data from migration `20260422213000_SeedRemainingEpic1CatalogueData`.
+- `AddReviewCommentRejectionReason.sql`
+  Adds the comment moderation rejection reason column introduced by migration `20260422221054_AddReviewCommentRejectionReason`.
 
 ## Recommended commands
 

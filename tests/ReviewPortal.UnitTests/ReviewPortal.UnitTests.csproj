@@ -28,6 +28,7 @@
 
   <ItemGroup>
     <Compile Include="..\..\src\ReviewPortal.API\Controllers\AuthController.cs" Link="Controllers\AuthController.cs" />
+    <Compile Include="..\..\src\ReviewPortal.API\Controllers\Admin\AdminModerationController.cs" Link="Controllers\Admin\AdminModerationController.cs" />
     <Compile Include="..\..\src\ReviewPortal.API\Controllers\CategoriesController.cs" Link="Controllers\CategoriesController.cs" />
     <Compile Include="..\..\src\ReviewPortal.API\Controllers\ReviewCommentsController.cs" Link="Controllers\ReviewCommentsController.cs" />
     <Compile Include="..\..\src\ReviewPortal.API\Controllers\ReviewResponsesController.cs" Link="Controllers\ReviewResponsesController.cs" />
