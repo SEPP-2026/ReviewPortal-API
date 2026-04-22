@@ -1,21 +1,21 @@
 # Epic 2 – Reviews, Ratings & Community Interaction
 
-**As a customer who has hired a tool from Shelton, I want to share my honest experience and read what other people think, so that future customers and the company can benefit from real feedback.**
+**As a customer who has hired a tool/service from Shelton, I want to share my honest experience and read what other people think, so that future customers and the company can benefit from real feedback.**
 
-This epic covers the entire review lifecycle — writing a review, rating different aspects of the service, reading other customers' reviews, commenting on them, and giving the company the ability to respond. It also includes the rating system that feeds into overall tool rankings.
+This epic covers the entire review lifecycle — writing a review, rating different aspects of the service, reading other customers' reviews, commenting on them, and giving the company the ability to respond. It also includes the rating system that feeds into overall tool/service rankings.
 
 ---
 
 ## User Stories
 
-### US-2.1 – Submit a review for a tool
+### US-2.1 – Submit a review for a tool/service
 
-**As a** customer who has recently hired a tool,
+**As a** customer who has recently hired a tool/service,
 **I want to** write a review and rate my experience,
 **so that** I can help other customers decide and give Shelton useful feedback.
 
 **Acceptance Criteria:**
-- A "Write a Review" button is visible on every tool detail page
+- A "Write a Review" button is visible on every tool/service detail page
 - The user must provide their name and email (or be logged in) to submit
 - The review form includes:
   - A text field for the written review (minimum 20 characters, maximum 2000)
@@ -34,7 +34,7 @@ This epic covers the entire review lifecycle — writing a review, rating differ
 |---|------|-------|
 | 1 | Create `ReviewService.SubmitReview()` method with validation (min 20 chars, all 5 ratings required) | Backend |
 | 2 | Set review status to "Pending" on creation; save to database | Backend |
-| 3 | Add "Write a Review" button to the tool detail page (visible to all users) | Frontend |
+| 3 | Add "Write a Review" button to the tool/service detail page (visible to all users) | Frontend |
 | 4 | Build the review submission form with text field and five star-rating input components | Frontend |
 | 5 | Implement client-side form validation (character count, all ratings required) | Frontend |
 | 6 | Handle authentication check — prompt login or collect name/email for anonymous submissions | Frontend |
@@ -44,14 +44,14 @@ This epic covers the entire review lifecycle — writing a review, rating differ
 
 ---
 
-### US-2.2 – Display approved reviews on the tool page
+### US-2.2 – Display approved reviews on the tool/service page
 
-**As a** customer browsing tools,
+**As a** customer browsing tools/services,
 **I want to** read reviews left by other customers,
-**so that** I can see whether the tool is reliable and whether the service was good.
+**so that** I can see whether the tool/service is reliable and whether the service was good.
 
 **Acceptance Criteria:**
-- Approved reviews appear on the tool detail page, sorted by most recent first
+- Approved reviews appear on the tool/service detail page, sorted by most recent first
 - Each review shows: reviewer name, date, the written text, and the individual star ratings
 - An overall average rating is calculated and shown at the top of the reviews section
 - If there are no reviews yet, a friendly message is shown: "No reviews yet – be the first to share your experience"
@@ -67,7 +67,7 @@ This epic covers the entire review lifecycle — writing a review, rating differ
 |---|------|-------|
 | 1 | Create `ReviewService` method to return approved reviews for a tool, sorted by most recent first | Backend |
 | 2 | Implement average rating calculation logic across all approved reviews | Backend |
-| 3 | Build the reviews section on the tool detail page | Frontend |
+| 3 | Build the reviews section on the tool/service detail page | Frontend |
 | 4 | Create a reusable `ReviewCard` component (reviewer name, date, text, individual star ratings) | Frontend |
 | 5 | Display calculated overall average rating at the top of the reviews section | Frontend |
 | 6 | Show a "No reviews yet" message for tools without approved reviews | Frontend |
@@ -76,14 +76,14 @@ This epic covers the entire review lifecycle — writing a review, rating differ
 
 ---
 
-### US-2.3 – Overall tool ranking based on ratings
+### US-2.3 – Overall tool/service ranking based on ratings
 
-**As a** customer comparing tools,
-**I want to** see an overall star rating for each tool,
+**As a** customer comparing tools/services,
+**I want to** see an overall star rating for each tool/service,
 **so that** I can quickly tell which ones are well regarded.
 
 **Acceptance Criteria:**
-- Each tool has a calculated overall rating (average of all review category averages)
+- Each tool/service has a calculated overall rating (average of all review category averages)
 - The overall rating is displayed on catalogue listing pages (category pages, search results) as well as the detail page
 - Tools can be sorted by rating on the category page
 - The number of reviews is shown alongside the rating (e.g. "4.3 ★ (17 reviews)")
@@ -232,8 +232,8 @@ This epic covers the entire review lifecycle — writing a review, rating differ
 
 **Acceptance Criteria:**
 - "My Reviews" page is accessible from the user menu when logged in
-- Each review shows: tool name, date submitted, current status (Pending / Approved / Rejected), and a snippet of the review text
-- Clicking a review takes the user to the tool page where it is displayed
+- Each review shows: tool/service name, date submitted, current status (Pending / Approved / Rejected), and a snippet of the review text
+- Clicking a review takes the user to the tool/service page where it is displayed
 - If a review was rejected, a brief reason is shown (set by the moderator)
 
 **Story Points:** 3

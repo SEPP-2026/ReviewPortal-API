@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Shelton Tool-Hire requires a web-based review portal that allows customers to browse the hire catalogue, check rental prices, calculate costs for specific hire periods, and leave honest reviews about the tools and the service they received. On the business side, staff need the ability to manage equipment listings, adjust pricing, upload images, and moderate reviews before they are published.
+Shelton Tool-Hire requires a web-based review portal that allows customers to browse the hire catalogue, check rental prices, calculate costs for specific hire periods, and leave honest reviews about the tools/services and the service they received. On the business side, staff need the ability to manage equipment/service listings, adjust pricing, upload images, and moderate reviews before they are published.
 
 As a team, we discussed what the company actually needs compared to what would simply be nice to have. We reviewed competitor sites such as HSS Hire, Speedy Hire, Jewson Tool Hire, and Brandon Hire Station to understand how the hire industry typically handles categories and pricing. Most competitors organise their catalogues by trade or job type, so we have followed a similar approach.
 
@@ -12,7 +12,7 @@ As a team, we discussed what the company actually needs compared to what would s
 
 We defined three personas to keep user needs at the centre of development:
 
-**Dave the DIY Customer** — A 35-year-old homeowner who browses at weekends looking for the right tool for a home project. He wants clear pricing, honest reviews, and a straightforward way to work out what it will cost. He gets frustrated by hidden charges and tools that arrive in poor condition.
+**Dave the DIY Customer** — A 35-year-old homeowner who browses at weekends looking for the right tool/service for a home project. He wants clear pricing, honest reviews, and a straightforward way to work out what it will cost. He gets frustrated by hidden charges and tools that arrive in poor condition.
 
 **Sarah the Site Manager** — A 42-year-old who manages a small construction firm. She uses the portal daily to compare hire rates and check equipment reliability. She needs fast search, accurate pricing across different hire periods, and values detailed reviews about technical support quality.
 
@@ -26,7 +26,7 @@ We have settled on three core epics. Each one represents a meaningful portion of
 
 | # | Epic | Who Benefits | Summary |
 |---|------|-------------|---------|
-| 1 | Tool Catalogue & Rental Calculator | Customers | Browse, search, and calculate the cost of tool hire |
+| 1 | Tool/Service Catalogue & Rental Calculator | Customers | Browse, search, and calculate the cost of tool/service hire |
 | 2 | Reviews, Ratings & Community Interaction | Customers & the business | Leave reviews, comment, respond, and rate the service |
 | 3 | Back-Office Management & Moderation | Shelton staff | Manage listings, pricing, images, and moderate content |
 
@@ -43,7 +43,7 @@ We have settled on three core epics. Each one represents a meaningful portion of
 
 ---
 
-## Tool Categories
+## Tool/Service Categories
 
 After reviewing competitor offerings and considering what Shelton's customers would realistically search for, we agreed on the following categories:
 
@@ -55,6 +55,7 @@ After reviewing competitor offerings and considering what Shelton's customers wo
 - **Plumbing & Drainage** – pipe freezing kits, drain rods, pipe cutters
 - **Access & Lifting** – cherry pickers, platform ladders, hoists
 - **Breaking & Drilling** – breakers, core drills, SDS drills, diamond blades
+- **Services** – equipment delivery, trained operator hire, PAT testing, site surveys
 
 ---
 
@@ -62,7 +63,7 @@ After reviewing competitor offerings and considering what Shelton's customers wo
 
 When a customer writes a review, they rate their experience across these five areas (each out of 5 stars):
 
-1. **Equipment Performance** – Did the tool do the job? Was it in good condition?
+1. **Equipment Performance** – Did the tool/service do the job? Was it in good condition?
 2. **Booking & Customer Service** – How easy was it to book? Were the staff helpful?
 3. **Technical Support & Guidance** – Did they explain how to use it properly? Was the advice useful?
 4. **After-Sales & Breakdown Support** – What happened when something went wrong? Was out-of-hours help available?

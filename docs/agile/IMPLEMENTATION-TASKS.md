@@ -89,12 +89,12 @@ No actual `Reviews` rows exist in the database. Sprint 1 tool detail pages rely 
 
 **Sub-tasks:**
 
-- [ ] **9.1** Create a new EF Core migration to seed 6–8 reviews with `Status = Approved` across 3–4 different tools
-- [ ] **9.2** Include varied ratings per review (not all 5 stars) to demonstrate realistic aggregation
-- [ ] **9.3** Ensure the seeded `Tool.OverallRating` and `Tool.ReviewCount` values match the actual reviews seeded
-- [ ] **9.4** Include 1–2 reviews with `Status = Pending` to populate the moderation queue for demos
-- [ ] **9.5** Generate SQL script, apply migration locally
-- [ ] **9.6** Run `dotnet build` and `dotnet test` — confirm no regressions
+- [x] **9.1** Create a new EF Core migration to seed 6–8 reviews with `Status = Approved` across 3–4 different tools
+- [x] **9.2** Include varied ratings per review (not all 5 stars) to demonstrate realistic aggregation
+- [x] **9.3** Ensure the seeded `Tool.OverallRating` and `Tool.ReviewCount` values match the actual reviews seeded
+- [x] **9.4** Include 1–2 reviews with `Status = Pending` to populate the moderation queue for demos
+- [x] **9.5** Generate SQL script, apply migration locally
+- [x] **9.6** Run `dotnet build` and `dotnet test` — confirm no regressions
 
 ---
 
@@ -387,7 +387,7 @@ TASK-16 (Admin category routing)     — independent
 | TASK-6: Moderation service methods | Done | 2026-04-22 |
 | TASK-7: Docs – tool/service wording | ⬜ Not started | |
 | TASK-8: Docs – moderation wording | ⬜ Not started | |
-| TASK-9: Seed review data | ⬜ Not started | |
+| TASK-9: Seed review data | Done | 2026-04-22 |
 | TASK-10: Docs – vague ACs | ⬜ Not started | |
 | TASK-11: Docs – traceability | ⬜ Not started | |
 | TASK-12: Docs – definitions | ⬜ Not started | |
