@@ -1,8 +1,8 @@
-# Epic 1 – Tool Catalogue & Rental Calculator
+# Epic 1 – Tool/Service Catalogue & Rental Calculator
 
-**As a customer, I want to browse Shelton's full range of hire equipment, find what I need quickly, and work out exactly how much it will cost before I commit to booking.**
+**As a customer, I want to browse Shelton's full range of hire equipment and services, find what I need quickly, and work out exactly how much it will cost before I commit to booking.**
 
-This epic covers everything a customer interacts with when they land on the site and start looking for tools. It includes the homepage, category pages, individual tool detail pages, search functionality, and the rental cost calculator.
+This epic covers everything a customer interacts with when they land on the site and start looking for tools/services. It includes the homepage, category pages, individual tool/service detail pages, search functionality, and the rental cost calculator.
 
 ---
 
@@ -11,11 +11,11 @@ This epic covers everything a customer interacts with when they land on the site
 ### US-1.1 – Homepage with featured categories
 
 **As a** first-time visitor to the site,
-**I want to** see the main tool categories laid out clearly on the homepage,
+**I want to** see the main tool/service categories laid out clearly on the homepage,
 **so that** I can quickly find the type of equipment I am looking for without having to search around.
 
 **Acceptance Criteria:**
-- Homepage displays all tool categories with a relevant image and name for each
+- Homepage displays all tool/service categories with a relevant image and name for each
 - Clicking a category takes the user to a filtered catalogue page
 - The page loads within 3 seconds on a reasonable internet connection
 - Works properly on mobile screens as well as desktop
@@ -39,15 +39,15 @@ This epic covers everything a customer interacts with when they land on the site
 
 ### US-1.2 – Category browsing page
 
-**As a** customer looking for a specific type of tool,
-**I want to** see all available tools within a chosen category,
+**As a** customer looking for a specific type of tool/service,
+**I want to** see all available tools/services within a chosen category,
 **so that** I can compare options and decide which one suits my job.
 
 **Acceptance Criteria:**
-- Each category page shows a list of tools with thumbnail image, name, and starting price
-- Tools can be sorted by name or price (low to high, high to low)
+- Each category page shows a list of tools/services with thumbnail image, name, and starting price
+- Tools/services can be sorted by name or price (low to high, high to low)
 - Pagination or infinite scroll is used if there are more than 12 items
-- An empty state message is shown if a category has no tools listed yet
+- An empty state message is shown if a category has no tools/services listed yet
 
 **Story Points:** 5
 **Priority:** Must
@@ -68,14 +68,14 @@ This epic covers everything a customer interacts with when they land on the site
 
 ---
 
-### US-1.3 – Tool detail page
+### US-1.3 – Tool/service detail page
 
-**As a** customer who has found a tool that looks right,
+**As a** customer who has found a tool/service that looks right,
 **I want to** see full details including description, images, and hire rates,
 **so that** I can make an informed decision about whether to hire it.
 
 **Acceptance Criteria:**
-- Page shows tool name, full description, multiple images (with the ability to click through them), and the category it belongs to
+- Page shows tool/service name, full description, multiple images (with the ability to click through them), and the category it belongs to
 - Hire rates are displayed clearly: hourly rate, daily rate, and weekly rate
 - Any special notes or requirements (e.g. "requires a deposit" or "needs a trained operator") are shown
 - The page includes a link or section for the rental calculator (see US-1.5)
@@ -100,7 +100,7 @@ This epic covers everything a customer interacts with when they land on the site
 
 ---
 
-### US-1.4 – Search for tools
+### US-1.4 – Search for tools/services
 
 **As a** customer who knows roughly what they need,
 **I want to** type in a search term and get relevant results back,
@@ -108,7 +108,7 @@ This epic covers everything a customer interacts with when they land on the site
 
 **Acceptance Criteria:**
 - A search bar is visible on every page (header/nav area)
-- Searching returns results matching tool name, description, or category
+- Searching returns results matching tool/service name, description, or category
 - Results show thumbnail, name, category, and starting hire price
 - If nothing matches, a helpful message is displayed (e.g. "No results found – try a different term or browse our categories")
 - Search is not case-sensitive
@@ -132,14 +132,14 @@ This epic covers everything a customer interacts with when they land on the site
 
 ### US-1.5 – Rental cost calculator
 
-**As a** customer who wants to hire a specific tool,
+**As a** customer who wants to hire a specific tool/service,
 **I want to** enter the dates and times I need it for and see the total cost,
 **so that** I can budget properly and avoid surprises.
 
 **Acceptance Criteria:**
-- Calculator is available on each tool detail page
+- Calculator is available on each tool/service detail page
 - User picks a start date/time and an end date/time using a date-time picker
-- The system calculates the cost based on the tool's stored hourly, daily, and weekly rates
+- The system calculates the cost based on the tool/service's stored hourly, daily, and weekly rates
 - Calculation logic: the system should work out the cheapest combination (e.g. 3 days is cheaper as a weekly rate if the weekly rate is less than 3 × daily)
 - A breakdown is shown: "2 days × £45/day + 3 hours × £8/hour = £99"
 - Validation prevents selecting an end date before the start date
@@ -163,11 +163,11 @@ This epic covers everything a customer interacts with when they land on the site
 
 ---
 
-### US-1.6 – Filter tools by price range
+### US-1.6 – Filter tools/services by price range
 
 **As a** budget-conscious customer,
 **I want to** filter the catalogue by a price range,
-**so that** I only see tools that fit within what I can afford.
+**so that** I only see tools/services that fit within what I can afford.
 
 **Acceptance Criteria:**
 - A price range filter is available on category pages (min/max input or slider)
@@ -194,7 +194,7 @@ This epic covers everything a customer interacts with when they land on the site
 ### US-1.7 – Responsive mobile layout for catalogue
 
 **As a** customer browsing on my phone,
-**I want** the catalogue and tool pages to work properly on a small screen,
+**I want** the catalogue and tool/service pages to work properly on a small screen,
 **so that** I can look things up on site without needing a laptop.
 
 **Acceptance Criteria:**
@@ -225,7 +225,7 @@ This epic covers everything a customer interacts with when they land on the site
 *[Technical — kept for reference]*
 
 **As a** developer working on the front end,
-**I want** RESTful API endpoints for categories and tools,
+**I want** RESTful API endpoints for categories and tools/services,
 **so that** we can fetch and display catalogue data from the database.
 
 **Acceptance Criteria:**
@@ -255,7 +255,7 @@ This epic covers everything a customer interacts with when they land on the site
 - `Categories` table with Id, Name, Description, ImageUrl
 - `Tools` table with Id, Name, Description, CategoryId (FK), HourlyRate, DailyRate, WeeklyRate, SpecialNotes, DepositRequired, DepositAmount, IsActive, OverallRating, ReviewCount, CreatedDate, UpdatedDate
 - `ToolImages` table with Id, ToolId (FK), ImageUrl, DisplayOrder, UploadedDate — images are stored in a separate table rather than a JSON column, allowing proper indexing and individual image management
-- Seed data includes at least 3 categories with 4–5 tools each
+- Seed data includes at least 3 categories with 4–5 tools/services each
 - EF Core migrations are set up and working
 - Database can be recreated from migrations on any team member's machine
 

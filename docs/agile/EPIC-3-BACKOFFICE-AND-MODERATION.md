@@ -1,6 +1,6 @@
 # Epic 3 – Back-Office Management & Moderation
 
-**As a Shelton Tool-Hire staff member, I need a secure admin area where I can manage the equipment catalogue, update pricing, handle images, and moderate customer reviews before they go public.**
+**As a Shelton Tool-Hire staff member, I need a secure admin area where I can manage the equipment/service catalogue, update pricing, handle images, and moderate customer reviews before they go public.**
 
 This epic covers all the behind-the-scenes work that keeps the portal running properly. Without it, the data goes stale and the reviews section becomes unusable. This is essentially the control panel for the business.
 
@@ -12,7 +12,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 
 **As a** Shelton staff member,
 **I want to** log into a secure admin area,
-**so that** I can manage equipment and moderate reviews without unauthorised people gaining access.
+**so that** I can manage equipment/services and moderate reviews without unauthorised people gaining access.
 
 **Acceptance Criteria:**
 - Admin users log in with email and password through a separate admin login page
@@ -40,10 +40,10 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 
 ---
 
-### US-3.2 – Add new equipment to the catalogue
+### US-3.2 – Add new equipment or service to the catalogue
 
 **As an** admin,
-**I want to** add a new tool or piece of equipment to the system,
+**I want to** add a new tool, piece of equipment, or service to the system,
 **so that** customers can see it in the catalogue and hire it.
 
 **Acceptance Criteria:**
@@ -52,7 +52,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 - Optional fields: Special notes, deposit required (yes/no and amount)
 - At least one image must be uploaded before the item can be saved
 - Validation catches missing required fields and shows clear error messages
-- On save, the tool appears in the catalogue immediately (status = Active)
+- On save, the equipment/service appears in the catalogue immediately (status = Active)
 - A success message confirms the addition
 
 **Story Points:** 5
@@ -65,7 +65,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 |---|------|-------|
 | 1 | Create `ToolManagementService.CreateTool()` method with validation for all required fields | Backend |
 | 2 | Enforce the minimum one-image requirement before allowing the tool to be saved | Backend |
-| 3 | Build the "Add Equipment" form in the admin area with all required and optional fields | Frontend |
+| 3 | Build the "Add Equipment/Service" form in the admin area with all required and optional fields | Frontend |
 | 4 | Implement category dropdown populated from existing categories | Frontend |
 | 5 | Add client-side validation with clear error messages for missing required fields | Frontend |
 | 6 | Integrate image upload into the form (at least one image required) | Frontend |
@@ -74,14 +74,14 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 
 ---
 
-### US-3.3 – Edit existing equipment details and pricing
+### US-3.3 – Edit existing equipment/service details and pricing
 
 **As an** admin,
-**I want to** update the description, pricing, or other details of a tool,
+**I want to** update the description, pricing, or other details of a tool/service,
 **so that** the catalogue stays accurate as prices change or we get better descriptions.
 
 **Acceptance Criteria:**
-- Each tool in the admin equipment list has an "Edit" button
+- Each tool/service in the admin equipment list has an "Edit" button
 - The edit form is pre-filled with the current values
 - All fields from the add form are editable
 - An "UpdatedDate" timestamp is set automatically on save
@@ -97,18 +97,18 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 | # | Task | Owner |
 |---|------|-------|
 | 1 | Create `ToolManagementService.UpdateTool()` method that sets `UpdatedDate` automatically | Backend |
-| 2 | Add "Edit" button to each tool in the admin equipment list | Frontend |
-| 3 | Build the edit form pre-filled with the tool's current values | Frontend |
+| 2 | Add "Edit" button to each tool/service in the admin equipment list | Frontend |
+| 3 | Build the edit form pre-filled with the tool/service's current values | Frontend |
 | 4 | Implement a confirmation dialogue before saving changes ("Are you sure you want to update this item?") | Frontend |
 | 5 | Verify that changes are reflected on the public site immediately after saving | Frontend |
 | 6 | Write unit tests for the tool update service, including timestamp auto-setting | Testing |
 
 ---
 
-### US-3.4 – Manage tool images
+### US-3.4 – Manage tool/service images
 
 **As an** admin,
-**I want to** upload, replace, or remove images for a tool,
+**I want to** upload, replace, or remove images for a tool/service,
 **so that** customers see up-to-date and accurate photos.
 
 **Acceptance Criteria:**
@@ -136,16 +136,16 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 
 ---
 
-### US-3.5 – Deactivate or remove equipment
+### US-3.5 – Deactivate or remove equipment/service
 
 **As an** admin,
-**I want to** remove a tool from the public catalogue or mark it as inactive,
+**I want to** remove a tool/service from the public catalogue or mark it as inactive,
 **so that** customers do not try to hire something that is no longer available.
 
 **Acceptance Criteria:**
-- Each tool has a "Deactivate" option in the admin list
-- Deactivated tools do not appear in the public catalogue or search results
-- Deactivated tools are still visible in the admin area with a clear "Inactive" label
+- Each tool/service has a "Deactivate" option in the admin list
+- Deactivated tools/services do not appear in the public catalogue or search results
+- Deactivated tools/services are still visible in the admin area with a clear "Inactive" label
 - There is also a "Reactivate" option to bring it back
 - We are not doing hard deletes — everything is soft-deleted so review history is preserved
 
@@ -160,8 +160,8 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 | 1 | Implement soft-delete logic in `ToolManagementService` (set `IsActive = false`; exclude from public queries) | Backend |
 | 2 | Add a reactivation method that sets `IsActive = true` | Backend |
 | 3 | Add "Deactivate" and "Reactivate" toggle buttons in the admin equipment list | Frontend |
-| 4 | Show an "Inactive" label for deactivated tools in the admin view | Frontend |
-| 5 | Verify that deactivated tools are hidden from the public catalogue and search results | Testing |
+| 4 | Show an "Inactive" label for deactivated tools/services in the admin view | Frontend |
+| 5 | Verify that deactivated tools/services are hidden from the public catalogue and search results | Testing |
 | 6 | Write unit tests for soft-delete and reactivation logic | Testing |
 
 ---
@@ -202,14 +202,14 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 ### US-3.7 – Manage categories
 
 **As an** admin,
-**I want to** add, rename, or reorganise tool categories,
+**I want to** add, rename, or reorganise tool/service categories,
 **so that** the catalogue stays well structured as the business grows.
 
 **Acceptance Criteria:**
 - Admin area has a "Categories" management page
 - Admins can add a new category with a name, description, and image
 - Existing categories can be renamed or have their description/image updated
-- Categories cannot be deleted if they still contain tools — the system shows a warning
+- Categories cannot be deleted if they still contain tools/services — the system shows a warning
 - Changes to category names are reflected across the whole site immediately
 
 **Story Points:** 3
@@ -221,11 +221,11 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 | # | Task | Owner |
 |---|------|-------|
 | 1 | Create `CategoryManagementService` with methods to add, update, and validate categories | Backend |
-| 2 | Implement a safeguard that prevents deletion of categories that still contain tools | Backend |
+| 2 | Implement a safeguard that prevents deletion of categories that still contain tools/services | Backend |
 | 3 | Build the "Categories" management page in the admin area | Frontend |
 | 4 | Add a form for creating a new category (name, description, image upload) | Frontend |
 | 5 | Allow editing of existing category details (name, description, image) | Frontend |
-| 6 | Show a warning message when an admin attempts to delete a category that has tools assigned | Frontend |
+| 6 | Show a warning message when an admin attempts to delete a category that has tools/services assigned | Frontend |
 | 7 | Write unit tests for category management service, including the deletion safeguard | Testing |
 
 ---
@@ -238,11 +238,11 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 
 **Acceptance Criteria:**
 - The admin home page shows:
-  - Total number of tools in the catalogue (active vs inactive)
+  - Total number of tools/services in the catalogue (active vs inactive)
   - Number of reviews pending moderation
   - Number of reviews published this month
-  - Top 5 highest-rated tools
-  - Top 5 most-reviewed tools
+  - Top 5 highest-rated tools/services
+  - Top 5 most-reviewed tools/services
 - Data is fetched from the API and displayed in a clean layout (cards or simple charts)
 - Stats refresh when the page is loaded (no need for real-time updates)
 
@@ -254,10 +254,10 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 
 | # | Task | Owner |
 |---|------|-------|
-| 1 | Create `DashboardService` to calculate and return summary statistics (tool counts, pending reviews, monthly reviews, top-rated, most-reviewed) | Backend |
+| 1 | Create `DashboardService` to calculate and return summary statistics (tool/service counts, pending reviews, monthly reviews, top-rated, most-reviewed) | Backend |
 | 2 | Build the admin home page layout with summary cards or simple charts | Frontend |
-| 3 | Display tool counts (active vs inactive) and review statistics | Frontend |
-| 4 | Display the top 5 highest-rated and top 5 most-reviewed tools | Frontend |
+| 3 | Display tool/service counts (active vs inactive) and review statistics | Frontend |
+| 4 | Display the top 5 highest-rated and top 5 most-reviewed tools/services | Frontend |
 | 5 | Ensure dashboard has adequate colour contrast and screen reader support for accessibility | Frontend |
 | 6 | Write unit tests for the dashboard statistics service | Testing |
 
@@ -308,9 +308,9 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 
 **Acceptance Criteria:**
 - Playwright tests cover the following flows:
-  1. Browse categories → view tool detail → use rental calculator
-  2. Submit a review → verify it appears in moderation queue → approve it → verify it appears on the tool page
-  3. Admin login → add a new tool → verify it appears in the catalogue
+  1. Browse categories → view tool/service detail → use rental calculator
+  2. Submit a review → verify it appears in moderation queue → approve it → verify it appears on the tool/service page
+  3. Admin login → add a new tool/service → verify it appears in the catalogue
 - Tests run as part of the GitHub Actions CI pipeline
 - Tests use a test database or seeded data so they are repeatable
 - Tests pass consistently (no flaky failures)
