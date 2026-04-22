@@ -30,6 +30,23 @@ public class Epic1SeedTests
         Assert.Contains("(3036, 2018", migration);
     }
 
+    [Fact]
+    public void SeedRemainingEpic1CatalogueDataMigration_SeedsMissingCatalogueAndServices()
+    {
+        var migration = File.ReadAllText(GetRepositoryFile("src", "ReviewPortal.Infrastructure", "Migrations", "20260422213000_SeedRemainingEpic1CatalogueData.cs"));
+
+        Assert.Contains("Painting & Decorating", migration);
+        Assert.Contains("Plumbing & Drainage", migration);
+        Assert.Contains("Non-physical hire services including delivery, operator hire, and compliance testing", migration);
+        Assert.Contains("(2019, 1007", migration);
+        Assert.Contains("(2022, 1007", migration);
+        Assert.Contains("(2023, 1008", migration);
+        Assert.Contains("(2026, 1008", migration);
+        Assert.Contains("(2027, 1009", migration);
+        Assert.Contains("(2030, 1009", migration);
+        Assert.Contains("(3060, 2030", migration);
+    }
+
     private static string GetRepositoryFile(params string[] pathSegments)
     {
         var currentDirectory = new DirectoryInfo(AppContext.BaseDirectory);

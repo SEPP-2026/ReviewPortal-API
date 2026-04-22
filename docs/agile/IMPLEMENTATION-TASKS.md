@@ -30,15 +30,15 @@ The product backlog lists 8 tool categories plus a Services category, but only 6
 
 **Sub-tasks:**
 
-- [ ] **1.1** Create a new EF Core migration to seed the **Painting & Decorating** category (Id: 1007) with description and image URL
-- [ ] **1.2** Seed 3–4 tools under Painting & Decorating (e.g. Paint Sprayer, Wallpaper Steamer, Belt Sander, Heat Gun) with hourly/daily/weekly rates, images, and realistic descriptions
-- [ ] **1.3** Seed the **Plumbing & Drainage** category (Id: 1008) with description and image URL
-- [ ] **1.4** Seed 3–4 tools under Plumbing & Drainage (e.g. Pipe Freezing Kit, Drain Rod Set, Pipe Cutter, Plumber's Torch) with rates, images, and descriptions
-- [ ] **1.5** Seed a **Services** category (Id: 1009) with description "Non-physical hire services including delivery, operator hire, and compliance testing" and image URL
-- [ ] **1.6** Seed 3–4 service entries under Services (e.g. Equipment Delivery, Trained Operator Hire, PAT Testing Service, Site Survey) with hourly/daily/weekly rates, descriptions, and images
-- [ ] **1.7** Generate SQL deployment script: `dotnet ef migrations script <PreviousMigration> <NewMigration> --idempotent --output scripts/sql/<MigrationName>.sql --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API`
-- [ ] **1.8** Apply migration locally: `dotnet ef database update --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API`
-- [ ] **1.9** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx` — confirm no regressions
+- [x] **1.1** Create a new EF Core migration to seed the **Painting & Decorating** category (Id: 1007) with description and image URL
+- [x] **1.2** Seed 3–4 tools under Painting & Decorating (e.g. Paint Sprayer, Wallpaper Steamer, Belt Sander, Heat Gun) with hourly/daily/weekly rates, images, and realistic descriptions
+- [x] **1.3** Seed the **Plumbing & Drainage** category (Id: 1008) with description and image URL
+- [x] **1.4** Seed 3–4 tools under Plumbing & Drainage (e.g. Pipe Freezing Kit, Drain Rod Set, Pipe Cutter, Plumber's Torch) with rates, images, and descriptions
+- [x] **1.5** Seed a **Services** category (Id: 1009) with description "Non-physical hire services including delivery, operator hire, and compliance testing" and image URL
+- [x] **1.6** Seed 3–4 service entries under Services (e.g. Equipment Delivery, Trained Operator Hire, PAT Testing Service, Site Survey) with hourly/daily/weekly rates, descriptions, and images
+- [x] **1.7** Generate SQL deployment script: `dotnet ef migrations script <PreviousMigration> <NewMigration> --idempotent --output scripts/sql/<MigrationName>.sql --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API`
+- [x] **1.8** Apply migration locally: `dotnet ef database update --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API`
+- [x] **1.9** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx` — confirm no regressions
 
 ---
 
@@ -379,7 +379,7 @@ TASK-16 (Admin category routing)     — independent
 
 | Task | Status | Date Completed |
 |------|--------|---------------|
-| TASK-1: Seed missing categories | ⬜ Not started | |
+| TASK-1: Seed missing categories | Done | 2026-04-22 |
 | TASK-2: AdminToolsController | ⬜ Not started | |
 | TASK-3: AdminModerationController | ⬜ Not started | |
 | TASK-4: ImageService | ⬜ Not started | |
