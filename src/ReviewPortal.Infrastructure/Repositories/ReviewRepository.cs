@@ -81,4 +81,34 @@ public class ReviewRepository : Repository<Review>, IReviewRepository
                 .ThenInclude(response => response!.StaffUser)
             .FirstOrDefaultAsync(review => review.Id == reviewId, cancellationToken);
     }
+
+    public async Task<IReadOnlyList<Review>> GetPendingWithDetailsAsync(
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Where(review => review.Status == ReviewStatus.Pending)
+            .OrderBy(review => review.CreatedDate)
+            .ThenBy(review => review.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Include(review => review.Tool)
+            .Include(review => review.Comments.Where(comment => comment.Status == ReviewStatus.Pending))
+            .ToListAsync(cancellationToken);
+    }
+
+    public Task<int> CountPendingAsync(CancellationToken cancellationToken = default)
+    {
+        return _dbSet.CountAsync(review => review.Status == ReviewStatus.Pending, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Review>> GetByToolIdAsync(int toolId, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Where(review => review.ToolId == toolId)
+            .ToListAsync(cancellationToken);
+    }
 }

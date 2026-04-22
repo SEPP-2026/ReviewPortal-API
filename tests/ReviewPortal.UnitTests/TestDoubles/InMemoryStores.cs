@@ -268,6 +268,34 @@ internal sealed class InMemoryReviewRepository : IReviewRepository
     {
         return Task.FromResult(_reviews.SingleOrDefault(review => review.Id == reviewId));
     }
+
+    public Task<IReadOnlyList<Review>> GetPendingWithDetailsAsync(
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<IReadOnlyList<Review>>(
+            _reviews
+                .Where(review => review.Status == ReviewStatus.Pending)
+                .OrderBy(review => review.CreatedDate)
+                .ThenBy(review => review.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList());
+    }
+
+    public Task<int> CountPendingAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(_reviews.Count(review => review.Status == ReviewStatus.Pending));
+    }
+
+    public Task<IReadOnlyList<Review>> GetByToolIdAsync(int toolId, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<IReadOnlyList<Review>>(
+            _reviews
+                .Where(review => review.ToolId == toolId)
+                .ToList());
+    }
 }
 
 internal sealed class InMemoryRepository<T> : IRepository<T> where T : BaseEntity

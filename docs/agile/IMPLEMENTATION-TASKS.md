@@ -56,11 +56,11 @@ Three methods in `ReviewService.cs` are currently stubs that return error string
 
 **Sub-tasks:**
 
-- [ ] **6.1** Implement `GetPendingReviewsAsync` in `ReviewService`:
+- [x] **6.1** Implement `GetPendingReviewsAsync` in `ReviewService`:
   - Query all reviews with `Status == Pending`, sorted oldest-first
   - Include pending comments in the response (or as a separate count)
   - Return paginated `PagedList<ReviewDto>` with tool name, reviewer name, date, text, ratings
-- [ ] **6.2** Implement `ModerateReviewAsync` in `ReviewService`:
+- [x] **6.2** Implement `ModerateReviewAsync` in `ReviewService`:
   - Look up review by ID (return 404 if not found)
   - If approving: set `Status = Approved`
   - If rejecting: set `Status = Rejected` and store `RejectionReason`
@@ -68,15 +68,15 @@ Three methods in `ReviewService.cs` are currently stubs that return error string
   - After approval: update `Tool.ReviewCount` to the count of approved reviews for that tool
   - After rejecting a previously approved review: recalculate rating and decrement count
   - Save changes via `_unitOfWork.SaveChangesAsync`
-- [ ] **6.3** Implement `ModerateCommentAsync` in `ReviewService`:
+- [x] **6.3** Implement `ModerateCommentAsync` in `ReviewService`:
   - Look up comment by ID (return 404 if not found)
   - If approving: set `Status = Approved`
   - If rejecting: set `Status = Rejected` and store `RejectionReason`
   - Save changes
-- [ ] **6.4** Write unit tests for `GetPendingReviewsAsync` — empty queue, multiple pending items, pagination, sort order
-- [ ] **6.5** Write unit tests for `ModerateReviewAsync` — approve flow, reject flow, 404 case, tool rating recalculation, re-rejection of approved review
-- [ ] **6.6** Write unit tests for `ModerateCommentAsync` — approve flow, reject flow, 404 case
-- [ ] **6.7** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx` — confirm all tests pass
+- [x] **6.4** Write unit tests for `GetPendingReviewsAsync` — empty queue, multiple pending items, pagination, sort order
+- [x] **6.5** Write unit tests for `ModerateReviewAsync` — approve flow, reject flow, 404 case, tool rating recalculation, re-rejection of approved review
+- [x] **6.6** Write unit tests for `ModerateCommentAsync` — approve flow, reject flow, 404 case
+- [x] **6.7** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx` — confirm all tests pass
 
 ---
 
@@ -181,13 +181,13 @@ Service methods `GetPendingReviewsAsync`, `ModerateReviewAsync`, and `ModerateCo
 
 **Sub-tasks:**
 
-- [ ] **3.1** Create `src/ReviewPortal.API/Controllers/Admin/AdminModerationController.cs`
-- [ ] **3.2** Route: `[Route("api/admin/moderation")]`, class-level `[Authorize(Roles = "Admin,Moderator")]`
-- [ ] **3.3** `[HttpGet("pending")]` with `[FromQuery] int page = 1, int pageSize = 20` → calls `_reviewService.GetPendingReviewsAsync(page, pageSize)` → returns `200 OK`
-- [ ] **3.4** `[HttpPut("reviews/{id:int}")]` with `[FromBody] ModerateReviewRequest` → calls `_reviewService.ModerateReviewAsync(id, request)` → returns `200 OK`
-- [ ] **3.5** `[HttpPut("comments/{id:int}")]` with `[FromBody] ModerateReviewRequest` → calls `_reviewService.ModerateCommentAsync(id, request)` → returns `200 OK`
-- [ ] **3.6** Write unit tests: Get pending success, Get pending empty, Approve review, Reject review with reason, Approve comment, Reject comment, Unauthorized, Forbidden
-- [ ] **3.7** Run `dotnet build` and `dotnet test` — confirm all tests pass
+- [x] **3.1** Create `src/ReviewPortal.API/Controllers/Admin/AdminModerationController.cs`
+- [x] **3.2** Route: `[Route("api/admin/moderation")]`, class-level `[Authorize(Roles = "Admin,Moderator")]`
+- [x] **3.3** `[HttpGet("pending")]` with `[FromQuery] int page = 1, int pageSize = 20` → calls `_reviewService.GetPendingReviewsAsync(page, pageSize)` → returns `200 OK`
+- [x] **3.4** `[HttpPut("reviews/{id:int}")]` with `[FromBody] ModerateReviewRequest` → calls `_reviewService.ModerateReviewAsync(id, request)` → returns `200 OK`
+- [x] **3.5** `[HttpPut("comments/{id:int}")]` with `[FromBody] ModerateReviewRequest` → calls `_reviewService.ModerateCommentAsync(id, request)` → returns `200 OK`
+- [x] **3.6** Write unit tests: Get pending success, Get pending empty, Approve review, Reject review with reason, Approve comment, Reject comment, Unauthorized, Forbidden
+- [x] **3.7** Run `dotnet build` and `dotnet test` — confirm all tests pass
 
 ---
 
@@ -381,10 +381,10 @@ TASK-16 (Admin category routing)     — independent
 |------|--------|---------------|
 | TASK-1: Seed missing categories | Done | 2026-04-22 |
 | TASK-2: AdminToolsController | ⬜ Not started | |
-| TASK-3: AdminModerationController | ⬜ Not started | |
+| TASK-3: AdminModerationController | Done | 2026-04-22 |
 | TASK-4: ImageService | ⬜ Not started | |
 | TASK-5: DashboardService | ⬜ Not started | |
-| TASK-6: Moderation service methods | ⬜ Not started | |
+| TASK-6: Moderation service methods | Done | 2026-04-22 |
 | TASK-7: Docs – tool/service wording | ⬜ Not started | |
 | TASK-8: Docs – moderation wording | ⬜ Not started | |
 | TASK-9: Seed review data | ⬜ Not started | |
