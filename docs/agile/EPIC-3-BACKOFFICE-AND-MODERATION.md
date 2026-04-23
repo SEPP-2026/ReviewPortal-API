@@ -51,7 +51,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 - Required fields: Name, Description, Category (dropdown from existing categories), Hourly Rate, Daily Rate, Weekly Rate
 - Optional fields: Special notes, deposit required (yes/no and amount)
 - At least one image must be uploaded before the item can be saved
-- Validation catches missing required fields and shows clear error messages
+- Submitting the form with missing required fields is blocked and each missing field is identified in the validation response
 - On save, the equipment/service appears in the catalogue immediately (status = Active)
 - A success message confirms the addition
 
@@ -85,7 +85,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 - The edit form is pre-filled with the current values
 - All fields from the add form are editable
 - An "UpdatedDate" timestamp is set automatically on save
-- Changes are reflected on the public site immediately after saving
+- A subsequent fetch of the public tool/service page returns the updated values immediately after saving
 - There is a confirmation step before saving ("Are you sure you want to update this item?")
 
 **Story Points:** 5
@@ -115,7 +115,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 - On the equipment edit page, existing images are displayed with options to delete each one
 - New images can be uploaded (supported formats: JPG, PNG, WebP; max file size: 5MB per image)
 - At least one image must remain — the system should not allow deleting the last image
-- Images are stored in a sensible location (e.g. Azure Blob Storage or a local uploads folder for the prototype)
+- Uploaded images are stored in the configured storage location (Azure Blob Storage or the prototype's local uploads folder)
 - A thumbnail preview is shown after upload before saving
 
 **Story Points:** 5
@@ -145,7 +145,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 **Acceptance Criteria:**
 - Each tool/service has a "Deactivate" option in the admin list
 - Deactivated tools/services do not appear in the public catalogue or search results
-- Deactivated tools/services are still visible in the admin area with a clear "Inactive" label
+- Deactivated tools/services are still visible in the admin area with an "Inactive" label
 - There is also a "Reactivate" option to bring it back
 - We are not doing hard deletes — everything is soft-deleted so review history is preserved
 
@@ -174,11 +174,11 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 
 **Acceptance Criteria:**
 - The admin area has a "Moderation Queue" page showing all reviews and comments with status = Pending
-- Each item shows: reviewer name, tool name, the review/comment text, date submitted, and the star ratings (for reviews)
+- Each item shows: reviewer name, tool/service name, the review/comment text, date submitted, and the star ratings (for reviews)
 - Moderator can click "Approve" to make it visible on the public site
 - Moderator can click "Reject" and must provide a brief reason (this reason is shown to the reviewer on their "My Reviews" page)
 - Items in the queue are sorted by oldest first so nothing gets buried
-- The queue shows a count badge in the admin navigation so moderators can see at a glance how many items are waiting
+- The admin navigation shows a count badge with the exact total number of pending reviews and comments
 
 **Story Points:** 8
 **Priority:** Must
@@ -191,7 +191,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 | 1 | Create `ModerationService` to return all pending reviews and comments, sorted by oldest first | Backend |
 | 2 | Implement approve action — update status to "Approved" and make content visible on the public site | Backend |
 | 3 | Implement reject action — update status to "Rejected" and store the rejection reason | Backend |
-| 4 | Build the "Moderation Queue" page displaying pending items (reviewer name, tool name, text, date, star ratings) | Frontend |
+| 4 | Build the "Moderation Queue" page displaying pending items (reviewer name, tool/service name, text, date, star ratings) | Frontend |
 | 5 | Add "Approve" and "Reject" buttons for each item, with a text input for the rejection reason | Frontend |
 | 6 | Add a pending-count badge in the admin navigation to indicate how many items are waiting | Frontend |
 | 7 | Ensure rejection reasons are transparent and visible to reviewers on their "My Reviews" page (links to US-2.8) | Frontend |
@@ -209,8 +209,8 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 - Admin area has a "Categories" management page
 - Admins can add a new category with a name, description, and image
 - Existing categories can be renamed or have their description/image updated
-- Categories cannot be deleted if they still contain tools/services — the system shows a warning
-- Changes to category names are reflected across the whole site immediately
+- Deletion is blocked when a category still has one or more assigned tools/services, and the warning message explains why
+- A subsequent fetch of the category on the public site returns the updated name, description, and image after save
 
 **Story Points:** 3
 **Priority:** Should
@@ -243,7 +243,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
   - Number of reviews published this month
   - Top 5 highest-rated tools/services
   - Top 5 most-reviewed tools/services
-- Data is fetched from the API and displayed in a clean layout (cards or simple charts)
+- Data is fetched from the API on page load and displayed as labelled summary cards or chart sections
 - Stats refresh when the page is loaded (no need for real-time updates)
 
 **Story Points:** 5
@@ -288,8 +288,8 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
   - `PUT /api/admin/moderation/comments/{id}` – approve or reject
 - Dashboard:
   - `GET /api/admin/dashboard/stats` – returns summary stats
-- All endpoints return appropriate status codes
-- Unit tests cover authorisation checks and business logic
+- Endpoints return 200/201 for success, 400 for validation failure, 401 for unauthenticated requests, 403 for forbidden requests, and 404 when the target resource does not exist
+- Unit tests cover success, validation failure, authorisation, and not-found paths
 - Unauthorised requests return 401, forbidden requests return 403
 
 **Story Points:** 13
@@ -313,7 +313,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
   3. Admin login → add a new tool/service → verify it appears in the catalogue
 - Tests run as part of the GitHub Actions CI pipeline
 - Tests use a test database or seeded data so they are repeatable
-- Tests pass consistently (no flaky failures)
+- The Playwright suite passes on repeated local or CI runs without test changes
 
 **Story Points:** 8
 **Priority:** Should

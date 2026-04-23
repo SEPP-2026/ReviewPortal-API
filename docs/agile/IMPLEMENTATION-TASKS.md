@@ -48,7 +48,7 @@ The product backlog lists 8 tool categories plus a Services category, but only 6
 
 ### TASK-6: Implement moderation service methods (stubs → real logic)
 
-**Links to:** [US-2.1 – Submit a review](EPIC-2-REVIEWS-AND-RATINGS.md#us-21--submit-a-review-for-a-tool) | [US-2.2 – Display approved reviews](EPIC-2-REVIEWS-AND-RATINGS.md#us-22--display-approved-reviews-on-the-tool-page) | [US-2.3 – Overall tool ranking](EPIC-2-REVIEWS-AND-RATINGS.md#us-23--overall-tool-ranking-based-on-ratings) | [US-2.4 – Comment on a review](EPIC-2-REVIEWS-AND-RATINGS.md#us-24--comment-on-someone-elses-review)
+**Links to:** [US-2.1 – Submit a review for a tool/service](EPIC-2-REVIEWS-AND-RATINGS.md#us-21--submit-a-review-for-a-toolservice) | [US-2.2 – Display approved reviews on the tool/service page](EPIC-2-REVIEWS-AND-RATINGS.md#us-22--display-approved-reviews-on-the-toolservice-page) | [US-2.3 – Overall tool/service ranking based on ratings](EPIC-2-REVIEWS-AND-RATINGS.md#us-23--overall-toolservice-ranking-based-on-ratings) | [US-2.4 – Comment on a review](EPIC-2-REVIEWS-AND-RATINGS.md#us-24--comment-on-someone-elses-review)
 **Also links to (Epic 3):** [US-3.6 – Review moderation queue](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-36--review-moderation-queue) | [US-3.9 – Admin API endpoints](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-39--admin-api-endpoints)
 **Priority:** Must | **Gap IDs:** GAP-SVC-3, GAP-SVC-6, GAP-SVC-7
 
@@ -82,7 +82,7 @@ Three methods in `ReviewService.cs` are currently stubs that return error string
 
 ### TASK-9: Seed review data
 
-**Links to:** [US-2.1 – Submit a review](EPIC-2-REVIEWS-AND-RATINGS.md#us-21--submit-a-review-for-a-tool) | [US-2.2 – Display approved reviews](EPIC-2-REVIEWS-AND-RATINGS.md#us-22--display-approved-reviews-on-the-tool-page) | [US-2.3 – Overall tool ranking](EPIC-2-REVIEWS-AND-RATINGS.md#us-23--overall-tool-ranking-based-on-ratings)
+**Links to:** [US-2.1 – Submit a review for a tool/service](EPIC-2-REVIEWS-AND-RATINGS.md#us-21--submit-a-review-for-a-toolservice) | [US-2.2 – Display approved reviews on the tool/service page](EPIC-2-REVIEWS-AND-RATINGS.md#us-22--display-approved-reviews-on-the-toolservice-page) | [US-2.3 – Overall tool/service ranking based on ratings](EPIC-2-REVIEWS-AND-RATINGS.md#us-23--overall-toolservice-ranking-based-on-ratings)
 **Priority:** Should | **Gap ID:** GAP-SD-4
 
 No actual `Reviews` rows exist in the database. Sprint 1 tool detail pages rely on denormalised `OverallRating`/`ReviewCount` fields. Seed real review rows to back up those values.
@@ -117,7 +117,7 @@ No actual `Reviews` rows exist in the database. Sprint 1 tool detail pages rely 
 
 ### TASK-14: Add "Not enough reviews" threshold to tool DTOs
 
-**Links to:** [US-2.3 – Overall tool ranking based on ratings](EPIC-2-REVIEWS-AND-RATINGS.md#us-23--overall-tool-ranking-based-on-ratings)
+**Links to:** [US-2.3 – Overall tool/service ranking based on ratings](EPIC-2-REVIEWS-AND-RATINGS.md#us-23--overall-toolservice-ranking-based-on-ratings)
 **Priority:** Should | **Gap ID:** GAP-SVC-5
 
 US-2.3 AC says: "If there are fewer than 2 reviews, 'Not enough reviews to rate' is shown instead of a number." Check if this is enforced in the API response DTOs.
@@ -154,7 +154,7 @@ No demo data for comments or company responses.
 
 ### TASK-2: Create AdminToolsController
 
-**Links to:** [US-3.2 – Add new equipment](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-32--add-new-equipment-to-the-catalogue) | [US-3.3 – Edit equipment details](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-33--edit-existing-equipment-details-and-pricing) | [US-3.5 – Deactivate or remove equipment](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-35--deactivate-or-remove-equipment) | [US-3.9 – Admin API endpoints](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-39--admin-api-endpoints)
+**Links to:** [US-3.2 – Add new equipment or service to the catalogue](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-32--add-new-equipment-or-service-to-the-catalogue) | [US-3.3 – Edit existing equipment/service details and pricing](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-33--edit-existing-equipmentservice-details-and-pricing) | [US-3.5 – Deactivate or remove equipment/service](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-35--deactivate-or-remove-equipmentservice) | [US-3.9 – Admin API endpoints](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-39--admin-api-endpoints)
 **Priority:** Must | **Gap IDs:** GAP-API-1, GAP-API-2, GAP-API-3
 
 Service methods `CreateToolAsync`, `UpdateToolAsync`, and `SetToolStatusAsync` already exist in `IToolService` but have no admin controller route.
@@ -193,7 +193,7 @@ Service methods `GetPendingReviewsAsync`, `ModerateReviewAsync`, and `ModerateCo
 
 ### TASK-4: Implement ImageService and image endpoints
 
-**Links to:** [US-3.4 – Manage tool images](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-34--manage-tool-images) | [US-3.9 – Admin API endpoints](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-39--admin-api-endpoints)
+**Links to:** [US-3.4 – Manage tool/service images](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-34--manage-toolservice-images) | [US-3.9 – Admin API endpoints](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-39--admin-api-endpoints)
 **Priority:** Must | **Gap IDs:** GAP-SVC-2, GAP-API-4, GAP-API-5
 
 No image upload or delete functionality exists.
@@ -277,28 +277,28 @@ Category CRUD already exists on the public `CategoriesController` with `[Authori
 
 **Sub-tasks:**
 
-- [ ] **7.1** In EPIC-1, update user-facing story text to say "tool/service" instead of just "tool" (keep `Tool` as entity/class name in technical references)
-- [ ] **7.2** In EPIC-2, update user-facing story text: "Submit a review for a tool/service", "Display approved reviews on the tool/service page", etc.
-- [ ] **7.3** In EPIC-3, update user-facing story text: "Add new equipment or service", "Edit existing equipment/service", etc.
-- [ ] **7.4** In PRODUCT-BACKLOG.md, update the Epics table and Tool Categories section to mention services
-- [ ] **7.5** In SPRINT-PLANNING.md, update story titles in the sprint tables
-- [ ] **7.6** Do NOT change entity names, class names, variable names, or controller names — only docs wording
+- [x] **7.1** In EPIC-1, update user-facing story text to say "tool/service" instead of just "tool" (keep `Tool` as entity/class name in technical references)
+- [x] **7.2** In EPIC-2, update user-facing story text: "Submit a review for a tool/service", "Display approved reviews on the tool/service page", etc.
+- [x] **7.3** In EPIC-3, update user-facing story text: "Add new equipment or service", "Edit existing equipment/service", etc.
+- [x] **7.4** In PRODUCT-BACKLOG.md, update the Epics table and Tool Categories section to mention services
+- [x] **7.5** In SPRINT-PLANNING.md, update story titles in the sprint tables
+- [x] **7.6** Do NOT change entity names, class names, variable names, or controller names — only docs wording
 
 ---
 
 ### TASK-8: Fix mandatory moderation wording
 
-**Links to:** [US-2.1 – Submit a review](EPIC-2-REVIEWS-AND-RATINGS.md#us-21--submit-a-review-for-a-tool) | [US-2.4 – Comment on a review](EPIC-2-REVIEWS-AND-RATINGS.md#us-24--comment-on-someone-elses-review)
+**Links to:** [US-2.1 – Submit a review for a tool/service](EPIC-2-REVIEWS-AND-RATINGS.md#us-21--submit-a-review-for-a-toolservice) | [US-2.4 – Comment on a review](EPIC-2-REVIEWS-AND-RATINGS.md#us-24--comment-on-someone-elses-review)
 **Also links to:** [REQUIREMENTS-SPECIFICATION](../REQUIREMENTS-SPECIFICATION.md)
 **Priority:** Must | **Gap ID:** GAP-DOC-5
 
 **Sub-tasks:**
 
-- [ ] **8.1** Search all docs for "if required by the system" or similar conditional moderation language
-- [ ] **8.2** Replace with: "All customer reviews and comments require moderation before publication"
-- [ ] **8.3** In US-2.1 AC, ensure it clearly states: "The review is saved with a status of 'Pending' and is not visible to other customers until approved by a moderator"
-- [ ] **8.4** In US-2.4 AC, ensure it clearly states: "Comments go through moderation (status = Pending) before being visible"
-- [ ] **8.5** In REQUIREMENTS-SPECIFICATION FR-21, confirm wording matches
+- [x] **8.1** Search all docs for "if required by the system" or similar conditional moderation language
+- [x] **8.2** Replace with: "All customer reviews and comments require moderation before publication"
+- [x] **8.3** In US-2.1 AC, ensure it clearly states: "The review is saved with a status of 'Pending' and is not visible to other customers until approved by a moderator"
+- [x] **8.4** In US-2.4 AC, ensure it clearly states: "Comments go through moderation (status = Pending) before being visible"
+- [x] **8.5** In REQUIREMENTS-SPECIFICATION FR-21, confirm wording matches
 
 ---
 
@@ -309,13 +309,13 @@ Category CRUD already exists on the public `CategoriesController` with `[Authori
 
 **Sub-tasks:**
 
-- [ ] **10.1** Audit all acceptance criteria in EPIC-1 for vague language ("clear", "efficient", "data integrity is maintained", "works properly")
-- [ ] **10.2** Rewrite each to a measurable, testable criterion, e.g.:
+- [x] **10.1** Audit all acceptance criteria in EPIC-1 for vague language ("clear", "efficient", "data integrity is maintained", "works properly")
+- [x] **10.2** Rewrite each to a measurable, testable criterion, e.g.:
   - ~~"data integrity is maintained"~~ → "Saving a tool/service with a missing required field returns HTTP 400 with a validation error listing the missing field(s)"
   - ~~"works properly on mobile"~~ → "All catalogue pages render without horizontal scrolling on viewports 375px wide and above"
-- [ ] **10.3** Audit and fix EPIC-2 acceptance criteria
-- [ ] **10.4** Audit and fix EPIC-3 acceptance criteria
-- [ ] **10.5** Ensure no AC uses subjective adjectives without a measurable benchmark
+- [x] **10.3** Audit and fix EPIC-2 acceptance criteria
+- [x] **10.4** Audit and fix EPIC-3 acceptance criteria
+- [x] **10.5** Ensure no AC uses subjective adjectives without a measurable benchmark
 
 ---
 
@@ -326,10 +326,10 @@ Category CRUD already exists on the public `CategoriesController` with `[Authori
 
 **Sub-tasks:**
 
-- [ ] **11.1** Add a new "Requirements Traceability" section to `REQUIREMENTS-SPECIFICATION.md` (or `PRODUCT-BACKLOG.md`)
-- [ ] **11.2** Map each scenario requirement from the project brief to its backlog user story
-- [ ] **11.3** Include: tool/service categories → US-1.9, review categories → US-2.1/US-2.9, rating aggregation → US-2.3, moderation → US-3.6, pricing → US-1.5
-- [ ] **11.4** Cross-reference to the Requirements Traceability Matrix in `GAP-ANALYSIS.md` §2
+- [x] **11.1** Add a new "Requirements Traceability" section to `REQUIREMENTS-SPECIFICATION.md` (or `PRODUCT-BACKLOG.md`)
+- [x] **11.2** Map each scenario requirement from the project brief to its backlog user story
+- [x] **11.3** Include: tool/service categories → US-1.9, review categories → US-2.1/US-2.9, rating aggregation → US-2.3, moderation → US-3.6, pricing → US-1.5
+- [x] **11.4** Cross-reference to the Requirements Traceability Matrix in `GAP-ANALYSIS.md` §2
 
 ---
 
@@ -340,13 +340,13 @@ Category CRUD already exists on the public `CategoriesController` with `[Authori
 
 **Sub-tasks:**
 
-- [ ] **12.1** Add or expand a "Design Decisions" or "Definitions" section in `PRODUCT-BACKLOG.md`
-- [ ] **12.2** Define the chosen tool/service categories (all 9 including Services)
-- [ ] **12.3** Define the chosen review categories (5 listed with descriptions)
-- [ ] **12.4** Define the rating aggregation method: `Overall = (Equipment + Customer + Technical + AfterSales + Value) / 5`, only approved reviews, cached on Tool entity
-- [ ] **12.5** Define service handling: unified `Tool` model, Services category, no separate logic
-- [ ] **12.6** Define moderation rules: reviews and comments start as Pending, admin approve/reject with reason, company responses bypass moderation, rejection criteria (offensive/irrelevant/spam)
-- [ ] **12.7** Define pricing logic: hourly/daily/weekly rates, cheapest combination calculation, date validation, cost breakdown format
+- [x] **12.1** Add or expand a "Design Decisions" or "Definitions" section in `PRODUCT-BACKLOG.md`
+- [x] **12.2** Define the chosen tool/service categories (all 9 including Services)
+- [x] **12.3** Define the chosen review categories (5 listed with descriptions)
+- [x] **12.4** Define the rating aggregation method: `Overall = (Equipment + Customer + Technical + AfterSales + Value) / 5`, only approved reviews, cached on Tool entity
+- [x] **12.5** Define service handling: unified `Tool` model, Services category, no separate logic
+- [x] **12.6** Define moderation rules: reviews and comments start as Pending, admin approve/reject with reason, company responses bypass moderation, rejection criteria (offensive/irrelevant/spam)
+- [x] **12.7** Define pricing logic: hourly/daily/weekly rates, cheapest combination calculation, date validation, cost breakdown format
 
 ---
 
@@ -385,12 +385,12 @@ TASK-16 (Admin category routing)     — independent
 | TASK-4: ImageService | ⬜ Not started | |
 | TASK-5: DashboardService | ⬜ Not started | |
 | TASK-6: Moderation service methods | Done | 2026-04-22 |
-| TASK-7: Docs – tool/service wording | ⬜ Not started | |
-| TASK-8: Docs – moderation wording | ⬜ Not started | |
+| TASK-7: Docs – tool/service wording | Done | 2026-04-23 |
+| TASK-8: Docs – moderation wording | Done | 2026-04-23 |
 | TASK-9: Seed review data | Done | 2026-04-22 |
-| TASK-10: Docs – vague ACs | ⬜ Not started | |
-| TASK-11: Docs – traceability | ⬜ Not started | |
-| TASK-12: Docs – definitions | ⬜ Not started | |
+| TASK-10: Docs – vague ACs | Done | 2026-04-23 |
+| TASK-11: Docs – traceability | Done | 2026-04-23 |
+| TASK-12: Docs – definitions | Done | 2026-04-23 |
 | TASK-13: Fix company response | ⬜ Not started | |
 | TASK-14: Review threshold | ⬜ Not started | |
 | TASK-15: Seed comments/responses | ⬜ Not started | |
