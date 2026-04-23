@@ -245,6 +245,24 @@ public class ToolServiceTests
     }
 
     [Fact]
+    public async Task GetToolsByCategoryAsync_WhenToolHasNoReviews_ReturnsThresholdMessage()
+    {
+        var category = new Category { Id = 1, Name = "Garden & Landscaping" };
+        var tool = CreateTool(1, category, "Rotavator", hourlyRate: 14m);
+
+        var service = CreateService(categories: [category], tools: [tool]);
+
+        var result = await service.GetToolsByCategoryAsync(1, 1, 12);
+
+        Assert.True(result.IsSuccess);
+        var item = Assert.Single(result.Value!.Items);
+        Assert.Null(item.OverallRating);
+        Assert.Equal(0, item.ReviewCount);
+        Assert.False(item.HasEnoughReviewsToRate);
+        Assert.Equal("Not enough reviews to rate", item.RatingMessage);
+    }
+
+    [Fact]
     public async Task GetToolsByCategoryAsync_WhenToolHasFewerThanTwoApprovedReviews_ReturnsNullOverallRatingWithApprovedCount()
     {
         var category = new Category { Id = 1, Name = "Garden & Landscaping" };

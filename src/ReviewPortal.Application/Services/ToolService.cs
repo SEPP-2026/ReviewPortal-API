@@ -461,7 +461,7 @@ public class ToolService : IToolService
 
     private static (bool HasEnoughReviewsToRate, string? RatingMessage) GetRatingDisplayState(Tool tool)
     {
-        var hasEnoughReviewsToRate = tool.ReviewCount >= MinimumReviewsRequiredForRating && tool.OverallRating.HasValue;
+        var hasEnoughReviewsToRate = tool.ReviewCount >= MinimumReviewsRequiredForRating;
 
         return (
             hasEnoughReviewsToRate,

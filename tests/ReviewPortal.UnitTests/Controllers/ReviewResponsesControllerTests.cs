@@ -78,6 +78,21 @@ public class ReviewResponsesControllerTests
     }
 
     [Fact]
+    public async Task Create_WhenReviewIsNotApproved_ReturnsBadRequestProblem()
+    {
+        var reviewService = new FakeReviewService
+        {
+            AddCompanyResponseResult = Result<CompanyResponseDto>.Failure("Company responses can only be added to approved reviews.")
+        };
+        var controller = CreateController(reviewService, userId: 42);
+
+        var result = await controller.Create(7, new CreateCompanyResponseRequest("Thanks for your review."), CancellationToken.None);
+
+        var problemResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status400BadRequest, problemResult.StatusCode);
+    }
+
+    [Fact]
     public async Task Update_WhenResponseIsUpdated_ReturnsOk()
     {
         var response = CreateCompanyResponseDto() with { ResponseText = "Updated response" };
