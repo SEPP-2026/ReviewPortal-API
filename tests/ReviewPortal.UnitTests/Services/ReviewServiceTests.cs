@@ -803,6 +803,79 @@ public class ReviewServiceTests
     }
 
     [Fact]
+    public async Task AddCompanyResponseAsync_WhenReviewIsPending_ReturnsValidationFailure()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var tool = CreateTool(9, category, isActive: true);
+        var review = CreateReview(
+            1,
+            tool,
+            "Ava",
+            ReviewStatus.Pending,
+            new DateTime(2026, 4, 1, 8, 0, 0, DateTimeKind.Utc),
+            5,
+            4,
+            4,
+            5,
+            5);
+        var staffUser = CreateStaffUser(42, UserRole.Admin, "Shelton Team");
+        var companyResponseRepository = new InMemoryRepository<CompanyResponse>();
+        var unitOfWork = new FakeUnitOfWork();
+        var service = CreateService(
+            reviewRepository: new InMemoryReviewRepository([review]),
+            companyResponseRepository: companyResponseRepository,
+            unitOfWork: unitOfWork,
+            tools: [tool],
+            users: [staffUser]);
+
+        var result = await service.AddCompanyResponseAsync(review.Id, ValidCompanyResponseRequest(), staffUser.Id);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Company responses can only be added to approved reviews.", result.Error);
+        Assert.Empty(companyResponseRepository.Items);
+        Assert.Null(review.CompanyResponse);
+        Assert.Equal(0, unitOfWork.SaveChangesCallCount);
+    }
+
+    [Fact]
+    public async Task AddCompanyResponseAsync_WhenReviewIsRejected_ReturnsValidationFailure()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var tool = CreateTool(9, category, isActive: true);
+        var review = CreateReview(
+            1,
+            tool,
+            "Ava",
+            ReviewStatus.Rejected,
+            new DateTime(2026, 4, 1, 8, 0, 0, DateTimeKind.Utc),
+            5,
+            4,
+            4,
+            5,
+            5);
+        review.RejectionReason = "Contains personal details.";
+        var staffUser = CreateStaffUser(42, UserRole.Admin, "Shelton Team");
+        var companyResponseRepository = new InMemoryRepository<CompanyResponse>();
+        var unitOfWork = new FakeUnitOfWork();
+        var service = CreateService(
+            reviewRepository: new InMemoryReviewRepository([review]),
+            companyResponseRepository: companyResponseRepository,
+            unitOfWork: unitOfWork,
+            tools: [tool],
+            users: [staffUser]);
+
+        var result = await service.AddCompanyResponseAsync(review.Id, ValidCompanyResponseRequest(), staffUser.Id);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Company responses can only be added to approved reviews.", result.Error);
+        Assert.Empty(companyResponseRepository.Items);
+        Assert.Null(review.CompanyResponse);
+        Assert.Equal(0, unitOfWork.SaveChangesCallCount);
+    }
+
+    [Fact]
     public async Task AddCompanyResponseAsync_WhenReviewAlreadyHasResponse_ReturnsConflict()
     {
         var category = new Category { Id = 1, Name = "Access & Lifting" };
@@ -1151,6 +1224,69 @@ public class ReviewServiceTests
         Assert.All(result.Value.Items, review => Assert.Equal("Pending", review.Status));
         var pendingComment = Assert.Single(result.Value.Items.First().Comments);
         Assert.Equal("Pending commenter", pendingComment.CommenterName);
+    }
+
+    [Fact]
+    public async Task GetPendingReviewsAsync_WhenApprovedReviewHasPendingComment_IncludesItInModerationQueue()
+    {
+        var category = new Category { Id = 1, Name = "Cleaning & Maintenance" };
+        var tool = CreateTool(13, category, isActive: true);
+        var pendingReview = CreateReview(
+            1,
+            tool,
+            "Pending Review Author",
+            ReviewStatus.Pending,
+            new DateTime(2026, 4, 10, 8, 0, 0, DateTimeKind.Utc),
+            4,
+            4,
+            4,
+            4,
+            4);
+        var approvedReviewWithPendingComment = CreateReview(
+            2,
+            tool,
+            "Approved Review Author",
+            ReviewStatus.Approved,
+            new DateTime(2026, 4, 8, 8, 0, 0, DateTimeKind.Utc),
+            5,
+            5,
+            5,
+            4,
+            4);
+        approvedReviewWithPendingComment.Comments =
+        [
+            new ReviewComment
+            {
+                Id = 8,
+                ReviewId = approvedReviewWithPendingComment.Id,
+                CommenterName = "Approved commenter",
+                CommentText = "This approved comment should stay out of the moderation queue.",
+                Status = ReviewStatus.Approved,
+                CreatedDate = new DateTime(2026, 4, 9, 8, 0, 0, DateTimeKind.Utc)
+            },
+            new ReviewComment
+            {
+                Id = 9,
+                ReviewId = approvedReviewWithPendingComment.Id,
+                CommenterName = "Pending commenter",
+                CommentText = "Please double-check whether the public guidance needs updating for this hire.",
+                Status = ReviewStatus.Pending,
+                CreatedDate = new DateTime(2026, 4, 11, 9, 0, 0, DateTimeKind.Utc)
+            }
+        ];
+        var service = CreateService(reviews: [approvedReviewWithPendingComment, pendingReview], tools: [tool]);
+
+        var result = await service.GetPendingReviewsAsync(page: 1, pageSize: 10);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Value!.TotalCount);
+        Assert.Equal(["Pending Review Author", "Approved Review Author"], result.Value.Items.Select(review => review.ReviewerName).ToArray());
+
+        var reviewWithPendingComment = Assert.Single(result.Value.Items.Where(review => review.Id == approvedReviewWithPendingComment.Id));
+        Assert.Equal("Approved", reviewWithPendingComment.Status);
+        var pendingComment = Assert.Single(reviewWithPendingComment.Comments);
+        Assert.Equal("Pending commenter", pendingComment.CommenterName);
+        Assert.Equal("Pending", pendingComment.Status);
     }
 
     [Fact]

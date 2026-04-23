@@ -16,6 +16,8 @@ These scripts mirror the checked-in EF Core migrations and can be applied manual
   Adds the comment moderation rejection reason column introduced by migration `20260422221054_AddReviewCommentRejectionReason`.
 - `SeedEpic2ReviewData.sql`
   Applies approved and pending review demo data from migration `20260422223500_SeedEpic2ReviewData`.
+- `SeedEpic2CommentAndResponseData.sql`
+  Applies approved/pending comment demo data and admin company responses from migration `20260423094500_SeedEpic2CommentAndResponseData`.
 
 ## Recommended commands
 
@@ -39,6 +41,6 @@ dotnet ef migrations script <from-migration> <to-migration> --no-build --project
 
 ## Current Epic 2 status
 
-As of `2026-04-16`, `dotnet ef migrations has-pending-model-changes` reports no pending model changes for the current Epic 2 backend implementation.
+As of `2026-04-23`, `dotnet ef migrations has-pending-model-changes` reports no pending model changes for the current Epic 2 backend implementation.
 
 `dotnet ef database update` is still environment-dependent. In this workspace it fails before applying anything because the configured SQL Server requires encryption support that this machine does not currently provide.

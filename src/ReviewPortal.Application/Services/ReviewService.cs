@@ -217,6 +217,11 @@ public class ReviewService : IReviewService
             return Result<CompanyResponseDto>.NotFound($"Review with ID {reviewId} not found.");
         }
 
+        if (review.Status != ReviewStatus.Approved)
+        {
+            return Result<CompanyResponseDto>.Failure("Company responses can only be added to approved reviews.");
+        }
+
         if (review.CompanyResponse is not null)
         {
             return Result<CompanyResponseDto>.Conflict($"A company response already exists for review with ID {reviewId}.");

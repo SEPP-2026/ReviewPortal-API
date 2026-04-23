@@ -276,8 +276,14 @@ internal sealed class InMemoryReviewRepository : IReviewRepository
     {
         return Task.FromResult<IReadOnlyList<Review>>(
             _reviews
-                .Where(review => review.Status == ReviewStatus.Pending)
-                .OrderBy(review => review.CreatedDate)
+                .Where(review =>
+                    review.Status == ReviewStatus.Pending ||
+                    review.Comments.Any(comment => comment.Status == ReviewStatus.Pending))
+                .OrderBy(review => review.Status == ReviewStatus.Pending
+                    ? review.CreatedDate
+                    : review.Comments
+                        .Where(comment => comment.Status == ReviewStatus.Pending)
+                        .Min(comment => comment.CreatedDate))
                 .ThenBy(review => review.Id)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -286,7 +292,10 @@ internal sealed class InMemoryReviewRepository : IReviewRepository
 
     public Task<int> CountPendingAsync(CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(_reviews.Count(review => review.Status == ReviewStatus.Pending));
+        return Task.FromResult(
+            _reviews.Count(review =>
+                review.Status == ReviewStatus.Pending ||
+                review.Comments.Any(comment => comment.Status == ReviewStatus.Pending)));
     }
 
     public Task<IReadOnlyList<Review>> GetByToolIdAsync(int toolId, CancellationToken cancellationToken = default)

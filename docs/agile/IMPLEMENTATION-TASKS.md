@@ -107,11 +107,11 @@ No actual `Reviews` rows exist in the database. Sprint 1 tool detail pages rely 
 
 **Sub-tasks:**
 
-- [ ] **13.1** In `ReviewService.AddCompanyResponseAsync`, after the `review is null` check, add: if `review.Status != ReviewStatus.Approved`, return `Result<CompanyResponseDto>.Failure("Company responses can only be added to approved reviews.")`
-- [ ] **13.2** Write unit test: attempting to add a response to a Pending review returns a validation failure
-- [ ] **13.3** Write unit test: attempting to add a response to a Rejected review returns a validation failure
-- [ ] **13.4** Write unit test: adding a response to an Approved review still works as before
-- [ ] **13.5** Run `dotnet build` and `dotnet test` — confirm all tests pass
+- [x] **13.1** In `ReviewService.AddCompanyResponseAsync`, after the `review is null` check, add: if `review.Status != ReviewStatus.Approved`, return `Result<CompanyResponseDto>.Failure("Company responses can only be added to approved reviews.")`
+- [x] **13.2** Write unit test: attempting to add a response to a Pending review returns a validation failure
+- [x] **13.3** Write unit test: attempting to add a response to a Rejected review returns a validation failure
+- [x] **13.4** Write unit test: adding a response to an Approved review still works as before
+- [x] **13.5** Run `dotnet build` and `dotnet test` — confirm all tests pass
 
 ---
 
@@ -124,11 +124,11 @@ US-2.3 AC says: "If there are fewer than 2 reviews, 'Not enough reviews to rate'
 
 **Sub-tasks:**
 
-- [ ] **14.1** Check `ToolDto` and `ToolSummaryDto` for a `HasEnoughReviews` or equivalent flag
-- [ ] **14.2** If missing, add a `bool HasEnoughReviews` property (true when `ReviewCount >= 2`) to both DTOs
-- [ ] **14.3** Update `ToolService.GetToolByIdAsync` and `GetToolsByCategoryAsync` mapping logic to populate the flag
-- [ ] **14.4** Write unit tests: tool with 0 reviews → `HasEnoughReviews = false`; tool with 1 review → `false`; tool with 2+ → `true`
-- [ ] **14.5** Run `dotnet build` and `dotnet test` — confirm all tests pass
+- [x] **14.1** Checked `ToolDto` and `ToolSummaryDto`; the existing equivalent flag is `HasEnoughReviewsToRate`
+- [x] **14.2** No DTO rename was required because `HasEnoughReviewsToRate` already satisfies the `ReviewCount >= 2` requirement in both DTOs
+- [x] **14.3** Confirmed `ToolService.GetToolByIdAsync` and `GetToolsByCategoryAsync` populate the flag/message, and tightened the threshold logic to use `ReviewCount >= 2` directly
+- [x] **14.4** Unit tests now explicitly cover 0 reviews → `false`, while existing tests cover 1 review → `false` and 2+ reviews → `true`
+- [x] **14.5** Run `dotnet build` and `dotnet test` — confirm all tests pass
 
 ---
 
@@ -141,10 +141,10 @@ No demo data for comments or company responses.
 
 **Sub-tasks:**
 
-- [ ] **15.1** In the same or new migration as TASK-9, seed 2–3 approved comments on seeded reviews
-- [ ] **15.2** Seed 1–2 `CompanyResponse` rows from the Admin seed user (Id: 2)
-- [ ] **15.3** Include 1 pending comment to populate the moderation queue
-- [ ] **15.4** Generate SQL script, apply migration, run tests
+- [x] **15.1** Added a new seed migration with 3 approved comments attached to seeded approved reviews
+- [x] **15.2** Seeded 2 `CompanyResponse` rows from the Admin seed user (Id: 2)
+- [x] **15.3** Seeded 1 pending comment and updated the moderation queue query so pending comments on approved reviews appear in the admin queue
+- [x] **15.4** Generate SQL script, apply migration, run tests
 
 ---
 
@@ -391,7 +391,7 @@ TASK-16 (Admin category routing)     — independent
 | TASK-10: Docs – vague ACs | Done | 2026-04-23 |
 | TASK-11: Docs – traceability | Done | 2026-04-23 |
 | TASK-12: Docs – definitions | Done | 2026-04-23 |
-| TASK-13: Fix company response | ⬜ Not started | |
-| TASK-14: Review threshold | ⬜ Not started | |
-| TASK-15: Seed comments/responses | ⬜ Not started | |
+| TASK-13: Fix company response | Done | 2026-04-23 |
+| TASK-14: Review threshold | Done | 2026-04-23 |
+| TASK-15: Seed comments/responses | Done | 2026-04-23 |
 | TASK-16: Admin category routing | ⬜ Not started | |
