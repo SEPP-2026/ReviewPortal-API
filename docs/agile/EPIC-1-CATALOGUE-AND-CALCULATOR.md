@@ -15,10 +15,10 @@ This epic covers everything a customer interacts with when they land on the site
 **so that** I can quickly find the type of equipment I am looking for without having to search around.
 
 **Acceptance Criteria:**
-- Homepage displays all tool/service categories with a relevant image and name for each
+- Homepage displays every active tool/service category with a category name and one image thumbnail
 - Clicking a category takes the user to a filtered catalogue page
-- The page loads within 3 seconds on a reasonable internet connection
-- Works properly on mobile screens as well as desktop
+- The page loads within 3 seconds on a 10 Mbps connection in the prototype environment
+- The homepage renders without horizontal scrolling at viewport widths of 375px and above
 
 **Story Points:** 5
 **Priority:** Must
@@ -46,8 +46,8 @@ This epic covers everything a customer interacts with when they land on the site
 **Acceptance Criteria:**
 - Each category page shows a list of tools/services with thumbnail image, name, and starting price
 - Tools/services can be sorted by name or price (low to high, high to low)
-- Pagination or infinite scroll is used if there are more than 12 items
-- An empty state message is shown if a category has no tools/services listed yet
+- Pagination controls are shown when a category contains more than 12 items, with no more than 12 items displayed per page
+- If a category has no active tools/services, the page shows an empty-state message instead of an empty grid
 
 **Story Points:** 5
 **Priority:** Must
@@ -59,11 +59,11 @@ This epic covers everything a customer interacts with when they land on the site
 |---|------|-------|
 | 1 | Create `ToolService` method to return paginated tools filtered by category | Backend |
 | 2 | Implement sorting logic (by name, price ascending, price descending) in the service layer | Backend |
-| 3 | Build category page layout with tool listing grid | Frontend |
+| 3 | Build category page layout with tool/service listing grid | Frontend |
 | 4 | Create reusable `ToolCard` component (thumbnail, name, starting price) | Frontend |
 | 5 | Add sort controls (dropdown or toggle buttons) to the page header | Frontend |
 | 6 | Implement pagination component for results exceeding 12 items | Frontend |
-| 7 | Handle and display empty state message when a category has no tools | Frontend |
+| 7 | Handle and display empty state message when a category has no tools/services | Frontend |
 | 8 | Write unit tests for sorting and pagination logic | Testing |
 
 ---
@@ -76,10 +76,10 @@ This epic covers everything a customer interacts with when they land on the site
 
 **Acceptance Criteria:**
 - Page shows tool/service name, full description, multiple images (with the ability to click through them), and the category it belongs to
-- Hire rates are displayed clearly: hourly rate, daily rate, and weekly rate
+- The page displays hourly, daily, and weekly hire rates as separate currency values
 - Any special notes or requirements (e.g. "requires a deposit" or "needs a trained operator") are shown
 - The page includes a link or section for the rental calculator (see US-1.5)
-- Average customer rating is visible if reviews exist (links to Epic 2)
+- If reviews exist, the page displays the overall rating and review count (links to Epic 2)
 
 **Story Points:** 5
 **Priority:** Must
@@ -90,7 +90,7 @@ This epic covers everything a customer interacts with when they land on the site
 | # | Task | Owner |
 |---|------|-------|
 | 1 | Create `ToolService` method to return full tool details including images and hire rates | Backend |
-| 2 | Build tool detail page layout with all required sections | Frontend |
+| 2 | Build tool/service detail page layout with all required sections | Frontend |
 | 3 | Implement image gallery component with click-through navigation | Frontend |
 | 4 | Display hire rates in a clear, tabular format (hourly, daily, weekly) | Frontend |
 | 5 | Show special notes and deposit information where applicable | Frontend |
@@ -110,7 +110,7 @@ This epic covers everything a customer interacts with when they land on the site
 - A search bar is visible on every page (header/nav area)
 - Searching returns results matching tool/service name, description, or category
 - Results show thumbnail, name, category, and starting hire price
-- If nothing matches, a helpful message is displayed (e.g. "No results found – try a different term or browse our categories")
+- If nothing matches, the page displays "No results found – try a different term or browse our categories"
 - Search is not case-sensitive
 
 **Story Points:** 5
@@ -140,10 +140,9 @@ This epic covers everything a customer interacts with when they land on the site
 - Calculator is available on each tool/service detail page
 - User picks a start date/time and an end date/time using a date-time picker
 - The system calculates the cost based on the tool/service's stored hourly, daily, and weekly rates
-- Calculation logic: the system should work out the cheapest combination (e.g. 3 days is cheaper as a weekly rate if the weekly rate is less than 3 × daily)
-- A breakdown is shown: "2 days × £45/day + 3 hours × £8/hour = £99"
-- Validation prevents selecting an end date before the start date
-- If the selected period is zero or negative, a sensible error is shown
+- The calculator returns the lowest total cost obtainable from the stored hourly, daily, and weekly rates for the selected period
+- The result includes a line-by-line breakdown showing quantity × rate for each tier used plus the final total
+- If the end date/time is earlier than or equal to the start date/time, the calculator returns a validation error and no total cost
 
 **Story Points:** 8
 **Priority:** Must
@@ -156,7 +155,7 @@ This epic covers everything a customer interacts with when they land on the site
 | 1 | Implement rental cost calculation service that determines the cheapest combination of hourly, daily, and weekly rates | Backend |
 | 2 | Add date range validation logic (prevent negative or zero-length periods) | Backend |
 | 3 | Create a calculator API endpoint that accepts start/end date-times and returns cost breakdown | Backend |
-| 4 | Build date-time picker component for start and end inputs on the tool detail page | Frontend |
+| 4 | Build date-time picker component for start and end inputs on the tool/service detail page | Frontend |
 | 5 | Display cost breakdown in a clear format (e.g. "2 days × £45/day + 3 hours × £8/hour = £99") | Frontend |
 | 6 | Show validation errors for invalid date selections | Frontend |
 | 7 | Write unit tests for the calculation logic covering multiple scenarios (hours only, days only, mixed, weekly thresholds) | Testing |
@@ -199,9 +198,9 @@ This epic covers everything a customer interacts with when they land on the site
 
 **Acceptance Criteria:**
 - All catalogue pages (homepage, category, detail, search results) are usable on screens 375px wide and above
-- Images resize appropriately
-- The search bar is accessible on mobile
-- Navigation does not break or overlap on smaller screens
+- Images remain within their containers without overflow at 375px, 390px, and 414px viewport widths
+- The search bar remains reachable from the mobile navigation and accepts text input at 375px and above
+- Primary navigation opens and closes without overlapping page content or pushing controls off-screen at 375px and above
 
 **Story Points:** 5
 **Priority:** Should
@@ -233,9 +232,9 @@ This epic covers everything a customer interacts with when they land on the site
 - `GET /api/categories/{id}/tools` returns tools in a specific category
 - `GET /api/tools/{id}` returns full detail for a single tool (including hire rates)
 - `GET /api/tools/search?q={term}` returns search results
-- All endpoints return proper HTTP status codes (200, 404, etc.)
+- Endpoints return 200 for successful reads, 400 for invalid query values, and 404 when the requested category or tool does not exist
 - Responses are in JSON format
-- Unit tests cover the controller and service logic
+- Unit tests cover success, validation failure, and not-found paths for controller and service logic
 
 **Story Points:** 8
 **Priority:** Must
@@ -256,8 +255,8 @@ This epic covers everything a customer interacts with when they land on the site
 - `Tools` table with Id, Name, Description, CategoryId (FK), HourlyRate, DailyRate, WeeklyRate, SpecialNotes, DepositRequired, DepositAmount, IsActive, OverallRating, ReviewCount, CreatedDate, UpdatedDate
 - `ToolImages` table with Id, ToolId (FK), ImageUrl, DisplayOrder, UploadedDate — images are stored in a separate table rather than a JSON column, allowing proper indexing and individual image management
 - Seed data includes at least 3 categories with 4–5 tools/services each
-- EF Core migrations are set up and working
-- Database can be recreated from migrations on any team member's machine
+- A clean local database can be created with `dotnet ef database update` without manual schema changes
+- Running the migrations on a clean local database recreates the schema and seeded catalogue data
 
 **Story Points:** 5
 **Priority:** Must
@@ -274,11 +273,11 @@ This epic covers everything a customer interacts with when they land on the site
 **so that** everyone can start contributing code from day one.
 
 **Acceptance Criteria:**
-- ASP.NET Core Web API project created with standard folder structure
-- Next.js project initialised with basic routing
+- The solution contains separate API, Application, Domain, and Infrastructure projects
+- The frontend project starts locally and serves at least a homepage route and one catalogue route
 - GitHub Actions workflow runs on every push: builds both projects, runs unit tests
 - README updated with setup instructions (how to run locally, connection string config, etc.)
-- .gitignore covers all the usual suspects (bin, obj, node_modules, .env)
+- `.gitignore` excludes `bin/`, `obj/`, `node_modules/`, `.env`, and generated build output files
 
 **Story Points:** 5
 **Priority:** Could

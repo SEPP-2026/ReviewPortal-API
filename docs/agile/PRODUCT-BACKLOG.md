@@ -43,7 +43,9 @@ We have settled on three core epics. Each one represents a meaningful portion of
 
 ---
 
-## Tool/Service Categories
+## Definitions and Design Decisions
+
+### Tool/Service Categories
 
 After reviewing competitor offerings and considering what Shelton's customers would realistically search for, we agreed on the following categories:
 
@@ -59,7 +61,7 @@ After reviewing competitor offerings and considering what Shelton's customers wo
 
 ---
 
-## Review Categories
+### Review Categories
 
 When a customer writes a review, they rate their experience across these five areas (each out of 5 stars):
 
@@ -79,9 +81,41 @@ The overall rating is an average of all five categories. We considered weighting
 
 ---
 
-## Tools and Services
+### Service Handling
 
 The project brief refers to "tools and services". After discussion, we decided to model services (such as equipment delivery, operator hire, or PAT testing) as tools within the catalogue rather than creating a separate entity. Services share the same attributes as tools — name, description, hire rates, images, and reviews — so a separate schema would duplicate structure without adding value. Where Shelton offers services, they are listed under a "Services" category alongside the physical equipment categories. This keeps the data model clean while covering the full range of offerings.
+
+---
+
+### Rating Aggregation
+
+The rating model is defined as follows:
+
+- Each review stores five category scores: Equipment Performance, Booking & Customer Service, Technical Support & Guidance, After-Sales & Breakdown Support, and Value for Money.
+- Review-level overall rating is calculated as `(Equipment + Customer + Technical + AfterSales + Value) / 5`.
+- Tool/service-level overall rating is calculated from approved reviews only.
+- Cached `OverallRating` and `ReviewCount` values are stored on the `Tool` record so catalogue and detail pages can load rating summaries without recalculating every request.
+- If a tool/service has fewer than 2 approved reviews, the frontend may display "Not enough reviews to rate" instead of a numeric score.
+
+### Moderation Rules
+
+The moderation workflow is defined as follows:
+
+- All customer reviews are created with `Pending` status and require moderator approval before public display.
+- All customer comments are created with `Pending` status and require moderator approval before public display.
+- Moderators/admins can approve or reject reviews and comments.
+- Rejections should include a short reason, especially for cases such as offensive, irrelevant, or spam content.
+- Company responses are official staff content, so they bypass moderation and publish immediately.
+
+### Pricing Logic
+
+The rental calculator follows these rules:
+
+- Every tool/service stores hourly, daily, and weekly hire rates.
+- The customer supplies a start date/time and an end date/time.
+- The end date/time must be later than the start date/time; otherwise the calculator returns a validation error.
+- The calculator chooses the cheapest valid combination of hourly, daily, and weekly rates for the requested hire period.
+- The response includes a cost breakdown showing the rate tiers used plus the final total.
 
 ---
 

@@ -86,7 +86,7 @@ Each requirement is traced to the user story that implements it and the brief re
 | FR-18 | The system shall allow customers to submit a written review for any tool | Must | US-2.1 | R4 |
 | FR-19 | Each review shall include five individual star ratings (1–5): Equipment Performance, Customer Service, Technical Support, After-Sales Support, and Value for Money | Must | US-2.1 | R13–R17 |
 | FR-20 | All five star ratings and a minimum of 20 characters of review text shall be required before submission | Must | US-2.1 | R4 |
-| FR-21 | Submitted reviews shall be saved with a status of "Pending" and shall not be visible until approved by a moderator | Must | US-2.1, US-3.6 | R26 |
+| FR-21 | All customer reviews shall be saved with a status of "Pending" and shall not be visible until approved by a moderator | Must | US-2.1, US-3.6 | R26 |
 | FR-22 | The system shall display approved reviews on the tool detail page sorted by most recent | Must | US-2.2 | R4 |
 | FR-23 | Each tool shall have an overall rating calculated as the average of all its approved review ratings | Must | US-2.3 | R25 |
 | FR-24 | The overall rating and review count shall be visible on catalogue listing pages and tool detail pages | Must | US-2.3 | R25 |
@@ -99,7 +99,7 @@ Each requirement is traced to the user story that implements it and the brief re
 |----|-------------|----------|------------|-----------|
 | FR-27 | Users shall be able to comment on other people's approved reviews | Must | US-2.4 | R18 |
 | FR-28 | Comments shall require a name and a minimum of 10 characters of text | Must | US-2.4 | R18 |
-| FR-29 | Comments shall go through moderation before becoming visible | Must | US-2.4 | R26 |
+| FR-29 | All customer comments shall be saved with a status of "Pending" and shall not be visible until approved by a moderator | Must | US-2.4 | R26 |
 | FR-30 | Shelton staff shall be able to post an official company response to any review | Must | US-2.5 | R19 |
 | FR-31 | Only one company response per review shall be permitted | Must | US-2.5 | R19 |
 | FR-32 | Company responses shall bypass moderation and appear immediately | Should | US-2.5 | R19 |
@@ -126,6 +126,41 @@ Each requirement is traced to the user story that implements it and the brief re
 | FR-43 | Moderators shall be able to approve or reject reviews/comments with a reason for rejection | Must | US-3.6 | R11, R26 |
 | FR-44 | Admins shall be able to add, rename, and update categories | Should | US-3.7 | R2 |
 | FR-45 | The admin area shall display a dashboard with summary statistics | Could | US-3.8 | R8 |
+
+### 3.7 Requirements Traceability
+
+This section provides the document-level traceability summary from the project brief to the backlog stories and formal requirements in this specification. The more detailed implementation-oriented matrix remains in [GAP-ANALYSIS.md §2](GAP-ANALYSIS.md#2-requirements-traceability-matrix).
+
+#### 3.7.1 Scenario Requirements to Backlog Stories
+
+| Brief Ref | Scenario Requirement | Backlog Stories | Functional Requirements |
+|-----------|----------------------|-----------------|-------------------------|
+| R2 | Browse the catalogue by category and manage category structure | US-1.1, US-1.2, US-1.6, US-1.9, US-3.7 | FR-01 to FR-04, FR-10, FR-11, FR-44 |
+| R3 | Search the catalogue by keyword | US-1.4 | FR-07 to FR-09 |
+| R4 | Submit reviews and support returning users with login and review history | US-2.1, US-2.7, US-2.8 | FR-18, FR-20, FR-33 to FR-36 |
+| R5 | Provide a full tool/service detail page with descriptive information | US-1.3 | FR-05, FR-06 |
+| R6 | Accept hire dates/times and show the customer a cost breakdown | US-1.5 | FR-12, FR-13, FR-16, FR-17 |
+| R7 | Calculate hire cost from stored hourly, daily, and weekly rates using the cheapest valid combination | US-1.5 | FR-14, FR-15 |
+| R8 | Provide secure back-office access and admin operations | US-3.1, US-3.2, US-3.5, US-3.8 | FR-37, FR-38, FR-41, FR-45 |
+| R9 | Allow staff to edit existing equipment/service details and pricing | US-3.3 | FR-39 |
+| R10 | Allow staff to manage tool/service images | US-3.4 | FR-40 |
+| R11 | Provide a moderation queue with approval and rejection actions | US-3.6 | FR-42, FR-43 |
+| R13-R17 | Capture the five defined review categories for every review | US-2.1, US-2.9 | FR-19 |
+| R18 | Support comments on approved reviews | US-2.4 | FR-27 to FR-29 |
+| R19 | Support one official company response per review | US-2.5 | FR-30 to FR-32 |
+| R24 | Match search terms against tool/service name, description, and category | US-1.4 | FR-07, FR-08 |
+| R25 | Aggregate, display, and sort by overall ratings | US-2.3 | FR-23 to FR-26 |
+| R26 | Moderate customer-submitted reviews and comments before publication | US-2.1, US-2.4, US-3.6 | FR-21, FR-29, FR-42, FR-43 |
+
+#### 3.7.2 Defined Decision Traceability
+
+| Defined Item | Backlog Stories | Functional Requirements | Notes |
+|--------------|-----------------|-------------------------|-------|
+| Tool/service categories, including the dedicated `Services` category | US-1.1, US-1.2, US-1.9, US-3.7 | FR-01 to FR-03, FR-44 | Covers catalogue structure, browsing, and seeded reference data |
+| Review categories (Equipment, Customer Service, Technical Support, After-Sales Support, Value for Money) | US-2.1, US-2.9 | FR-19 | The five review dimensions are captured in both submission and schema stories |
+| Rating aggregation method for overall score and review-count threshold | US-2.3 | FR-23 to FR-26 | Covers average rating, display, sorting, and the minimum-review threshold |
+| Moderation workflow for reviews and comments | US-2.1, US-2.4, US-3.6 | FR-21, FR-29, FR-42, FR-43 | Covers `Pending` status, moderator actions, and public visibility rules |
+| Pricing logic for hourly, daily, and weekly hire calculation | US-1.5 | FR-12 to FR-17 | Covers inputs, cheapest-combination logic, validation, and cost breakdown |
 
 ---
 
@@ -197,6 +232,6 @@ graph TB
 
 ### 5.2 Assumptions
 - Shelton Tool-Hire's "services" (e.g. delivery, operator hire) are modelled as tools within a "Services" category, as they share the same attributes (name, description, rates, reviews). This avoids duplicating the schema for a small number of non-physical offerings.
-- The review system does not require verified purchases — any registered user (or anonymous visitor providing name and email) can leave a review, subject to moderation
+- The review system does not require verified purchases — any registered user (or anonymous visitor providing name and email) can leave a review, but all customer reviews and comments require moderation before publication
 - Tool availability/stock checking is out of scope — the calculator computes cost only, not availability
 - Multi-language support is not required for the prototype
