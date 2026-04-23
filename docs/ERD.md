@@ -75,6 +75,7 @@ erDiagram
         string CommenterName
         string CommentText
         string Status
+        string RejectionReason
         datetime CreatedDate
     }
 
@@ -209,6 +210,7 @@ Customer comments on existing reviews. One level deep only (no nested threading)
 | **CommenterName** | `nvarchar(100)` | Required | Commenter's display name |
 | **CommentText** | `nvarchar(1000)` | Required, Min: 10 chars | Comment content |
 | **Status** | `nvarchar(20)` | Required, Default: `"Pending"` | `Pending`, `Approved`, or `Rejected` |
+| **RejectionReason** | `nvarchar(500)` | Optional | Moderator's reason if rejected |
 | **CreatedDate** | `datetime2` | Required, Default: `GETUTCDATE()` | Submission timestamp |
 
 ---

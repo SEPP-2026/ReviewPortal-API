@@ -15,6 +15,8 @@ public class ReviewComment : BaseEntity
 
     public ReviewStatus Status { get; set; } = ReviewStatus.Pending;
 
+    public string? RejectionReason { get; set; }
+
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
     // Navigation properties

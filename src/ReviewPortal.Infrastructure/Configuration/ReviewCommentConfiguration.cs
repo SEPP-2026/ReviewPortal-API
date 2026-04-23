@@ -23,6 +23,9 @@ public class ReviewCommentConfiguration : IEntityTypeConfiguration<ReviewComment
             .HasConversion<string>()
             .HasMaxLength(20);
 
+        builder.Property(rc => rc.RejectionReason)
+            .HasMaxLength(500);
+
         builder.Property(rc => rc.CreatedDate)
             .HasDefaultValueSql("GETUTCDATE()");
 

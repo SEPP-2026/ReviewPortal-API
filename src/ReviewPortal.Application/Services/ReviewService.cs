@@ -18,6 +18,7 @@ public class ReviewService : IReviewService
     private const int MaxCompanyResponseLength = 2000;
     private const int MinReviewLength = 20;
     private const int MaxReviewLength = 2000;
+    private const int MaxRejectionReasonLength = 500;
 
     private readonly IReviewRepository _reviewRepository;
     private readonly IRepository<CompanyResponse> _companyResponseRepository;
@@ -344,19 +345,82 @@ public class ReviewService : IReviewService
         return Result<PagedList<ReviewSummaryDto>>.Success(pagedReviews);
     }
 
-    public Task<Result<PagedList<ReviewDto>>> GetPendingReviewsAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<Result<PagedList<ReviewDto>>> GetPendingReviewsAsync(int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(Result<PagedList<ReviewDto>>.Failure("Pending review retrieval is not implemented in this slice."));
+        var validationError = ValidatePaging(page, pageSize);
+        if (validationError is not null)
+        {
+            return Result<PagedList<ReviewDto>>.Failure(validationError);
+        }
+
+        var totalPendingReviews = await _reviewRepository.CountPendingAsync(cancellationToken);
+        var pendingReviews = totalPendingReviews == 0
+            ? Array.Empty<Review>()
+            : await _reviewRepository.GetPendingWithDetailsAsync(page, pageSize, cancellationToken);
+
+        var pagedReviews = new PagedList<ReviewDto>(
+            pendingReviews
+                .Select(review => MapReview(review, review.Tool?.Name ?? string.Empty, ReviewStatus.Pending))
+                .ToList(),
+            page,
+            pageSize,
+            totalPendingReviews);
+
+        return Result<PagedList<ReviewDto>>.Success(pagedReviews);
     }
 
-    public Task<Result<bool>> ModerateReviewAsync(int reviewId, ModerateReviewRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> ModerateReviewAsync(int reviewId, ModerateReviewRequest request, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(Result<bool>.Failure("Review moderation is not implemented in this slice."));
+        var validationError = ValidateModerationRequest(request);
+        if (validationError is not null)
+        {
+            return Result<bool>.Failure(validationError);
+        }
+
+        var review = await _reviewRepository.GetByIdAsync(reviewId, cancellationToken);
+        if (review is null)
+        {
+            return Result<bool>.NotFound($"Review with ID {reviewId} not found.");
+        }
+
+        review.Status = request.Approved ? ReviewStatus.Approved : ReviewStatus.Rejected;
+        review.RejectionReason = request.Approved ? null : request.RejectionReason!.Trim();
+
+        var tool = await _toolRepository.GetByIdAsync(review.ToolId, cancellationToken);
+        if (tool is null)
+        {
+            return Result<bool>.NotFound($"Tool with ID {review.ToolId} not found.");
+        }
+
+        await _reviewRepository.UpdateAsync(review, cancellationToken);
+        await RecalculateToolRatingAsync(tool, cancellationToken);
+        await _toolRepository.UpdateAsync(tool, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result<bool>.Success(true);
     }
 
-    public Task<Result<bool>> ModerateCommentAsync(int commentId, ModerateReviewRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> ModerateCommentAsync(int commentId, ModerateReviewRequest request, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(Result<bool>.Failure("Comment moderation is not implemented in this slice."));
+        var validationError = ValidateModerationRequest(request);
+        if (validationError is not null)
+        {
+            return Result<bool>.Failure(validationError);
+        }
+
+        var comment = await _reviewCommentRepository.GetByIdAsync(commentId, cancellationToken);
+        if (comment is null)
+        {
+            return Result<bool>.NotFound($"Comment with ID {commentId} not found.");
+        }
+
+        comment.Status = request.Approved ? ReviewStatus.Approved : ReviewStatus.Rejected;
+        comment.RejectionReason = request.Approved ? null : request.RejectionReason!.Trim();
+
+        await _reviewCommentRepository.UpdateAsync(comment, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result<bool>.Success(true);
     }
 
     private static string? ValidateReviewRequest(CreateReviewRequest request, int? userId)
@@ -474,6 +538,29 @@ public class ReviewService : IReviewService
         return null;
     }
 
+    private static string? ValidateModerationRequest(ModerateReviewRequest request)
+    {
+        if (request is null)
+        {
+            return "Moderation request is required.";
+        }
+
+        if (!request.Approved)
+        {
+            if (string.IsNullOrWhiteSpace(request.RejectionReason))
+            {
+                return "Rejection reason is required when rejecting.";
+            }
+
+            if (request.RejectionReason.Trim().Length > MaxRejectionReasonLength)
+            {
+                return $"Rejection reason must be {MaxRejectionReasonLength} characters or fewer.";
+            }
+        }
+
+        return null;
+    }
+
     private static string? ValidateRating(int rating, string fieldName)
     {
         if (rating is < 1 or > 5)
@@ -559,10 +646,25 @@ public class ReviewService : IReviewService
         return Result<User>.Success(user);
     }
 
-    private static ReviewDto MapReview(Review review, string toolName)
+    private async Task RecalculateToolRatingAsync(Tool tool, CancellationToken cancellationToken)
     {
-        var approvedComments = review.Comments
-            .Where(comment => comment.Status == ReviewStatus.Approved)
+        var approvedReviews = (await _reviewRepository.GetByToolIdAsync(tool.Id, cancellationToken))
+            .Where(review => review.Status == ReviewStatus.Approved)
+            .ToList();
+
+        tool.ReviewCount = approvedReviews.Count;
+        tool.OverallRating = approvedReviews.Count == 0
+            ? null
+            : Math.Round(
+                approvedReviews.Average(review => review.OverallRating),
+                2,
+                MidpointRounding.AwayFromZero);
+    }
+
+    private static ReviewDto MapReview(Review review, string toolName, ReviewStatus commentStatus = ReviewStatus.Approved)
+    {
+        var comments = review.Comments
+            .Where(comment => comment.Status == commentStatus)
             .OrderBy(comment => comment.CreatedDate)
             .ThenBy(comment => comment.Id)
             .Select(MapComment)
@@ -592,7 +694,7 @@ public class ReviewService : IReviewService
             review.Status.ToString(),
             review.RejectionReason,
             review.CreatedDate,
-            approvedComments,
+            comments,
             companyResponse);
     }
 
