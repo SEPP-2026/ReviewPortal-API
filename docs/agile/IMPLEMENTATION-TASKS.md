@@ -146,6 +146,34 @@ No demo data for comments or company responses.
 - [x] **15.3** Seeded 1 pending comment and updated the moderation queue query so pending comments on approved reviews appear in the admin queue
 - [x] **15.4** Generate SQL script, apply migration, run tests
 
+---
+
+### TASK-17: Align auth stack with ASP.NET Identity requirement
+
+**Links to:** [US-2.7 - User registration and login](EPIC-2-REVIEWS-AND-RATINGS.md#us-27--user-registration-and-login) | [REQUIREMENTS-SPECIFICATION](../REQUIREMENTS-SPECIFICATION.md) | [NON-FUNCTIONAL-REQUIREMENTS](../NON-FUNCTIONAL-REQUIREMENTS.md)
+**Priority:** Must | **Gap IDs:** GAP-AUTH-1, GAP-AUTH-2, GAP-AUTH-3, GAP-AUTH-4, GAP-AUTH-5
+
+The current implementation uses a custom `AuthService`, `IUserRepository`, `IPasswordHasher`, and hand-managed password reset flow. JWT bearer authentication is configured, but the project is not actually wired to ASP.NET Identity for user management, password policies, token providers, role management, or EF-backed Identity stores. If the requirement is to use ASP.NET Identity, this needs a full auth-stack refactor rather than a docs-only change.
+
+**Gap summary:**
+
+- `AppDbContext` inherits from `DbContext`, not `IdentityDbContext`
+- `User` is a custom entity, not an Identity user/store model
+- DI registers `IJwtProvider` and a password hasher, but does not call `AddIdentity` / `AddIdentityCore`
+- `AuthService` performs registration, login, password checks, and reset-token generation manually instead of via `UserManager` / `SignInManager`
+- No Identity schema migration or SQL deployment script exists for the required auth tables/columns
+
+**Sub-tasks:**
+
+- [ ] **17.1** Add the required Identity packages and convert the auth persistence model to an ASP.NET Identity-compatible user type (either adapt `User` or introduce an `ApplicationUser` mapping strategy)
+- [ ] **17.2** Update `AppDbContext` to use Identity EF stores and configure ASP.NET Identity in DI with the project password policy (minimum 8 chars, one number, one uppercase)
+- [ ] **17.3** Refactor `AuthService` to use `UserManager` for registration, password verification, password changes, and password resets while keeping JWT token issuance for API auth
+- [ ] **17.4** Replace manual reset-token generation/storage with Identity token providers or document and justify any compatible hybrid design if the schema must remain partially custom
+- [ ] **17.5** Ensure role handling (`Customer`, `Admin`, `Moderator`) is supported through Identity role claims and that existing authorization attributes continue to work
+- [ ] **17.6** Create the required EF Core migration and SQL deployment script for the Identity schema changes, and update seed/test-user scripts if the user table shape changes
+- [ ] **17.7** Update unit and integration tests to cover Identity-backed registration, login, password change, forgot-password, reset-password, and JWT claim generation
+- [ ] **17.8** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx` and confirm all auth flows still work through the Web API
+
 ### TASK-18: Add missing ReviewComments status index
 
 **Links to:** [US-2.9 - Review database schema](EPIC-2-REVIEWS-AND-RATINGS.md#us-29--review-database-schema)
