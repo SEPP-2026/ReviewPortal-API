@@ -2,7 +2,7 @@
 
 **As a customer who has hired a tool/service from Shelton, I want to share my honest experience and read what other people think, so that future customers and the company can benefit from real feedback.**
 
-This epic covers the entire review lifecycle — writing a review, rating different aspects of the service, reading other customers' reviews, commenting on them, and giving the company the ability to respond. It also includes the rating system that feeds into overall tool/service rankings.
+This epic covers the entire review lifecycle — writing a review, rating different aspects of the service, reading other customers' reviews, commenting on them, and giving the company the ability to respond. It also includes the rating system that feeds into overall tool/service rankings. All customer reviews and comments require moderation before publication.
 
 ---
 
@@ -22,7 +22,7 @@ This epic covers the entire review lifecycle — writing a review, rating differ
   - Star ratings (1–5) for each review category: Equipment Performance, Booking & Customer Service, Technical Support, After-Sales Support, Value for Money
 - All five ratings are required before the form can be submitted
 - On submission, the user sees a confirmation message: "Thanks for your review – it will be visible once our team has checked it"
-- The review is saved with a status of "Pending" (not visible to other customers until approved)
+- The review is saved with a status of "Pending" and is not visible to other customers until approved by a moderator
 
 **Story Points:** 8
 **Priority:** Must
@@ -54,8 +54,8 @@ This epic covers the entire review lifecycle — writing a review, rating differ
 - Approved reviews appear on the tool/service detail page, sorted by most recent first
 - Each review shows: reviewer name, date, the written text, and the individual star ratings
 - An overall average rating is calculated and shown at the top of the reviews section
-- If there are no reviews yet, a friendly message is shown: "No reviews yet – be the first to share your experience"
-- Reviews can be paginated if there are more than 10
+- If there are no approved reviews yet, the page displays "No reviews yet – be the first to share your experience"
+- Pagination controls are shown when more than 10 approved reviews exist, with no more than 10 reviews displayed per page
 
 **Story Points:** 5
 **Priority:** Must
@@ -115,8 +115,8 @@ This epic covers the entire review lifecycle — writing a review, rating differ
 **Acceptance Criteria:**
 - Each review has a "Reply" or "Add Comment" option
 - Comments require a name and the comment text (minimum 10 characters)
-- Comments appear below the parent review, indented or visually nested
-- Comments also go through moderation (status = Pending) before being visible
+- Approved comments appear directly beneath their parent review and are grouped separately from top-level reviews
+- Comments go through moderation (status = Pending) before being visible
 - A review can have multiple comments but we are not doing threaded/nested replies within comments (one level deep only)
 
 **Story Points:** 5
@@ -129,7 +129,7 @@ This epic covers the entire review lifecycle — writing a review, rating differ
 |---|------|-------|
 | 1 | Create `CommentService.AddComment()` method with validation (min 10 chars, name required) | Backend |
 | 2 | Set comment status to "Pending" on creation; save to database | Backend |
-| 3 | Add "Reply" or "Add Comment" button beneath each review on the tool page | Frontend |
+| 3 | Add "Reply" or "Add Comment" button beneath each review on the tool/service page | Frontend |
 | 4 | Build comment form with name and text fields, including client-side validation | Frontend |
 | 5 | Display approved comments beneath the parent review, visually nested (one level only) | Frontend |
 | 6 | Write unit tests for comment submission and validation logic | Testing |
@@ -144,7 +144,7 @@ This epic covers the entire review lifecycle — writing a review, rating differ
 
 **Acceptance Criteria:**
 - On the admin side, each review has a "Respond" button
-- The response appears on the public tool page beneath the review, clearly labelled as "Shelton Tool-Hire Response"
+- The response appears directly beneath the parent review on the public tool/service page and includes the exact label "Shelton Tool-Hire Response"
 - Only one official response per review is allowed
 - Company responses do not require moderation (they are posted by staff and go live immediately)
 - The response can be edited or removed by admin users
@@ -161,7 +161,7 @@ This epic covers the entire review lifecycle — writing a review, rating differ
 | 2 | Ensure company responses bypass the moderation workflow and are published immediately | Backend |
 | 3 | Add "Respond" button on the admin review view | Frontend |
 | 4 | Build response form in the admin area with text input | Frontend |
-| 5 | Display company response on the public tool page, clearly labelled as "Shelton Tool-Hire Response" | Frontend |
+| 5 | Display company response on the public tool/service page, clearly labelled as "Shelton Tool-Hire Response" | Frontend |
 | 6 | Add edit and delete options for existing responses in the admin view | Frontend |
 | 7 | Write unit tests for the one-response-per-review constraint and CRUD operations | Testing |
 
@@ -181,8 +181,8 @@ This epic covers the entire review lifecycle — writing a review, rating differ
 - `POST /api/reviews/{reviewId}/comments` adds a comment to a review
 - `GET /api/reviews/{reviewId}/comments` fetches comments for a review
 - `POST /api/reviews/{reviewId}/response` allows staff to add a company response
-- Validation errors return 400 with meaningful messages
-- Unit tests cover all review service logic and edge cases
+- Validation errors return HTTP 400 with a response body identifying the invalid field or business rule
+- Unit tests cover success, validation failure, and not-found paths for review endpoints and service logic
 
 **Story Points:** 8
 **Priority:** Must
@@ -234,7 +234,7 @@ This epic covers the entire review lifecycle — writing a review, rating differ
 - "My Reviews" page is accessible from the user menu when logged in
 - Each review shows: tool/service name, date submitted, current status (Pending / Approved / Rejected), and a snippet of the review text
 - Clicking a review takes the user to the tool/service page where it is displayed
-- If a review was rejected, a brief reason is shown (set by the moderator)
+- If a review was rejected, the moderator's stored rejection reason is displayed
 
 **Story Points:** 3
 **Priority:** Should
@@ -246,8 +246,8 @@ This epic covers the entire review lifecycle — writing a review, rating differ
 |---|------|-------|
 | 1 | Create `ReviewService` method to return all reviews by the authenticated user, including status and rejection reason | Backend |
 | 2 | Build "My Reviews" page accessible from the user menu | Frontend |
-| 3 | Display each review as a list item (tool name, date, status badge, text snippet) | Frontend |
-| 4 | Link each review to the corresponding tool detail page | Frontend |
+| 3 | Display each review as a list item (tool/service name, date, status badge, text snippet) | Frontend |
+| 4 | Link each review to the corresponding tool/service detail page | Frontend |
 | 5 | Show the moderator's rejection reason for any rejected reviews | Frontend |
 | 6 | Write unit tests for the user-specific review retrieval service method | Testing |
 
@@ -265,8 +265,8 @@ This epic covers the entire review lifecycle — writing a review, rating differ
 - `Reviews` table: Id, ToolId (FK), UserId (or ReviewerName/Email for anonymous), ReviewText, EquipmentRating, CustomerServiceRating, TechnicalSupportRating, AfterSalesRating, ValueForMoneyRating, OverallRating (computed), Status (Pending/Approved/Rejected), RejectionReason, CreatedDate
 - `ReviewComments` table: Id, ReviewId (FK), CommenterName, CommentText, Status, CreatedDate
 - `CompanyResponses` table: Id, ReviewId (FK), ResponseText, StaffUserId, CreatedDate, UpdatedDate
-- Proper indexes on ToolId and Status columns for query performance
-- EF Core migrations created and tested
+- The database includes indexes on `Reviews.ToolId`, `Reviews.Status`, `ReviewComments.ReviewId`, and `ReviewComments.Status`
+- The review schema is created by an EF Core migration that applies successfully with `dotnet ef database update`
 
 **Story Points:** 5
 **Priority:** Must
