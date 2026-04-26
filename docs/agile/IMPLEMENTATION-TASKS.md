@@ -183,11 +183,11 @@ US-2.9 requires indexes on ReviewComments.ReviewId and ReviewComments.Status, bu
 
 **Sub-tasks:**
 
-- [ ] **18.1** Add HasIndex(rc => rc.Status) to ReviewCommentConfiguration
-- [ ] **18.2** Create a new EF Core migration and SQL deployment script for the missing IX_ReviewComments_Status index
-- [ ] **18.3** Add or update schema tests to verify the migration/configuration includes the ReviewComments.Status index
-- [ ] **18.4** Apply the migration locally with dotnet ef database update
-- [ ] **18.5** Run dotnet build and dotnet test - confirm all tests pass
+- [x] **18.1** Add HasIndex(rc => rc.Status) to ReviewCommentConfiguration
+- [x] **18.2** Create a new EF Core migration and SQL deployment script for the missing IX_ReviewComments_Status index
+- [x] **18.3** Add or update schema tests to verify the migration/configuration includes the ReviewComments.Status index
+- [x] **18.4** Apply the migration locally with dotnet ef database update
+- [x] **18.5** Run dotnet build and dotnet test - confirm all tests pass
 
 ---
 ## Epic 3 â€“ Back-Office Management & Moderation
@@ -557,7 +557,7 @@ TASK-16 (Admin category routing)     â€” independent
 | TASK-14: Review threshold | Done | 2026-04-23 |
 | TASK-15: Seed comments/responses | Done | 2026-04-23 |
 | TASK-17: Identity auth alignment | â¬œ Not started | |
-| TASK-18: Review comment status index | â¬œ Not started | |
+| TASK-18: Review comment status index | Done | 2026-04-26 |
 | TASK-19: Admin tool service logic | â¬œ Not started | |
 | TASK-20: FluentValidation adoption | â¬œ Not started | |
 | TASK-21: Review rating DB constraints | â¬œ Not started | |

@@ -1,6 +1,6 @@
 # Implementation Sequence
 
-> Last updated: 2026-04-25
+> Last updated: 2026-04-26
 > Scope: remaining backend/API work for Epic 2, Epic 3, deployment hardening, Azure App Service readiness, and Next.js integration readiness.
 
 ## Goal
@@ -31,7 +31,6 @@ It is designed to answer:
 
 ### Still open
 
-- TASK-18: review comment status index
 - TASK-19: admin tool service logic
 - TASK-2: admin tools controller
 - TASK-4: image service and image endpoints
@@ -108,8 +107,7 @@ This is the highest-risk issue in the repository. The repo still contains a comm
 
 ### Run next
 
-2. TASK-18: Add missing `ReviewComments.Status` index
-3. TASK-21: Add DB check constraints for review rating values
+2. TASK-21: Add DB check constraints for review rating values
 
 ### Why now
 
@@ -315,19 +313,18 @@ Use this checklist after every code task:
 If you want the shortest practical sequence, run these in exactly this order:
 
 1. TASK-24
-2. TASK-18
-3. TASK-21
-4. TASK-19
-5. TASK-2
-6. TASK-4
-7. TASK-5
-8. TASK-16
-9. TASK-20
-10. Either skip TASK-17 or implement it only if full ASP.NET Identity is mandatory
-11. TASK-22
-12. TASK-23
-13. Final Azure smoke test
-14. Final Next.js end-to-end check against Azure
+2. TASK-21
+3. TASK-19
+4. TASK-2
+5. TASK-4
+6. TASK-5
+7. TASK-16
+8. TASK-20
+9. Either skip TASK-17 or implement it only if full ASP.NET Identity is mandatory
+10. TASK-22
+11. TASK-23
+12. Final Azure smoke test
+13. Final Next.js end-to-end check against Azure
 
 ## Definition Of Done For The Whole Backend
 
