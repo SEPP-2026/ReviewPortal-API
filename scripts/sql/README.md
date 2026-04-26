@@ -18,6 +18,8 @@ These scripts mirror the checked-in EF Core migrations and can be applied manual
   Applies approved and pending review demo data from migration `20260422223500_SeedEpic2ReviewData`.
 - `SeedEpic2CommentAndResponseData.sql`
   Applies approved/pending comment demo data and admin company responses from migration `20260423094500_SeedEpic2CommentAndResponseData`.
+- `AddReviewCommentsStatusIndex.sql`
+  Adds the missing `IX_ReviewComments_Status` index introduced by migration `20260426210328_AddReviewCommentsStatusIndex`.
 
 ## Recommended commands
 
