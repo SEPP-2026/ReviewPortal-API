@@ -36,6 +36,15 @@ public class ReviewConfiguration : IEntityTypeConfiguration<Review>
         builder.Property(r => r.CreatedDate)
             .HasDefaultValueSql("GETUTCDATE()");
 
+        builder.ToTable(t =>
+        {
+            t.HasCheckConstraint("CK_Reviews_EquipmentRating_Range", "[EquipmentRating] BETWEEN 1 AND 5");
+            t.HasCheckConstraint("CK_Reviews_CustomerServiceRating_Range", "[CustomerServiceRating] BETWEEN 1 AND 5");
+            t.HasCheckConstraint("CK_Reviews_TechnicalSupportRating_Range", "[TechnicalSupportRating] BETWEEN 1 AND 5");
+            t.HasCheckConstraint("CK_Reviews_AfterSalesRating_Range", "[AfterSalesRating] BETWEEN 1 AND 5");
+            t.HasCheckConstraint("CK_Reviews_ValueForMoneyRating_Range", "[ValueForMoneyRating] BETWEEN 1 AND 5");
+        });
+
         builder.HasIndex(r => r.ToolId);
         builder.HasIndex(r => r.Status);
         builder.HasIndex(r => r.UserId);
