@@ -37,7 +37,6 @@ It is designed to answer:
 - TASK-5: dashboard service and admin dashboard controller
 - TASK-16: admin category routing decision
 - TASK-20: FluentValidation adoption
-- TASK-21: database check constraints for review ratings
 - TASK-22: real API integration tests
 - TASK-23: CI/CD and coverage automation
 - TASK-24: secret cleanup and externalised configuration
@@ -103,15 +102,15 @@ This is the highest-risk issue in the repository. The repo still contains a comm
   - `Jwt__ExpiryMinutes`
   - `Cors__AllowedOrigins__0` and any additional origins
 
-## Phase 1 - Fix schema-level integrity gaps
+## Phase 1 - Schema-level integrity gaps complete
 
-### Run next
+### Status
 
-2. TASK-21: Add DB check constraints for review rating values
+TASK-18 and TASK-21 are complete. Continue with the remaining Epic 3 and quality tasks below.
 
-### Why now
+### Why this mattered
 
-These are small, contained database correctness tasks. They reduce risk before more API surface and admin flows are added.
+These were small, contained database correctness tasks. They reduced risk before more API surface and admin flows are added.
 
 ### Deliverables
 
@@ -313,18 +312,17 @@ Use this checklist after every code task:
 If you want the shortest practical sequence, run these in exactly this order:
 
 1. TASK-24
-2. TASK-21
-3. TASK-19
-4. TASK-2
-5. TASK-4
-6. TASK-5
-7. TASK-16
-8. TASK-20
-9. Either skip TASK-17 or implement it only if full ASP.NET Identity is mandatory
-10. TASK-22
-11. TASK-23
-12. Final Azure smoke test
-13. Final Next.js end-to-end check against Azure
+2. TASK-19
+3. TASK-2
+4. TASK-4
+5. TASK-5
+6. TASK-16
+7. TASK-20
+8. Either skip TASK-17 or implement it only if full ASP.NET Identity is mandatory
+9. TASK-22
+10. TASK-23
+11. Final Azure smoke test
+12. Final Next.js end-to-end check against Azure
 
 ## Definition Of Done For The Whole Backend
 

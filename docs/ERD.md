@@ -196,6 +196,9 @@ Customer reviews for tools. Each review includes written feedback and five indiv
 > [!IMPORTANT]
 > Indexes on `ToolId` and `Status` are essential for query performance — the catalogue page queries approved reviews per tool, and the moderation queue queries all pending items.
 
+> [!IMPORTANT]
+> Database check constraints enforce all five review rating columns in the range `1` to `5`: `CK_Reviews_EquipmentRating_Range`, `CK_Reviews_CustomerServiceRating_Range`, `CK_Reviews_TechnicalSupportRating_Range`, `CK_Reviews_AfterSalesRating_Range`, and `CK_Reviews_ValueForMoneyRating_Range`.
+
 ---
 
 ### 6. ReviewComments
@@ -257,4 +260,6 @@ Official Shelton Tool-Hire responses to customer reviews. One response per revie
 | Reviews | `ToolId` | Fetch reviews for a specific tool |
 | Reviews | `Status` | Moderation queue and approved-only queries |
 | Reviews | `UserId` | "My Reviews" page queries |
+| ReviewComments | `ReviewId` | Fetch comments for a specific review |
+| ReviewComments | `Status` | Pending-comment moderation queue queries |
 | CompanyResponses | `ReviewId` | Unique constraint — one response per review |

@@ -357,11 +357,11 @@ The five review rating columns are validated in code only. The database schema s
 
 **Sub-tasks:**
 
-- [ ] **21.1** Add EF Core check constraint(s) enforcing rating values in the range `1` to `5` for all five review rating columns
-- [ ] **21.2** Create a new EF Core migration and SQL deployment script for the rating constraints
-- [ ] **21.3** Update `docs/ERD.md` (and any schema notes) to document the DB-level rating constraints
-- [ ] **21.4** Add schema/integration tests proving out-of-range review inserts fail at the database level
-- [ ] **21.5** Apply the migration locally and run `dotnet build` / `dotnet test`
+- [x] **21.1** Add EF Core check constraint(s) enforcing rating values in the range `1` to `5` for all five review rating columns
+- [x] **21.2** Create a new EF Core migration and SQL deployment script for the rating constraints
+- [x] **21.3** Update `docs/ERD.md` (and any schema notes) to document the DB-level rating constraints
+- [x] **21.4** Add schema/integration tests proving out-of-range review inserts fail at the database level
+- [x] **21.5** Apply the migration locally and run `dotnet build` / `dotnet test`
 
 ---
 
@@ -560,7 +560,7 @@ TASK-16 (Admin category routing)     â€” independent
 | TASK-18: Review comment status index | Done | 2026-04-26 |
 | TASK-19: Admin tool service logic | â¬œ Not started | |
 | TASK-20: FluentValidation adoption | â¬œ Not started | |
-| TASK-21: Review rating DB constraints | â¬œ Not started | |
+| TASK-21: Review rating DB constraints | Done | 2026-04-26 |
 | TASK-22: API integration tests | â¬œ Not started | |
 | TASK-23: CI and coverage automation | â¬œ Not started | |
 | TASK-24: Secret cleanup and config externalisation | â¬œ Not started | |
