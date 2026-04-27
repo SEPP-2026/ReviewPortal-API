@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ReviewPortal.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using ReviewPortal.Infrastructure.Data;
 namespace ReviewPortal.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260426210328_AddReviewCommentsStatusIndex")]
+    partial class AddReviewCommentsStatusIndex
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -160,18 +163,7 @@ namespace ReviewPortal.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Reviews", t =>
-                        {
-                            t.HasCheckConstraint("CK_Reviews_AfterSalesRating_Range", "[AfterSalesRating] BETWEEN 1 AND 5");
-
-                            t.HasCheckConstraint("CK_Reviews_CustomerServiceRating_Range", "[CustomerServiceRating] BETWEEN 1 AND 5");
-
-                            t.HasCheckConstraint("CK_Reviews_EquipmentRating_Range", "[EquipmentRating] BETWEEN 1 AND 5");
-
-                            t.HasCheckConstraint("CK_Reviews_TechnicalSupportRating_Range", "[TechnicalSupportRating] BETWEEN 1 AND 5");
-
-                            t.HasCheckConstraint("CK_Reviews_ValueForMoneyRating_Range", "[ValueForMoneyRating] BETWEEN 1 AND 5");
-                        });
+                    b.ToTable("Reviews");
                 });
 
             modelBuilder.Entity("ReviewPortal.Domain.Entities.ReviewComment", b =>

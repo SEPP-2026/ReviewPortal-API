@@ -183,11 +183,11 @@ US-2.9 requires indexes on ReviewComments.ReviewId and ReviewComments.Status, bu
 
 **Sub-tasks:**
 
-- [ ] **18.1** Add HasIndex(rc => rc.Status) to ReviewCommentConfiguration
-- [ ] **18.2** Create a new EF Core migration and SQL deployment script for the missing IX_ReviewComments_Status index
-- [ ] **18.3** Add or update schema tests to verify the migration/configuration includes the ReviewComments.Status index
-- [ ] **18.4** Apply the migration locally with dotnet ef database update
-- [ ] **18.5** Run dotnet build and dotnet test - confirm all tests pass
+- [x] **18.1** Add HasIndex(rc => rc.Status) to ReviewCommentConfiguration
+- [x] **18.2** Create a new EF Core migration and SQL deployment script for the missing IX_ReviewComments_Status index
+- [x] **18.3** Add or update schema tests to verify the migration/configuration includes the ReviewComments.Status index
+- [x] **18.4** Apply the migration locally with dotnet ef database update
+- [x] **18.5** Run dotnet build and dotnet test - confirm all tests pass
 
 ---
 ## Epic 3 â€“ Back-Office Management & Moderation
@@ -203,14 +203,14 @@ Service methods `CreateToolAsync`, `UpdateToolAsync`, and `SetToolStatusAsync` a
 
 **Sub-tasks:**
 
-- [ ] **2.1** Create `src/ReviewPortal.API/Controllers/Admin/AdminToolsController.cs`
-- [ ] **2.2** Route: `[Route("api/admin/tools")]`, class-level `[Authorize(Roles = "Admin")]`
-- [ ] **2.3** `[HttpPost]` â†’ calls `_toolService.CreateToolAsync(request)` â†’ returns `201 Created` with the created tool
-- [ ] **2.4** `[HttpPut("{id:int}")]` â†’ calls `_toolService.UpdateToolAsync(id, request)` â†’ returns `200 OK`
-- [ ] **2.5** `[HttpPatch("{id:int}/status")]` â†’ accepts `{ "isActive": true/false }` â†’ calls `_toolService.SetToolStatusAsync(id, isActive)` â†’ returns `200 OK`
-- [ ] **2.6** Register the controller in DI if needed (ASP.NET auto-discovers by convention)
-- [ ] **2.7** Write unit tests: Create success, Create validation failure, Update success, Update 404, Status change success, Status change 404, Unauthorized (no token), Forbidden (Customer role)
-- [ ] **2.8** Run `dotnet build` and `dotnet test` â€” confirm all tests pass
+- [x] **2.1** Create `src/ReviewPortal.API/Controllers/Admin/AdminToolsController.cs`
+- [x] **2.2** Route: `[Route("api/admin/tools")]`, class-level `[Authorize(Roles = "Admin")]`
+- [x] **2.3** `[HttpPost]` â†’ calls `_toolService.CreateToolAsync(request)` â†’ returns `201 Created` with the created tool
+- [x] **2.4** `[HttpPut("{id:int}")]` â†’ calls `_toolService.UpdateToolAsync(id, request)` â†’ returns `200 OK`
+- [x] **2.5** `[HttpPatch("{id:int}/status")]` â†’ accepts `{ "isActive": true/false }` â†’ calls `_toolService.SetToolStatusAsync(id, isActive)` â†’ returns `200 OK`
+- [x] **2.6** Register the controller in DI if needed (ASP.NET auto-discovers by convention)
+- [x] **2.7** Write unit tests: Create success, Create validation failure, Update success, Update 404, Status change success, Status change 404, Unauthorized (no token), Forbidden (Customer role)
+- [x] **2.8** Run `dotnet build` and `dotnet test` â€” confirm all tests pass
 
 ---
 
@@ -357,11 +357,11 @@ The five review rating columns are validated in code only. The database schema s
 
 **Sub-tasks:**
 
-- [ ] **21.1** Add EF Core check constraint(s) enforcing rating values in the range `1` to `5` for all five review rating columns
-- [ ] **21.2** Create a new EF Core migration and SQL deployment script for the rating constraints
-- [ ] **21.3** Update `docs/ERD.md` (and any schema notes) to document the DB-level rating constraints
-- [ ] **21.4** Add schema/integration tests proving out-of-range review inserts fail at the database level
-- [ ] **21.5** Apply the migration locally and run `dotnet build` / `dotnet test`
+- [x] **21.1** Add EF Core check constraint(s) enforcing rating values in the range `1` to `5` for all five review rating columns
+- [x] **21.2** Create a new EF Core migration and SQL deployment script for the rating constraints
+- [x] **21.3** Update `docs/ERD.md` (and any schema notes) to document the DB-level rating constraints
+- [x] **21.4** Add schema/integration tests proving out-of-range review inserts fail at the database level
+- [x] **21.5** Apply the migration locally and run `dotnet build` / `dotnet test`
 
 ---
 
@@ -520,7 +520,7 @@ TASK-13 (Fix company response) â€” independent, do anytime
 TASK-14 (Review threshold)     â€” independent, do anytime
 TASK-17 (Auth alignment)       - independent, do anytime
 TASK-18 (Comment status index) - independent, do anytime
-TASK-19 (Tool service logic)   -> TASK-2 -> TASK-4
+TASK-19 (Tool service logic)   -> TASK-4 (TASK-2 controller route is complete)
 TASK-20 (FluentValidation)     -> supports TASK-17 and TASK-19
 TASK-21 (Rating DB checks)     -> pair with TASK-18
 TASK-22 (API integration)      -> after core API slices are stable
@@ -542,7 +542,7 @@ TASK-16 (Admin category routing)     â€” independent
 | Task | Status | Date Completed |
 |------|--------|---------------|
 | TASK-1: Seed missing categories | Done | 2026-04-22 |
-| TASK-2: AdminToolsController | â¬œ Not started | |
+| TASK-2: AdminToolsController | Done | 2026-04-26 |
 | TASK-3: AdminModerationController | Done | 2026-04-22 |
 | TASK-4: ImageService | â¬œ Not started | |
 | TASK-5: DashboardService | â¬œ Not started | |
@@ -557,10 +557,10 @@ TASK-16 (Admin category routing)     â€” independent
 | TASK-14: Review threshold | Done | 2026-04-23 |
 | TASK-15: Seed comments/responses | Done | 2026-04-23 |
 | TASK-17: Identity auth alignment | â¬œ Not started | |
-| TASK-18: Review comment status index | â¬œ Not started | |
+| TASK-18: Review comment status index | Done | 2026-04-26 |
 | TASK-19: Admin tool service logic | â¬œ Not started | |
 | TASK-20: FluentValidation adoption | â¬œ Not started | |
-| TASK-21: Review rating DB constraints | â¬œ Not started | |
+| TASK-21: Review rating DB constraints | Done | 2026-04-26 |
 | TASK-22: API integration tests | â¬œ Not started | |
 | TASK-23: CI and coverage automation | â¬œ Not started | |
 | TASK-24: Secret cleanup and config externalisation | â¬œ Not started | |

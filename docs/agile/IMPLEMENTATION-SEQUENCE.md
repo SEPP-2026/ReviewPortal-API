@@ -1,6 +1,6 @@
 # Implementation Sequence
 
-> Last updated: 2026-04-25
+> Last updated: 2026-04-26
 > Scope: remaining backend/API work for Epic 2, Epic 3, deployment hardening, Azure App Service readiness, and Next.js integration readiness.
 
 ## Goal
@@ -27,18 +27,16 @@ It is designed to answer:
 - Epic 2 company response approval guard
 - Epic 2 review-threshold DTO support
 - Epic 2 comment and company-response seed data
+- Epic 3 admin tools controller
 - documentation cleanup tasks (TASK-7, TASK-8, TASK-10, TASK-11, TASK-12)
 
 ### Still open
 
-- TASK-18: review comment status index
 - TASK-19: admin tool service logic
-- TASK-2: admin tools controller
 - TASK-4: image service and image endpoints
 - TASK-5: dashboard service and admin dashboard controller
 - TASK-16: admin category routing decision
 - TASK-20: FluentValidation adoption
-- TASK-21: database check constraints for review ratings
 - TASK-22: real API integration tests
 - TASK-23: CI/CD and coverage automation
 - TASK-24: secret cleanup and externalised configuration
@@ -68,6 +66,7 @@ The frontend must use the actual API routes that exist today:
 - `GET /api/tools/{id}`
 - `POST /api/tools/{id}/rental-calculation`
 - auth routes under `/api/auth/...`
+- admin tool routes under `/api/admin/tools` require an Admin bearer token
 
 Do not assume there is a `GET /api/tools` list endpoint. That route does not exist.
 
@@ -104,16 +103,15 @@ This is the highest-risk issue in the repository. The repo still contains a comm
   - `Jwt__ExpiryMinutes`
   - `Cors__AllowedOrigins__0` and any additional origins
 
-## Phase 1 - Fix schema-level integrity gaps
+## Phase 1 - Schema-level integrity gaps complete
 
-### Run next
+### Status
 
-2. TASK-18: Add missing `ReviewComments.Status` index
-3. TASK-21: Add DB check constraints for review rating values
+TASK-18 and TASK-21 are complete. Continue with the remaining Epic 3 and quality tasks below.
 
-### Why now
+### Why this mattered
 
-These are small, contained database correctness tasks. They reduce risk before more API surface and admin flows are added.
+These were small, contained database correctness tasks. They reduced risk before more API surface and admin flows are added.
 
 ### Deliverables
 
@@ -138,16 +136,15 @@ This is the main feature-delivery phase for Epic 3.
 ### Run in this order
 
 4. TASK-19: Implement admin tool management service methods and creation flow
-5. TASK-2: Create `AdminToolsController`
-6. TASK-4: Implement `ImageService` and admin image endpoints
-7. TASK-5: Implement dashboard service and admin dashboard controller
-8. TASK-16: Decide admin category routing
+5. TASK-4: Implement `ImageService` and admin image endpoints
+6. TASK-5: Implement dashboard service and admin dashboard controller
+7. TASK-16: Decide admin category routing
 
 ### Why this order
 
 - TASK-19 is the missing core business logic
-- TASK-2 depends on TASK-19
-- TASK-4 depends on the admin tools slice existing
+- TASK-2 controller routing is complete, but TASK-19 is still needed for real create/update/status behaviour
+- TASK-4 depends on the admin tools controller slice and service logic existing
 - TASK-5 is independent of image handling but is still Epic 3 core admin functionality
 - TASK-16 is partly architectural and should be settled before frontend/admin integration is finalised
 
@@ -315,19 +312,16 @@ Use this checklist after every code task:
 If you want the shortest practical sequence, run these in exactly this order:
 
 1. TASK-24
-2. TASK-18
-3. TASK-21
-4. TASK-19
-5. TASK-2
-6. TASK-4
-7. TASK-5
-8. TASK-16
-9. TASK-20
-10. Either skip TASK-17 or implement it only if full ASP.NET Identity is mandatory
-11. TASK-22
-12. TASK-23
-13. Final Azure smoke test
-14. Final Next.js end-to-end check against Azure
+2. TASK-19
+3. TASK-4
+4. TASK-5
+5. TASK-16
+6. TASK-20
+7. Either skip TASK-17 or implement it only if full ASP.NET Identity is mandatory
+8. TASK-22
+9. TASK-23
+10. Final Azure smoke test
+11. Final Next.js end-to-end check against Azure
 
 ## Definition Of Done For The Whole Backend
 

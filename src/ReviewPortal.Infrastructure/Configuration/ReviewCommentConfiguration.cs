@@ -29,6 +29,8 @@ public class ReviewCommentConfiguration : IEntityTypeConfiguration<ReviewComment
         builder.Property(rc => rc.CreatedDate)
             .HasDefaultValueSql("GETUTCDATE()");
 
+        builder.HasIndex(rc => rc.Status);
+
         builder.HasOne(rc => rc.Review)
             .WithMany(r => r.Comments)
             .HasForeignKey(rc => rc.ReviewId)
