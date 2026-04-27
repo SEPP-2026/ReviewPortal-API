@@ -1,6 +1,6 @@
 # Entity Relationship Diagram – Shelton Tool-Hire Review Portal
 
-This document describes the complete data model for the Review Portal, covering all entities derived from the project's user stories (US-1.9, US-2.9, and Epic 3 requirements).
+This document describes the complete data model for the Review Portal, covering all entities derived from the project's user stories (US-1.9, US-2.9, and Epic 3 requirements). The wider table-by-table schema design is maintained in [DATABASE-DESIGN.md](DATABASE-DESIGN.md).
 
 ---
 
@@ -13,6 +13,8 @@ erDiagram
         string Name
         string Email
         string PasswordHash
+        string PasswordResetTokenHash
+        datetime PasswordResetTokenExpiryUtc
         string Role
         datetime CreatedDate
     }
@@ -104,14 +106,16 @@ erDiagram
 
 ### 1. Users
 
-Stores all registered users — both customers and staff/admin accounts. Authentication uses ASP.NET Identity with JWT tokens.
+Stores all registered users — both customers and staff/admin accounts. Authentication uses the project's custom JWT bearer auth service with ASP.NET Core `PasswordHasher<TUser>`-compatible password hashing; the current schema is not an ASP.NET Identity store schema.
 
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
 | **Id** | `int` | PK, Identity | Unique user identifier |
 | **Name** | `nvarchar(100)` | Required | Display name |
 | **Email** | `nvarchar(256)` | Required, Unique | Login email address |
-| **PasswordHash** | `nvarchar(max)` | Required | Hashed password (ASP.NET Identity) |
+| **PasswordHash** | `nvarchar(max)` | Required | Hashed password produced by the configured ASP.NET Core password hasher |
+| **PasswordResetTokenHash** | `nvarchar(256)` | Optional | Hashed reset token used for password reset |
+| **PasswordResetTokenExpiryUtc** | `datetime2` | Optional | Expiry timestamp for the password reset token |
 | **Role** | `nvarchar(50)` | Required, Default: `"Customer"` | `Customer`, `Admin`, or `Moderator` |
 | **CreatedDate** | `datetime2` | Required, Default: `GETUTCDATE()` | Account creation timestamp |
 
@@ -220,7 +224,7 @@ Customer comments on existing reviews. One level deep only (no nested threading)
 
 ### 7. CompanyResponses
 
-Official Shelton Tool-Hire responses to customer reviews. One response per review, posted by staff.
+Official Shelton Tool-Hire responses to approved customer reviews. One response per approved review, posted by staff.
 
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
@@ -232,7 +236,7 @@ Official Shelton Tool-Hire responses to customer reviews. One response per revie
 | **UpdatedDate** | `datetime2` | Required, Default: `GETUTCDATE()` | Last edit timestamp |
 
 > [!NOTE]
-> Company responses bypass moderation — they go live immediately as they are posted by authorised staff.
+> Company responses can only be added to approved reviews. They bypass moderation and go live immediately as they are posted by authorised staff.
 
 ---
 

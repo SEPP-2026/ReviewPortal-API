@@ -105,7 +105,7 @@ The moderation workflow is defined as follows:
 - All customer comments are created with `Pending` status and require moderator approval before public display.
 - Moderators/admins can approve or reject reviews and comments.
 - Rejections should include a short reason, especially for cases such as offensive, irrelevant, or spam content.
-- Company responses are official staff content, so they bypass moderation and publish immediately.
+- Company responses are official staff content, so they are only added to approved reviews, bypass moderation, and publish immediately.
 
 ### Pricing Logic
 
@@ -126,7 +126,7 @@ The rental calculator follows these rules:
 - **Database:** Microsoft SQL Server
 - **Testing:** xUnit (unit tests), Playwright (end-to-end)
 - **CI/CD:** GitHub Actions
-- **Auth:** ASP.NET Identity with JWT tokens
+- **Auth:** Custom JWT bearer auth service with ASP.NET Core `PasswordHasher<TUser>`-compatible password hashing; full ASP.NET Identity is only a future refactor if explicitly required
 
 ---
 

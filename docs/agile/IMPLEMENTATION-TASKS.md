@@ -151,9 +151,9 @@ No demo data for comments or company responses.
 ### TASK-17: Align auth stack with ASP.NET Identity requirement
 
 **Links to:** [US-2.7 - User registration and login](EPIC-2-REVIEWS-AND-RATINGS.md#us-27--user-registration-and-login) | [REQUIREMENTS-SPECIFICATION](../REQUIREMENTS-SPECIFICATION.md) | [NON-FUNCTIONAL-REQUIREMENTS](../NON-FUNCTIONAL-REQUIREMENTS.md)
-**Priority:** Must | **Gap IDs:** GAP-AUTH-1, GAP-AUTH-2, GAP-AUTH-3, GAP-AUTH-4, GAP-AUTH-5
+**Priority:** Conditional | **Gap IDs:** GAP-AUTH-1, GAP-AUTH-2, GAP-AUTH-3, GAP-AUTH-4, GAP-AUTH-5
 
-The current implementation uses a custom `AuthService`, `IUserRepository`, `IPasswordHasher`, and hand-managed password reset flow. JWT bearer authentication is configured, but the project is not actually wired to ASP.NET Identity for user management, password policies, token providers, role management, or EF-backed Identity stores. If the requirement is to use ASP.NET Identity, this needs a full auth-stack refactor rather than a docs-only change.
+The current implementation uses a custom `AuthService`, `IUserRepository`, `IPasswordHasher`, and hand-managed password reset flow. JWT bearer authentication is configured, and passwords are hashed through an ASP.NET Core `PasswordHasher<TUser>`-compatible implementation. The project is not wired to full ASP.NET Identity for user management, token providers, role stores, or EF-backed Identity tables. Do not implement this refactor unless the brief or assessor explicitly requires full ASP.NET Identity rather than the current custom JWT flow.
 
 **Gap summary:**
 
@@ -263,7 +263,7 @@ No image upload or delete functionality exists.
 ### TASK-5: Implement DashboardService and controller
 
 **Links to:** [US-3.8 â€“ Admin dashboard with overview stats](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-38--admin-dashboard-with-overview-stats) | [US-3.9 â€“ Admin API endpoints](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-39--admin-api-endpoints)
-**Priority:** Must | **Gap IDs:** GAP-SVC-1, GAP-API-9
+**Priority:** Could | **Gap IDs:** GAP-SVC-1, GAP-API-9
 
 No dashboard service or controller exists.
 
@@ -518,7 +518,7 @@ TASK-1  (Seed categories)
 
 TASK-13 (Fix company response) â€” independent, do anytime
 TASK-14 (Review threshold)     â€” independent, do anytime
-TASK-17 (Auth alignment)       - independent, do anytime
+TASK-17 (Auth alignment)       - conditional decision gate only if full ASP.NET Identity is mandatory
 TASK-18 (Comment status index) - independent, do anytime
 TASK-19 (Tool service logic)   -> TASK-4 (TASK-2 controller route is complete)
 TASK-20 (FluentValidation)     -> supports TASK-17 and TASK-19
@@ -556,7 +556,7 @@ TASK-16 (Admin category routing)     â€” independent
 | TASK-13: Fix company response | Done | 2026-04-23 |
 | TASK-14: Review threshold | Done | 2026-04-23 |
 | TASK-15: Seed comments/responses | Done | 2026-04-23 |
-| TASK-17: Identity auth alignment | â¬œ Not started | |
+| TASK-17: Identity auth alignment | Conditional / decision gate | |
 | TASK-18: Review comment status index | Done | 2026-04-26 |
 | TASK-19: Admin tool service logic | â¬œ Not started | |
 | TASK-20: FluentValidation adoption | â¬œ Not started | |

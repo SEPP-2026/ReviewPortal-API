@@ -272,7 +272,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 **so that** all admin actions go through a proper backend.
 
 **Acceptance Criteria:**
-- All admin endpoints require authentication and the "Admin" role
+- Admin management endpoints require authentication and the "Admin" role; moderation endpoints require authentication and either the "Admin" or "Moderator" role
 - Equipment management:
   - `POST /api/admin/tools` – create a new tool
   - `PUT /api/admin/tools/{id}` – update a tool
