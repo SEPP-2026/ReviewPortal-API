@@ -143,9 +143,9 @@ This epic covers the entire review lifecycle — writing a review, rating differ
 **so that** we can thank people for positive feedback or address any concerns publicly.
 
 **Acceptance Criteria:**
-- On the admin side, each review has a "Respond" button
-- The response appears directly beneath the parent review on the public tool/service page and includes the exact label "Shelton Tool-Hire Response"
-- Only one official response per review is allowed
+- On the admin side, each approved review has a "Respond" button
+- The response appears directly beneath the parent approved review on the public tool/service page and includes the exact label "Shelton Tool-Hire Response"
+- Only one official response per approved review is allowed
 - Company responses do not require moderation (they are posted by staff and go live immediately)
 - The response can be edited or removed by admin users
 
@@ -163,7 +163,7 @@ This epic covers the entire review lifecycle — writing a review, rating differ
 | 4 | Build response form in the admin area with text input | Frontend |
 | 5 | Display company response on the public tool/service page, clearly labelled as "Shelton Tool-Hire Response" | Frontend |
 | 6 | Add edit and delete options for existing responses in the admin view | Frontend |
-| 7 | Write unit tests for the one-response-per-review constraint and CRUD operations | Testing |
+| 7 | Write unit tests for the approved-review-only and one-response-per-review constraints plus CRUD operations | Testing |
 
 ---
 
@@ -180,7 +180,7 @@ This epic covers the entire review lifecycle — writing a review, rating differ
 - `GET /api/tools/{toolId}/reviews` returns approved reviews for a tool (paginated)
 - `POST /api/reviews/{reviewId}/comments` adds a comment to a review
 - `GET /api/reviews/{reviewId}/comments` fetches comments for a review
-- `POST /api/reviews/{reviewId}/response` allows staff to add a company response
+- `POST /api/reviews/{reviewId}/response` allows staff to add a company response to an approved review
 - Validation errors return HTTP 400 with a response body identifying the invalid field or business rule
 - Unit tests cover success, validation failure, and not-found paths for review endpoints and service logic
 
@@ -202,7 +202,7 @@ This epic covers the entire review lifecycle — writing a review, rating differ
 - Login returns a JWT token that is stored on the client
 - Logged-in users see their name in the header and can access "My Reviews"
 - Logged-out users can still browse the catalogue but must log in or provide details to leave a review
-- Authentication uses ASP.NET Identity with JWT bearer tokens
+- Authentication uses the project's JWT bearer auth service with ASP.NET Core `PasswordHasher<TUser>`-compatible password hashing; a full ASP.NET Identity migration is a separate decision only if explicitly required
 
 **Story Points:** 8
 **Priority:** Must
@@ -212,14 +212,14 @@ This epic covers the entire review lifecycle — writing a review, rating differ
 
 | # | Task | Owner |
 |---|------|-------|
-| 1 | Configure ASP.NET Identity with JWT bearer token generation | Backend |
+| 1 | Configure JWT bearer token generation and password hashing | Backend |
 | 2 | Implement registration service with password policy enforcement (min 8 chars, one number, one uppercase) | Backend |
 | 3 | Implement login service that validates credentials and returns a JWT token | Backend |
 | 4 | Build registration form (name, email, password) with client-side validation | Frontend |
 | 5 | Build login form with clear error handling (generic error message, no field-specific hints) | Frontend |
 | 6 | Store JWT token on the client and display the user's name in the site header | Frontend |
 | 7 | Conditionally show "My Reviews" link for authenticated users | Frontend |
-| 8 | Ensure GDPR-compliant data handling — collect only necessary personal data, store passwords securely via Identity's hashing | Backend |
+| 8 | Ensure GDPR-compliant data handling — collect only necessary personal data, store passwords securely with ASP.NET Core password hashing | Backend |
 | 9 | Write unit tests for registration validation, login flow, and token generation | Testing |
 
 ---

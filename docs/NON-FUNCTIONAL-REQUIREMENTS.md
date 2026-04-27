@@ -20,7 +20,7 @@ This document captures the quality attributes and non-functional requirements th
 
 | ID | Requirement | Target | Verification |
 |----|-------------|--------|-------------|
-| NFR-06 | All passwords shall be hashed using ASP.NET Identity's default PBKDF2 algorithm — never stored in plain text | Hashed storage | Code review, unit test |
+| NFR-06 | All passwords shall be hashed using ASP.NET Core `PasswordHasher<TUser>`-compatible PBKDF2 hashing — never stored in plain text | Hashed storage | Code review, unit test |
 | NFR-07 | Password policy shall enforce a minimum of 8 characters with at least one uppercase letter and one number | Policy enforced | Unit test, integration test |
 | NFR-08 | Authentication tokens (JWT) shall expire after 60 minutes | 60-min expiry | Integration test |
 | NFR-09 | Admin API endpoints shall require both authentication and the "Admin" or "Moderator" role | Role-based access | Integration test (401/403) |
@@ -28,6 +28,7 @@ This document captures the quality attributes and non-functional requirements th
 | NFR-11 | All user inputs shall be validated server-side using FluentValidation to prevent injection attacks | Input sanitised | Unit tests on validators |
 | NFR-12 | HTTPS shall be enforced in production | TLS required | Configuration review |
 | NFR-13 | CORS policy shall restrict allowed origins to the frontend domain in production | Restricted origins | Configuration review |
+| NFR-40 | Secrets such as database passwords and JWT signing keys shall not be stored in source control; they shall be supplied through user secrets, environment variables, or Azure App Service settings | No committed secrets | Secret scan, configuration review |
 
 ---
 

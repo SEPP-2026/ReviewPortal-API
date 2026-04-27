@@ -7,7 +7,7 @@ Backend-only MSc project submission for the Shelton Tool-Hire Review Portal. Thi
 - Platform: ASP.NET Core Web API on .NET 8
 - Architecture: Clean Architecture
 - Database: SQL Server with EF Core code-first migrations
-- Authentication: ASP.NET Identity with JWT bearer tokens
+- Authentication: Custom JWT bearer auth with ASP.NET Core password hashing
 - Testing: xUnit, FluentAssertions, and Bogus
 - Scope: catalogue browsing, rental cost calculation, review workflows, comments, company responses, and role-based authentication
 
@@ -23,7 +23,7 @@ ReviewPortal-API/
 |-- tests/
 |   |-- ReviewPortal.UnitTests/        # Fast unit and controller tests
 |   `-- ReviewPortal.IntegrationTests/ # Infrastructure and authentication integration tests
-|-- docs/                              # Requirements, ERD, testing strategy, agile artefacts
+|-- docs/                              # Requirements, design diagrams, ERD, testing strategy, agile artefacts
 |-- scripts/
 |   `-- sql/                           # Checked-in migration and seed scripts
 |-- .github/workflows/ci.yml           # GitHub Actions build and test pipeline
@@ -144,10 +144,13 @@ dotnet ef database update --project src/ReviewPortal.Infrastructure --startup-pr
 |----------|------|
 | Architecture and coding conventions | [`CLAUDE.md`](CLAUDE.md) |
 | AI agent working instructions | [`AGENTS.md`](AGENTS.md) |
+| Functional design diagrams | [`docs/FUNCTIONAL-DESIGN-DIAGRAMS.md`](docs/FUNCTIONAL-DESIGN-DIAGRAMS.md) |
+| Database design | [`docs/DATABASE-DESIGN.md`](docs/DATABASE-DESIGN.md) |
 | Entity relationship diagram | [`docs/ERD.md`](docs/ERD.md) |
 | Requirements specification | [`docs/REQUIREMENTS-SPECIFICATION.md`](docs/REQUIREMENTS-SPECIFICATION.md) |
 | Non-functional requirements | [`docs/NON-FUNCTIONAL-REQUIREMENTS.md`](docs/NON-FUNCTIONAL-REQUIREMENTS.md) |
 | Testing strategy | [`docs/TESTING-STRATEGY.md`](docs/TESTING-STRATEGY.md) |
+| Test plan | [`docs/TEST-PLAN.md`](docs/TEST-PLAN.md) |
 | Azure deployment guide | [`docs/DEPLOYMENT-TO-AZURE-APP-SERVICE.md`](docs/DEPLOYMENT-TO-AZURE-APP-SERVICE.md) |
 | Agile backlog and sprint artefacts | [`docs/agile/`](docs/agile/) |
 | SQL script usage notes | [`scripts/sql/README.md`](scripts/sql/README.md) |

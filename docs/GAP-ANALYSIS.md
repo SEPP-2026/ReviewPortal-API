@@ -1,7 +1,7 @@
 # Gap Analysis – Shelton Tool-Hire Review Portal (API Backend)
 
-> **Date:** 22 April 2026
-> **Scope:** API backend repo (`ReviewPortal-API`) only — Epics 1 & 2 implemented, Epic 3 pending.
+> **Last reviewed:** 27 April 2026
+> **Scope:** API backend repo (`ReviewPortal-API`) only — Epic 1 and Epic 2 backend work is mostly implemented; Epic 3 is partially implemented and still has service, image, dashboard, validation, integration-test, CI, and secret-cleanup gaps.
 > **Purpose:** Identify every gap between the lecture feedback, the specification documents, and what is actually built in the codebase, then list concrete tasks to close each gap.
 
 ---
@@ -10,14 +10,14 @@
 
 | # | Feedback Point | Status |
 |---|---------------|--------|
-| LF-1 | No explicit treatment of **services** — add service entries, service detail pages, or searching/reviewing services separately | **TO DO** (docs + seed data) |
-| LF-2 | User stories should say **"tool/service"** instead of just "tool" | **TO DO** (docs only) |
+| LF-1 | No explicit treatment of **services** — add service entries, service detail pages, or searching/reviewing services separately | **Done** (Services category and service seed entries added) |
+| LF-2 | User stories should say **"tool/service"** instead of just "tool" | **Done** |
 | LF-3 | Sprint sequencing — "Approve or Reject Reviews" was Sprint 2 but moderation queue was Sprint 3 | **Done** (already fixed) |
 | LF-4 | Sprint 1 claims approved reviews and overall rating but those features come later; needs seed data | **Done** (seed data uses pre-set `OverallRating` / `ReviewCount`) |
-| LF-5 | "if required by the system" wording is wrong — **all customer reviews require moderation before publication** | **TO DO** (code review + AC update) |
-| LF-6 | Some acceptance criteria are **too vague** ("data integrity is maintained", "clear/efficient") | **TO DO** (docs) |
-| LF-7 | Add a **requirements traceability** section mapping scenario requirements to backlog stories | **TO DO** (docs) |
-| LF-8 | Explicitly define: categories, review categories, rating aggregation, service handling, moderation rules, pricing logic | **Partially done** in PRODUCT-BACKLOG.md; needs formal section in docs |
+| LF-5 | "if required by the system" wording is wrong — **all customer reviews require moderation before publication** | **Done** |
+| LF-6 | Some acceptance criteria are **too vague** ("data integrity is maintained", "clear/efficient") | **Done** |
+| LF-7 | Add a **requirements traceability** section mapping scenario requirements to backlog stories | **Done** |
+| LF-8 | Explicitly define: categories, review categories, rating aggregation, service handling, moderation rules, pricing logic | **Done** |
 
 ---
 
@@ -36,12 +36,12 @@
 | Electrical & Heating | ✅ Yes | 1004 | US-1.1, US-1.2, US-1.9 |
 | Access & Lifting | ✅ Yes | 1005 | US-1.1, US-1.2, US-1.9 |
 | Breaking & Drilling | ✅ Yes | 1006 | US-1.1, US-1.2, US-1.9 |
-| Painting & Decorating | ❌ **Missing from seed** | — | US-1.9 |
-| Plumbing & Drainage | ❌ **Missing from seed** | — | US-1.9 |
-| **Services** (delivery, operator hire, PAT testing) | ❌ **Missing from seed** | — | US-1.9, LF-1 |
+| Painting & Decorating | ✅ Yes | 1007 | US-1.9 |
+| Plumbing & Drainage | ✅ Yes | 1008 | US-1.9 |
+| **Services** (delivery, operator hire, PAT testing) | ✅ Yes | 1009 | US-1.9, LF-1 |
 
-> [!WARNING]
-> The product backlog lists 8 categories but only 6 are seeded in the database. **Painting & Decorating**, **Plumbing & Drainage**, and a **Services** category are missing. A new migration is needed.
+> [!NOTE]
+> TASK-1 closed the original seed-data gap by adding Painting & Decorating, Plumbing & Drainage, and Services with sample tool/service entries.
 
 ### 2.2 Review Categories
 
@@ -62,7 +62,7 @@
 | Overall = (Quality + Customer + Technical + After-Sales + Value) / 5 | `Review.CalculateOverallRating()` computes `(E + C + T + A + V) / 5.0m` | ✅ Implemented |
 | Only approved reviews count | `ReviewService.GetApprovedReviewsAsync` filters by `Status == Approved` | ✅ Implemented |
 | Tool-level cached rating (`OverallRating`, `ReviewCount`) | Denormalised fields on `Tool` entity, updated on moderation | ✅ Implemented |
-| "Not enough reviews" threshold (< 2 reviews) | Documented in US-2.3 AC | ⚠️ **Needs verification** — check if `ToolDto` includes a `HasEnoughReviews` flag when `ReviewCount < 2` |
+| "Not enough reviews" threshold (< 2 reviews) | `ToolDto` and `ToolSummaryDto` expose `HasEnoughReviewsToRate` plus `RatingMessage` | ✅ Implemented |
 
 ### 2.4 Tool and Service Handling
 
@@ -70,8 +70,8 @@
 |------------|--------|-------|
 | Tools and services use a **unified model** | ✅ Implemented | `Tool` entity covers both |
 | Both can be searched, filtered, reviewed, rated | ✅ Implemented | Same endpoints serve both |
-| Services listed under a "Services" category | ❌ **Missing** | No "Services" category in seed data |
-| Service-specific seed items (delivery, operator hire, PAT testing) | ❌ **Missing** | Need sample service entries |
+| Services listed under a "Services" category | ✅ Implemented | Seeded under category Id 1009 |
+| Service-specific seed items (delivery, operator hire, PAT testing) | ✅ Implemented | Sample service entries are included in seed data |
 
 ### 2.5 Moderation Rules
 
@@ -81,7 +81,7 @@
 | Comments initially set to `Pending` | `ReviewService.AddCommentAsync` sets `Status = Pending` | ✅ Implemented |
 | Admin can approve content | `ReviewService.ModerateReviewAsync` / `ModerateCommentAsync` | ✅ Implemented |
 | Admin can reject with reason | `ModerateReviewRequest` includes `RejectionReason` | ✅ Implemented |
-| Company responses allowed on approved reviews only | ❌ **NOT enforced** | `AddCompanyResponseAsync` checks for null review and existing response, but does **not** validate `review.Status == Approved`. Staff can respond to Pending/Rejected reviews. **FIX REQUIRED** |
+| Company responses allowed on approved reviews only | ✅ Implemented | `AddCompanyResponseAsync` rejects Pending/Rejected reviews |
 | Company responses bypass moderation | ✅ Implemented | Responses go live immediately (no `Status` field) |
 | Only approved content visible to public | `GetApprovedReviewsAsync` / `GetApprovedCommentsAsync` filter by status | ✅ Implemented |
 | Rejection criteria (offensive, irrelevant, spam) | ❌ **Not enforced automatically** | Manual moderation only — this is acceptable for the prototype |
@@ -104,24 +104,25 @@
 
 | Gap ID | Description | Impact | Priority | Action Required |
 |--------|-------------|--------|----------|----------------|
-| **GAP-SD-1** | **Painting & Decorating** category not seeded | Product backlog lists 8 categories but only 6 exist | Must | Add migration to seed category + 3–4 tools with images |
-| **GAP-SD-2** | **Plumbing & Drainage** category not seeded | Same as above | Must | Add migration to seed category + 3–4 tools with images |
-| **GAP-SD-3** | **Services** category not seeded | Lecture feedback (LF-1) explicitly requires services | Must | Add "Services" category with sample items (equipment delivery, operator hire, PAT testing service) |
-| **GAP-SD-4** | No **review seed data** for Sprint 1 demo | Sprint 1 tool detail page shows ratings from seed data via `OverallRating`/`ReviewCount` denorm fields, but no actual `Reviews` rows exist | Should | Add seed reviews (Approved status) with realistic data for 3–4 tools |
-| **GAP-SD-5** | No **comment or company response seed data** | No demo data for moderation queue or community features | Could | Add seed comments and responses for seeded reviews |
+| **GAP-SD-1** | **Painting & Decorating** category not seeded | Closed by TASK-1 | Must | Done |
+| **GAP-SD-2** | **Plumbing & Drainage** category not seeded | Closed by TASK-1 | Must | Done |
+| **GAP-SD-3** | **Services** category not seeded | Closed by TASK-1 | Must | Done |
+| **GAP-SD-4** | No **review seed data** for Sprint 1 demo | Closed by TASK-9 | Should | Done |
+| **GAP-SD-5** | No **comment or company response seed data** | Closed by TASK-15 | Could | Done |
 
 ### 3.2 Gaps in API Endpoints (Epic 3 — Backend)
 
 | Gap ID | Description | User Story | Current State | Action Required |
 |--------|-------------|-----------|--------------|----------------|
-| **GAP-API-1** | `POST /api/admin/tools` — Create new tool | US-3.2, US-3.9 | ✅ `IToolService.CreateToolAsync` exists but **no admin controller** exposes it at `/api/admin/tools` | Create `AdminToolsController` with `[Authorize(Roles = "Admin")]` |
-| **GAP-API-2** | `PUT /api/admin/tools/{id}` — Update tool | US-3.3, US-3.9 | ✅ `IToolService.UpdateToolAsync` exists but **no admin route** | Add to `AdminToolsController` |
-| **GAP-API-3** | `PATCH /api/admin/tools/{id}/status` — Activate/deactivate | US-3.5, US-3.9 | ✅ `IToolService.SetToolStatusAsync` exists but **no admin route** | Add to `AdminToolsController` |
+| **Current status note** | This table originally identified the Epic 3 API gaps. TASK-2 and TASK-3 have since closed GAP-API-1 through GAP-API-3 and GAP-API-6 through GAP-API-8. | US-3.6, US-3.9 | ✅ Admin tools and admin moderation routes now exist | Remaining open API gaps are GAP-API-4, GAP-API-5, GAP-API-9, and the GAP-API-10 routing decision |
+| **GAP-API-1** | `POST /api/admin/tools` — Create new tool | US-3.2, US-3.9 | ✅ Route exists in `AdminToolsController` | Closed by TASK-2; underlying service logic remains TASK-19 |
+| **GAP-API-2** | `PUT /api/admin/tools/{id}` — Update tool | US-3.3, US-3.9 | ✅ Route exists in `AdminToolsController` | Closed by TASK-2; underlying service logic remains TASK-19 |
+| **GAP-API-3** | `PATCH /api/admin/tools/{id}/status` — Activate/deactivate | US-3.5, US-3.9 | ✅ Route exists in `AdminToolsController` | Closed by TASK-2; underlying service logic remains TASK-19 |
 | **GAP-API-4** | `POST /api/admin/tools/{id}/images` — Upload image | US-3.4, US-3.9 | ❌ **Not implemented** — No image upload service | Create `IImageService`, implement file upload (local/Azure Blob), add endpoint |
 | **GAP-API-5** | `DELETE /api/admin/tools/{id}/images/{imageId}` — Delete image | US-3.4, US-3.9 | ❌ **Not implemented** — No image deletion service | Add to `IImageService`, enforce min-1-image rule |
-| **GAP-API-6** | `GET /api/admin/moderation/pending` — Moderation queue | US-3.6, US-3.9 | ✅ `IReviewService.GetPendingReviewsAsync` exists but **no admin moderation controller** | Create `AdminModerationController` |
-| **GAP-API-7** | `PUT /api/admin/moderation/reviews/{id}` — Approve/reject review | US-3.6, US-3.9 | ✅ `IReviewService.ModerateReviewAsync` exists but **no admin route** | Add to `AdminModerationController` |
-| **GAP-API-8** | `PUT /api/admin/moderation/comments/{id}` — Approve/reject comment | US-3.6, US-3.9 | ✅ `IReviewService.ModerateCommentAsync` exists but **no admin route** | Add to `AdminModerationController` |
+| **GAP-API-6** | `GET /api/admin/moderation/pending` — Moderation queue | US-3.6, US-3.9 | ✅ Route exists in `AdminModerationController` | Done |
+| **GAP-API-7** | `PUT /api/admin/moderation/reviews/{id}` — Approve/reject review | US-3.6, US-3.9 | ✅ Route exists in `AdminModerationController` | Done |
+| **GAP-API-8** | `PUT /api/admin/moderation/comments/{id}` — Approve/reject comment | US-3.6, US-3.9 | ✅ Route exists in `AdminModerationController` | Done |
 | **GAP-API-9** | `GET /api/admin/dashboard/stats` — Dashboard statistics | US-3.8, US-3.9 | ❌ **Not implemented** — No `DashboardService` or `IDashboardService` | Create interface, service, and controller |
 | **GAP-API-10** | Admin category endpoints at `/api/admin/categories` | US-3.7, US-3.9 | ⚠️ **Partially done** — CRUD exists on `CategoriesController` with `[Authorize(Roles = "Admin")]` but uses the public route (`/api/categories`) not `/api/admin/categories` | Decide: keep current or add separate admin route |
 
@@ -129,30 +130,45 @@
 
 | Gap ID | Description | Current State | Action Required |
 |--------|-------------|--------------|----------------|
+| **Current status note** | TASK-6, TASK-13, and TASK-14 have closed the moderation, approved-review-only response, and rating-threshold service gaps. | ✅ Implemented | Remaining open service gaps are `IImageService`, `IDashboardService`, and admin tool create/update/status logic in TASK-19 |
 | **GAP-SVC-1** | `IDashboardService` / `DashboardService` | ❌ Not created | Implement: active/inactive tool count, pending review count, monthly reviews, top 5 rated, top 5 reviewed |
 | **GAP-SVC-2** | `IImageService` / `ImageService` | ❌ Not created | Implement: upload (JPG, PNG, WebP validation, 5MB limit), delete (min-1-image constraint), storage config |
-| **GAP-SVC-3** | Tool rating recalculation on moderation | ❌ **Stub only** | `ModerateReviewAsync` returns `"Review moderation is not implemented in this slice."` — full implementation needed including `Tool.OverallRating` and `Tool.ReviewCount` recalculation |
-| **GAP-SVC-4** | Company response — only allowed on approved reviews | ❌ **NOT enforced** | `AddCompanyResponseAsync` does not check `review.Status == Approved`. Staff can respond to Pending/Rejected reviews. Add status validation. |
-| **GAP-SVC-5** | "Not enough reviews" threshold logic | ⚠️ **Needs verification** | Check `GetToolByIdAsync` returns a flag/message when `ReviewCount < 2` |
-| **GAP-SVC-6** | `GetPendingReviewsAsync` | ❌ **Stub only** | Returns error: `"Pending review retrieval is not implemented in this slice."` — full implementation needed |
-| **GAP-SVC-7** | `ModerateCommentAsync` | ❌ **Stub only** | Returns error: `"Comment moderation is not implemented in this slice."` — full implementation needed |
+| **GAP-SVC-3** | Tool rating recalculation on moderation | ✅ Implemented by TASK-6 | Done |
+| **GAP-SVC-4** | Company response — only allowed on approved reviews | ✅ Implemented by TASK-13 | Done |
+| **GAP-SVC-5** | "Not enough reviews" threshold logic | ✅ Implemented by TASK-14 | Done |
+| **GAP-SVC-6** | `GetPendingReviewsAsync` | ✅ Implemented by TASK-6 | Done |
+| **GAP-SVC-7** | `ModerateCommentAsync` | ✅ Implemented by TASK-6 | Done |
 
 ### 3.4 Gaps in Documentation (from Lecture Feedback)
 
 | Gap ID | Description | Files Affected | Action Required |
 |--------|-------------|---------------|----------------|
-| **GAP-DOC-1** | User stories say "tool" — should say **"tool/service"** | EPIC-1, EPIC-2, EPIC-3, PRODUCT-BACKLOG, SPRINT-PLANNING | Find-and-replace in user-facing text (not technical entity names) |
-| **GAP-DOC-2** | Vague acceptance criteria ("data integrity is maintained", "clear/efficient") | All Epic docs | Rewrite to measurable, testable criteria |
-| **GAP-DOC-3** | Missing **requirements traceability** section | PRODUCT-BACKLOG.md or REQUIREMENTS-SPECIFICATION.md | Add section mapping scenario requirements → backlog stories (see §2 above) |
-| **GAP-DOC-4** | Missing explicit definitions for Level 2 submission | PRODUCT-BACKLOG.md or new doc | Define: categories, review categories, rating aggregation, service handling, moderation rules, pricing logic |
-| **GAP-DOC-5** | "if required by the system" wording | EPIC-2 and REQUIREMENTS-SPECIFICATION | Change to "all customer reviews and comments require moderation before publication" |
+| **Current status note** | Documentation cleanup tasks TASK-7, TASK-8, TASK-10, TASK-11, and TASK-12 are complete. | EPIC docs, PRODUCT-BACKLOG, SPRINT-PLANNING, REQUIREMENTS-SPECIFICATION | Keep this section as historical traceability; use `IMPLEMENTATION-TASKS.md` for current task status |
+| **GAP-DOC-1** | User stories say "tool" — should say **"tool/service"** | EPIC-1, EPIC-2, EPIC-3, PRODUCT-BACKLOG, SPRINT-PLANNING | Done by TASK-7 |
+| **GAP-DOC-2** | Vague acceptance criteria ("data integrity is maintained", "clear/efficient") | All Epic docs | Done by TASK-10 |
+| **GAP-DOC-3** | Missing **requirements traceability** section | PRODUCT-BACKLOG.md or REQUIREMENTS-SPECIFICATION.md | Done by TASK-11 |
+| **GAP-DOC-4** | Missing explicit definitions for Level 2 submission | PRODUCT-BACKLOG.md or new doc | Done by TASK-12 |
+| **GAP-DOC-5** | "if required by the system" wording | EPIC-2 and REQUIREMENTS-SPECIFICATION | Done by TASK-8 |
+
+---
+
+### 3.5 Current Open Cross-Cutting Gaps
+
+| Gap ID | Description | Current State | Action Required |
+|--------|-------------|--------------|----------------|
+| **GAP-SVC-8 / GAP-FLOW-1** | Admin tool service methods and first-image creation flow | `AdminToolsController` routes exist, but `ToolService.CreateToolAsync`, `UpdateToolAsync`, and `SetToolStatusAsync` still need real business logic | Complete TASK-19 before treating admin tool management as feature-complete |
+| **GAP-VAL-1** | FluentValidation adoption | Request validation currently lives in services and controller/model binding; no FluentValidation package or validators are registered | Complete TASK-20 |
+| **GAP-AUTH-1 to GAP-AUTH-5** | ASP.NET Identity alignment decision | Current implementation uses custom JWT auth plus ASP.NET Core password hashing; full ASP.NET Identity is not wired | Keep current auth unless the brief/assessor explicitly requires Identity, then complete TASK-17 |
+| **GAP-QA-1** | Real API integration tests | Current integration coverage does not yet exercise the full HTTP pipeline for critical routes | Complete TASK-22 |
+| **GAP-CI-1 / GAP-COV-1** | CI and coverage automation | CI/coverage expectations still need implementation alignment | Complete TASK-23 |
+| **GAP-SEC-1** | Secret cleanup and externalised configuration | Secrets must be kept out of tracked configuration and supplied via user secrets/environment/Azure settings | Complete TASK-24 |
 
 ---
 
 ## 4. Prioritised Task Checklist
 
 > [!NOTE]
-> Tasks are grouped by priority. **Must** items are required for a passing submission. **Should** items strengthen the submission. **Could** items add polish.
+> This checklist is the original gap-to-task breakdown and is kept for traceability. For the current ticked-off task status, use `docs/agile/IMPLEMENTATION-TASKS.md`; for the current execution order, use `docs/agile/IMPLEMENTATION-SEQUENCE.md`.
 
 ### Must — Complete Before Submission
 
