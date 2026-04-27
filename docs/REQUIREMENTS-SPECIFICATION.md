@@ -21,6 +21,7 @@ The system is a web-based review portal that allows customers to browse Shelton 
 | Rating Category | One of five aspects of the hire experience that customers rate individually |
 | Overall Rating | The arithmetic mean of a review's five individual category ratings |
 | Back-Office | The staff-only administrative area of the portal |
+| Admin API | Secured Web API endpoints used by staff/admin screens for catalogue management, moderation, images, categories, and dashboard data |
 
 ---
 
@@ -84,7 +85,7 @@ Each requirement is traced to the user story that implements it and the brief re
 | ID | Requirement | Priority | User Story | Brief Ref |
 |----|-------------|----------|------------|-----------|
 | FR-18 | The system shall allow customers to submit a written review for any tool | Must | US-2.1 | R4 |
-| FR-19 | Each review shall include five individual star ratings (1–5): Equipment Performance, Customer Service, Technical Support, After-Sales Support, and Value for Money | Must | US-2.1 | R13–R17 |
+| FR-19 | Each review shall include five individual star ratings (1–5): Equipment Performance, Booking & Customer Service, Technical Support & Guidance, After-Sales & Breakdown Support, and Value for Money | Must | US-2.1 | R13–R17 |
 | FR-20 | All five star ratings and a minimum of 20 characters of review text shall be required before submission | Must | US-2.1 | R4 |
 | FR-21 | All customer reviews shall be saved with a status of "Pending" and shall not be visible until approved by a moderator | Must | US-2.1, US-3.6 | R26 |
 | FR-22 | The system shall display approved reviews on the tool detail page sorted by most recent | Must | US-2.2 | R4 |
@@ -100,16 +101,16 @@ Each requirement is traced to the user story that implements it and the brief re
 | FR-27 | Users shall be able to comment on other people's approved reviews | Must | US-2.4 | R18 |
 | FR-28 | Comments shall require a name and a minimum of 10 characters of text | Must | US-2.4 | R18 |
 | FR-29 | All customer comments shall be saved with a status of "Pending" and shall not be visible until approved by a moderator | Must | US-2.4 | R26 |
-| FR-30 | Shelton staff shall be able to post an official company response to any review | Must | US-2.5 | R19 |
-| FR-31 | Only one company response per review shall be permitted | Must | US-2.5 | R19 |
-| FR-32 | Company responses shall bypass moderation and appear immediately | Should | US-2.5 | R19 |
+| FR-30 | Shelton staff shall be able to post an official company response to an approved review | Must | US-2.5 | R19 |
+| FR-31 | Only one company response per approved review shall be permitted | Must | US-2.5 | R19 |
+| FR-32 | Company responses from authorised staff shall bypass moderation and appear immediately | Should | US-2.5 | R19 |
 
 ### 3.5 User Authentication
 
 | ID | Requirement | Priority | User Story | Brief Ref |
 |----|-------------|----------|------------|-----------|
-| FR-33 | Users shall be able to register with a name, email, and password | Must | US-2.7 | R4 |
-| FR-34 | Users shall be able to log in and receive a JWT authentication token | Must | US-2.7 | R4 |
+| FR-33 | Users shall be able to register with a name, email, and password that satisfies the password policy | Must | US-2.7 | R4 |
+| FR-34 | Users shall be able to log in and receive a JWT authentication token containing identity and role claims | Must | US-2.7 | R4 |
 | FR-35 | Logged-in users shall be able to view a "My Reviews" page showing all their submitted reviews and statuses | Should | US-2.8 | R4 |
 | FR-36 | Unauthenticated users shall be able to browse the catalogue but must provide details or log in to submit reviews | Must | US-2.7 | R4 |
 
@@ -117,54 +118,70 @@ Each requirement is traced to the user story that implements it and the brief re
 
 | ID | Requirement | Priority | User Story | Brief Ref |
 |----|-------------|----------|------------|-----------|
-| FR-37 | Staff shall log in through a secure admin area with role-based access (Admin, Moderator) | Must | US-3.1 | R8 |
-| FR-38 | Admins shall be able to add new equipment with name, description, category, rates, and images | Must | US-3.2 | R8 |
-| FR-39 | Admins shall be able to edit existing equipment details and pricing | Must | US-3.3 | R9 |
-| FR-40 | Admins shall be able to upload, replace, or remove tool images | Must | US-3.4 | R10 |
-| FR-41 | Admins shall be able to deactivate and reactivate equipment (soft-delete) | Must | US-3.5 | R8 |
+| FR-37 | Staff shall log in through a secure admin area using JWT bearer authentication with role-based access (Admin, Moderator) | Must | US-3.1 | R8 |
+| FR-38 | Admins shall be able to add new equipment or services with name, description, category, hourly/daily/weekly rates, and at least one image | Must | US-3.2 | R8 |
+| FR-39 | Admins shall be able to edit existing equipment/service details and pricing | Must | US-3.3 | R9 |
+| FR-40 | Admins shall be able to upload, replace, or remove tool/service images | Must | US-3.4 | R10 |
+| FR-41 | Admins shall be able to deactivate and reactivate equipment/services using soft-delete status | Must | US-3.5 | R8 |
 | FR-42 | Moderators shall have a dedicated moderation queue showing all pending reviews and comments | Must | US-3.6 | R11 |
-| FR-43 | Moderators shall be able to approve or reject reviews/comments with a reason for rejection | Must | US-3.6 | R11, R26 |
+| FR-43 | Moderators and admins shall be able to approve or reject reviews/comments with a reason for rejection | Must | US-3.6 | R11, R26 |
 | FR-44 | Admins shall be able to add, rename, and update categories | Should | US-3.7 | R2 |
 | FR-45 | The admin area shall display a dashboard with summary statistics | Could | US-3.8 | R8 |
 
-### 3.7 Requirements Traceability
+### 3.7 Admin API, Validation, and Data Integrity
+
+| ID | Requirement | Priority | User Story | Brief Ref |
+|----|-------------|----------|------------|-----------|
+| FR-46 | Admin tool management endpoints under `/api/admin/tools` shall require the Admin role and support create, update, deactivate, and reactivate operations | Must | US-3.2, US-3.3, US-3.5, US-3.9 | R8, R9 |
+| FR-47 | Admin image endpoints shall support uploading JPG, JPEG, PNG, and WebP images up to 5MB and shall prevent deleting the last remaining image for a tool/service | Must | US-3.4, US-3.9 | R10 |
+| FR-48 | Moderation API endpoints under `/api/admin/moderation` shall require the Admin or Moderator role and support pending queue retrieval plus review/comment approval and rejection | Must | US-3.6, US-3.9 | R11, R26 |
+| FR-49 | The admin dashboard API shall return active/inactive tool counts, pending moderation counts, current-month review counts, top-rated tools/services, and most-reviewed tools/services | Could | US-3.8, US-3.9 | R8 |
+| FR-50 | Category management endpoints shall allow admins to create and update categories and shall block deletion when a category still contains tools/services | Should | US-3.7, US-3.9 | R2 |
+| FR-51 | API validation failures shall return HTTP 400 responses with structured details identifying the invalid field or business rule | Must | US-1.8, US-2.6, US-3.9 | R4, R8 |
+| FR-52 | The review database schema shall include indexes for `Reviews.ToolId`, `Reviews.Status`, `ReviewComments.ReviewId`, and `ReviewComments.Status` | Must | US-2.9 | R26 |
+| FR-53 | The database shall enforce review rating values in the range 1 to 5 for all five rating columns | Must | US-2.9 | R13-R17 |
+
+### 3.8 Requirements Traceability
 
 This section provides the document-level traceability summary from the project brief to the backlog stories and formal requirements in this specification. The more detailed implementation-oriented matrix remains in [GAP-ANALYSIS.md §2](GAP-ANALYSIS.md#2-requirements-traceability-matrix).
 
-#### 3.7.1 Scenario Requirements to Backlog Stories
+#### 3.8.1 Scenario Requirements to Backlog Stories
 
 | Brief Ref | Scenario Requirement | Backlog Stories | Functional Requirements |
 |-----------|----------------------|-----------------|-------------------------|
-| R2 | Browse the catalogue by category and manage category structure | US-1.1, US-1.2, US-1.6, US-1.9, US-3.7 | FR-01 to FR-04, FR-10, FR-11, FR-44 |
+| R2 | Browse the catalogue by category and manage category structure | US-1.1, US-1.2, US-1.6, US-1.9, US-3.7, US-3.9 | FR-01 to FR-04, FR-10, FR-11, FR-44, FR-50 |
 | R3 | Search the catalogue by keyword | US-1.4 | FR-07 to FR-09 |
 | R4 | Submit reviews and support returning users with login and review history | US-2.1, US-2.7, US-2.8 | FR-18, FR-20, FR-33 to FR-36 |
 | R5 | Provide a full tool/service detail page with descriptive information | US-1.3 | FR-05, FR-06 |
 | R6 | Accept hire dates/times and show the customer a cost breakdown | US-1.5 | FR-12, FR-13, FR-16, FR-17 |
 | R7 | Calculate hire cost from stored hourly, daily, and weekly rates using the cheapest valid combination | US-1.5 | FR-14, FR-15 |
-| R8 | Provide secure back-office access and admin operations | US-3.1, US-3.2, US-3.5, US-3.8 | FR-37, FR-38, FR-41, FR-45 |
+| R8 | Provide secure back-office access and admin operations | US-3.1, US-3.2, US-3.5, US-3.8, US-3.9 | FR-37, FR-38, FR-41, FR-45, FR-46, FR-49 |
 | R9 | Allow staff to edit existing equipment/service details and pricing | US-3.3 | FR-39 |
-| R10 | Allow staff to manage tool/service images | US-3.4 | FR-40 |
-| R11 | Provide a moderation queue with approval and rejection actions | US-3.6 | FR-42, FR-43 |
-| R13-R17 | Capture the five defined review categories for every review | US-2.1, US-2.9 | FR-19 |
+| R10 | Allow staff to manage tool/service images | US-3.4, US-3.9 | FR-40, FR-47 |
+| R11 | Provide a moderation queue with approval and rejection actions | US-3.6, US-3.9 | FR-42, FR-43, FR-48 |
+| R13-R17 | Capture the five defined review categories for every review | US-2.1, US-2.9 | FR-19, FR-53 |
 | R18 | Support comments on approved reviews | US-2.4 | FR-27 to FR-29 |
-| R19 | Support one official company response per review | US-2.5 | FR-30 to FR-32 |
+| R19 | Support one official company response per approved review | US-2.5 | FR-30 to FR-32 |
 | R24 | Match search terms against tool/service name, description, and category | US-1.4 | FR-07, FR-08 |
 | R25 | Aggregate, display, and sort by overall ratings | US-2.3 | FR-23 to FR-26 |
-| R26 | Moderate customer-submitted reviews and comments before publication | US-2.1, US-2.4, US-3.6 | FR-21, FR-29, FR-42, FR-43 |
+| R26 | Moderate customer-submitted reviews and comments before publication | US-2.1, US-2.4, US-2.9, US-3.6, US-3.9 | FR-21, FR-29, FR-42, FR-43, FR-48, FR-52 |
 
-#### 3.7.2 Defined Decision Traceability
+#### 3.8.2 Defined Decision Traceability
 
 | Defined Item | Backlog Stories | Functional Requirements | Notes |
 |--------------|-----------------|-------------------------|-------|
 | Tool/service categories, including the dedicated `Services` category | US-1.1, US-1.2, US-1.9, US-3.7 | FR-01 to FR-03, FR-44 | Covers catalogue structure, browsing, and seeded reference data |
-| Review categories (Equipment, Customer Service, Technical Support, After-Sales Support, Value for Money) | US-2.1, US-2.9 | FR-19 | The five review dimensions are captured in both submission and schema stories |
+| Review categories (Equipment Performance, Booking & Customer Service, Technical Support & Guidance, After-Sales & Breakdown Support, Value for Money) | US-2.1, US-2.9 | FR-19 | The five review dimensions are captured in both submission and schema stories |
 | Rating aggregation method for overall score and review-count threshold | US-2.3 | FR-23 to FR-26 | Covers average rating, display, sorting, and the minimum-review threshold |
 | Moderation workflow for reviews and comments | US-2.1, US-2.4, US-3.6 | FR-21, FR-29, FR-42, FR-43 | Covers `Pending` status, moderator actions, and public visibility rules |
 | Pricing logic for hourly, daily, and weekly hire calculation | US-1.5 | FR-12 to FR-17 | Covers inputs, cheapest-combination logic, validation, and cost breakdown |
+| Authentication approach | US-2.7, US-3.1 | FR-33, FR-34, FR-37 | Current implementation uses a custom JWT auth service with ASP.NET Core `PasswordHasher<TUser>`-compatible password hashing; full ASP.NET Identity remains a separate decision only if explicitly required |
 
 ---
 
 ## 4. Use Case Diagram
+
+The extended submission-ready functional design diagrams are maintained in [FUNCTIONAL-DESIGN-DIAGRAMS.md](FUNCTIONAL-DESIGN-DIAGRAMS.md), including use case, class, activity, architecture, sequence, DFD, and ERD diagrams.
 
 ```mermaid
 graph TB

@@ -6,6 +6,8 @@ This document outlines our approach to testing the Shelton Tool-Hire Review Port
 
 The goal is not 100% code coverage for the sake of it, but **meaningful test coverage** that gives the team confidence to ship without regressions.
 
+The detailed MSc submission test plan, including black-box tests, dry-run checks, and usability testing schema, is maintained in [TEST-PLAN.md](TEST-PLAN.md).
+
 ---
 
 ## 2. Test Pyramid
