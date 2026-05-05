@@ -376,12 +376,12 @@ The current `ReviewPortal.IntegrationTests` project only checks JWT generation, 
 
 **Sub-tasks:**
 
-- [ ] **22.1** Create a `WebApplicationFactory<Program>`-based test host with isolated SQL Server/LocalDB or Testcontainers setup and deterministic data reset
-- [ ] **22.2** Add public API integration tests for categories, category tools, search, tool detail, and rental calculation
-- [ ] **22.3** Add auth integration tests for register, login, `GET /api/auth/me`, change-password, forgot-password, and reset-password
-- [ ] **22.4** Add review lifecycle tests covering submit review -> moderation queue -> approve/reject -> approved list / my reviews visibility
-- [ ] **22.5** Add admin authorization tests for 401/403 behaviour on admin tools, moderation, and dashboard routes
-- [ ] **22.6** Run the integration suite through `dotnet test ReviewPortal.slnx`
+- [x] **22.1** Create a `WebApplicationFactory<Program>`-based test host with isolated SQL Server/LocalDB or Testcontainers setup and deterministic data reset
+- [x] **22.2** Add public API integration tests for categories, category tools, search, tool detail, and rental calculation
+- [x] **22.3** Add auth integration tests for register, login, `GET /api/auth/me`, change-password, forgot-password, and reset-password
+- [x] **22.4** Add review lifecycle tests covering submit review -> moderation queue -> approve/reject -> approved list / my reviews visibility
+- [x] **22.5** Add admin authorization tests for 401/403 behaviour on admin tools, moderation, and dashboard routes
+- [x] **22.6** Run the integration suite through `dotnet test ReviewPortal.slnx`
 
 ---
 
@@ -563,7 +563,7 @@ TASK-16 (Admin category routing)     â€” independent
 | TASK-19: Admin tool service logic | Done | 2026-05-05 |
 | TASK-20: FluentValidation adoption | Done | 2026-05-05 |
 | TASK-21: Review rating DB constraints | Done | 2026-04-26 |
-| TASK-22: API integration tests | â¬œ Not started | |
+| TASK-22: API integration tests | Done | 2026-05-05 |
 | TASK-23: CI and coverage automation | â¬œ Not started | |
 | TASK-24: Secret cleanup and config externalisation | â¬œ Not started | |
 | TASK-16: Admin category routing | Done | 2026-05-05 |
