@@ -269,27 +269,27 @@ No dashboard service or controller exists.
 
 **Sub-tasks:**
 
-- [ ] **5.1** Create `src/ReviewPortal.Application/DTOs/Dashboard/DashboardStatsDto.cs` with properties:
+- [x] **5.1** Create `src/ReviewPortal.Application/DTOs/Dashboard/DashboardStatsDto.cs` with properties:
   - `int TotalActiveTools`, `int TotalInactiveTools`
   - `int PendingModerationCount`
   - `int ReviewsPublishedThisMonth`
   - `IReadOnlyList<ToolRankingDto> TopRatedTools` (top 5)
   - `IReadOnlyList<ToolRankingDto> MostReviewedTools` (top 5)
-- [ ] **5.2** Create `ToolRankingDto` record: `int ToolId`, `string ToolName`, `decimal? OverallRating`, `int ReviewCount`
-- [ ] **5.3** Create `src/ReviewPortal.Application/Interfaces/IDashboardService.cs` with `Task<Result<DashboardStatsDto>> GetDashboardStatsAsync(CancellationToken)`
-- [ ] **5.4** Create `src/ReviewPortal.Application/Services/DashboardService.cs` implementing `IDashboardService`
+- [x] **5.2** Create `ToolRankingDto` record: `int ToolId`, `string ToolName`, `decimal? OverallRating`, `int ReviewCount`
+- [x] **5.3** Create `src/ReviewPortal.Application/Interfaces/IDashboardService.cs` with `Task<Result<DashboardStatsDto>> GetDashboardStatsAsync(CancellationToken)`
+- [x] **5.4** Create `src/ReviewPortal.Application/Services/DashboardService.cs` implementing `IDashboardService`
   - Query `Tools` for active/inactive counts
   - Query pending reviews plus pending comments and return a combined moderation count
   - Query `Reviews` with `Status == Approved` and `CreatedDate` in current month for monthly count
   - Query `Tools` ordered by `OverallRating` desc (where `ReviewCount >= 2`) for top rated
   - Query `Tools` ordered by `ReviewCount` desc for most reviewed
-- [ ] **5.5** Register `IDashboardService` in DI
-- [ ] **5.6** Create `src/ReviewPortal.API/Controllers/Admin/AdminDashboardController.cs`
+- [x] **5.5** Register `IDashboardService` in DI
+- [x] **5.6** Create `src/ReviewPortal.API/Controllers/Admin/AdminDashboardController.cs`
   - Route: `[Route("api/admin/dashboard")]`, `[Authorize(Roles = "Admin")]`
   - `[HttpGet("stats")]` â†’ calls `GetDashboardStatsAsync` â†’ returns `200 OK`
-- [ ] **5.7** Write unit tests for `DashboardService`: all-zero case, mixed data, top 5 ordering, monthly boundary
-- [ ] **5.8** Write unit tests for `AdminDashboardController`: success, unauthorised
-- [ ] **5.9** Run `dotnet build` and `dotnet test` â€” confirm all tests pass
+- [x] **5.7** Write unit tests for `DashboardService`: all-zero case, mixed data, top 5 ordering, monthly boundary
+- [x] **5.8** Write unit tests for `AdminDashboardController`: success, unauthorised
+- [x] **5.9** Run `dotnet build` and `dotnet test` â€” confirm all tests pass
 
 ---
 
@@ -545,7 +545,7 @@ TASK-16 (Admin category routing)     â€” independent
 | TASK-2: AdminToolsController | Done | 2026-04-26 |
 | TASK-3: AdminModerationController | Done | 2026-04-22 |
 | TASK-4: ImageService | Done | 2026-05-05 |
-| TASK-5: DashboardService | â¬œ Not started | |
+| TASK-5: DashboardService | Done | 2026-05-05 |
 | TASK-6: Moderation service methods | Done | 2026-04-22 |
 | TASK-7: Docs â€“ tool/service wording | Done | 2026-04-23 |
 | TASK-8: Docs â€“ moderation wording | Done | 2026-04-23 |

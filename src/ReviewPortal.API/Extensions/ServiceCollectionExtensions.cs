@@ -51,6 +51,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IImageService, ImageService>();
+        services.AddScoped<IDashboardService, DashboardService>();
 
         return services;
     }
