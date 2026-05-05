@@ -1,7 +1,5 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ReviewPortal.API.Extensions;
-using ReviewPortal.Application.DTOs.Categories;
 using ReviewPortal.Application.Interfaces;
 
 namespace ReviewPortal.API.Controllers;
@@ -57,30 +55,6 @@ public class CategoriesController : ControllerBase
             : await _toolService.GetToolsByCategoryAsync(id, page, pageSize, effectiveSort, cancellationToken);
 
         return this.ToActionResult(result, Ok);
-    }
-
-    [HttpPost]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Create([FromBody] CreateCategoryRequest request, CancellationToken cancellationToken)
-    {
-        var result = await _categoryService.CreateCategoryAsync(request, cancellationToken);
-        return this.ToActionResult(result, category => CreatedAtAction(nameof(GetById), new { id = category.Id }, category));
-    }
-
-    [HttpPut("{id}")]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateCategoryRequest request, CancellationToken cancellationToken)
-    {
-        var result = await _categoryService.UpdateCategoryAsync(id, request, cancellationToken);
-        return this.ToActionResult(result, Ok);
-    }
-
-    [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
-    {
-        var result = await _categoryService.DeleteCategoryAsync(id, cancellationToken);
-        return this.ToActionResult(result, _ => NoContent());
     }
 
     private static string? BuildSortValue(string? sortBy, string? sortOrder)
