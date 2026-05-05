@@ -29,12 +29,12 @@ It is designed to answer:
 - Epic 2 comment and company-response seed data
 - Epic 3 admin tools controller
 - Epic 3 image service and admin image endpoints
+- Epic 3 dashboard service and admin dashboard controller
 - documentation cleanup tasks (TASK-7, TASK-8, TASK-10, TASK-11, TASK-12)
 
 ### Still open
 
 - TASK-19: admin tool service logic
-- TASK-5: dashboard service and admin dashboard controller
 - TASK-16: admin category routing decision
 - TASK-20: FluentValidation adoption
 - TASK-22: real API integration tests
@@ -136,15 +136,14 @@ This is the main feature-delivery phase for Epic 3.
 ### Run in this order
 
 4. TASK-19: Implement admin tool management service methods and creation flow
-5. TASK-5: Implement dashboard service and admin dashboard controller
-6. TASK-16: Decide admin category routing
+5. TASK-16: Decide admin category routing
 
 ### Why this order
 
 - TASK-19 is the missing core business logic
 - TASK-2 controller routing is complete, but TASK-19 is still needed for real create/update/status behaviour
 - TASK-4 image upload/delete endpoints are already complete; TASK-19 still needs the remaining create/update/status business logic
-- TASK-5 is independent of image handling but is still Epic 3 core admin functionality
+- TASK-5 dashboard stats are already complete
 - TASK-16 is partly architectural and should be settled before frontend/admin integration is finalised
 
 ### Epic 3 completion target after this phase
@@ -312,14 +311,13 @@ If you want the shortest practical sequence, run these in exactly this order:
 
 1. TASK-24
 2. TASK-19
-3. TASK-5
-4. TASK-16
-5. TASK-20
-6. Either skip TASK-17 or implement it only if full ASP.NET Identity is mandatory
-7. TASK-22
-8. TASK-23
-9. Final Azure smoke test
-10. Final Next.js end-to-end check against Azure
+3. TASK-16
+4. TASK-20
+5. Either skip TASK-17 or implement it only if full ASP.NET Identity is mandatory
+6. TASK-22
+7. TASK-23
+8. Final Azure smoke test
+9. Final Next.js end-to-end check against Azure
 
 ## Definition Of Done For The Whole Backend
 
