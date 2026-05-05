@@ -15,14 +15,23 @@ public class ToolService : IToolService
     private const int HoursInWeek = 168;
     private const int MinimumReviewsRequiredForRating = 2;
     private const string NotEnoughReviewsMessage = "Not enough reviews to rate";
+    private const int MaxNameLength = 200;
+    private const int MaxDescriptionLength = 2000;
+    private const int MaxSpecialNotesLength = 1000;
+    private const int MaxImageUrlLength = 500;
 
     private readonly IToolRepository _toolRepository;
     private readonly ICategoryRepository _categoryRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public ToolService(IToolRepository toolRepository, ICategoryRepository categoryRepository)
+    public ToolService(
+        IToolRepository toolRepository,
+        ICategoryRepository categoryRepository,
+        IUnitOfWork unitOfWork)
     {
         _toolRepository = toolRepository;
         _categoryRepository = categoryRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result<PagedList<ToolSummaryDto>>> GetToolsByCategoryAsync(
@@ -147,19 +156,236 @@ public class ToolService : IToolService
             cheapestCombination.TotalCost));
     }
 
-    public Task<Result<ToolDto>> CreateToolAsync(CreateToolRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result<ToolDto>> CreateToolAsync(CreateToolRequest request, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(Result<ToolDto>.Failure("Tool creation is not implemented in this slice."));
+        var validationError = ValidateCreateToolRequest(request);
+        if (validationError is not null)
+        {
+            return Result<ToolDto>.Failure(validationError);
+        }
+
+        var category = await _categoryRepository.GetByIdAsync(request.CategoryId, cancellationToken);
+        if (category is null)
+        {
+            return Result<ToolDto>.NotFound($"Category with ID {request.CategoryId} not found.");
+        }
+
+        var utcNow = DateTime.UtcNow;
+        var tool = new Tool
+        {
+            CategoryId = request.CategoryId,
+            Category = category,
+            Name = request.Name.Trim(),
+            Description = request.Description.Trim(),
+            HourlyRate = request.HourlyRate,
+            DailyRate = request.DailyRate,
+            WeeklyRate = request.WeeklyRate,
+            SpecialNotes = TrimOptional(request.SpecialNotes),
+            DepositRequired = request.DepositRequired,
+            DepositAmount = request.DepositRequired ? request.DepositAmount : null,
+            IsActive = true,
+            OverallRating = null,
+            ReviewCount = 0,
+            CreatedDate = utcNow,
+            UpdatedDate = utcNow
+        };
+
+        tool.Images.Add(new ToolImage
+        {
+            Tool = tool,
+            ImageUrl = request.ImageUrl.Trim(),
+            DisplayOrder = 1,
+            UploadedDate = utcNow
+        });
+
+        await _toolRepository.AddAsync(tool, cancellationToken);
+        foreach (var image in tool.Images)
+        {
+            image.ToolId = tool.Id;
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result<ToolDto>.Success(MapToolDetail(tool));
     }
 
-    public Task<Result<ToolDto>> UpdateToolAsync(int id, UpdateToolRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result<ToolDto>> UpdateToolAsync(int id, UpdateToolRequest request, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(Result<ToolDto>.Failure("Tool updates are not implemented in this slice."));
+        var validationError = ValidateUpdateToolRequest(request);
+        if (validationError is not null)
+        {
+            return Result<ToolDto>.Failure(validationError);
+        }
+
+        var tool = await _toolRepository.GetByIdAsync(id, cancellationToken);
+        if (tool is null)
+        {
+            return Result<ToolDto>.NotFound($"Tool with ID {id} not found.");
+        }
+
+        var category = await _categoryRepository.GetByIdAsync(request.CategoryId, cancellationToken);
+        if (category is null)
+        {
+            return Result<ToolDto>.NotFound($"Category with ID {request.CategoryId} not found.");
+        }
+
+        tool.CategoryId = request.CategoryId;
+        tool.Category = category;
+        tool.Name = request.Name.Trim();
+        tool.Description = request.Description.Trim();
+        tool.HourlyRate = request.HourlyRate;
+        tool.DailyRate = request.DailyRate;
+        tool.WeeklyRate = request.WeeklyRate;
+        tool.SpecialNotes = TrimOptional(request.SpecialNotes);
+        tool.DepositRequired = request.DepositRequired;
+        tool.DepositAmount = request.DepositRequired ? request.DepositAmount : null;
+
+        await _toolRepository.UpdateAsync(tool, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var refreshedTool = await _toolRepository.GetByIdWithDetailsAsync(id, cancellationToken);
+        return Result<ToolDto>.Success(MapToolDetail(refreshedTool ?? tool));
     }
 
-    public Task<Result<bool>> SetToolStatusAsync(int id, bool isActive, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> SetToolStatusAsync(int id, bool isActive, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(Result<bool>.Failure("Tool status changes are not implemented in this slice."));
+        var tool = await _toolRepository.GetByIdAsync(id, cancellationToken);
+        if (tool is null)
+        {
+            return Result<bool>.NotFound($"Tool with ID {id} not found.");
+        }
+
+        tool.IsActive = isActive;
+
+        await _toolRepository.UpdateAsync(tool, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result<bool>.Success(true);
+    }
+
+    private static string? ValidateCreateToolRequest(CreateToolRequest request)
+    {
+        if (request is null)
+        {
+            return "Tool request is required.";
+        }
+
+        return ValidateCommonToolFields(
+            request.CategoryId,
+            request.Name,
+            request.Description,
+            request.HourlyRate,
+            request.DailyRate,
+            request.WeeklyRate,
+            request.SpecialNotes,
+            request.DepositRequired,
+            request.DepositAmount)
+            ?? ValidateImageUrl(request.ImageUrl);
+    }
+
+    private static string? ValidateUpdateToolRequest(UpdateToolRequest request)
+    {
+        if (request is null)
+        {
+            return "Tool request is required.";
+        }
+
+        return ValidateCommonToolFields(
+            request.CategoryId,
+            request.Name,
+            request.Description,
+            request.HourlyRate,
+            request.DailyRate,
+            request.WeeklyRate,
+            request.SpecialNotes,
+            request.DepositRequired,
+            request.DepositAmount);
+    }
+
+    private static string? ValidateCommonToolFields(
+        int categoryId,
+        string name,
+        string description,
+        decimal hourlyRate,
+        decimal dailyRate,
+        decimal weeklyRate,
+        string? specialNotes,
+        bool depositRequired,
+        decimal? depositAmount)
+    {
+        if (categoryId <= 0)
+        {
+            return "Category ID must be greater than 0.";
+        }
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return "Name is required.";
+        }
+
+        if (name.Trim().Length > MaxNameLength)
+        {
+            return $"Name must be {MaxNameLength} characters or fewer.";
+        }
+
+        if (string.IsNullOrWhiteSpace(description))
+        {
+            return "Description is required.";
+        }
+
+        if (description.Trim().Length > MaxDescriptionLength)
+        {
+            return $"Description must be {MaxDescriptionLength} characters or fewer.";
+        }
+
+        if (hourlyRate <= 0m)
+        {
+            return "Hourly rate must be greater than 0.";
+        }
+
+        if (dailyRate <= 0m)
+        {
+            return "Daily rate must be greater than 0.";
+        }
+
+        if (weeklyRate <= 0m)
+        {
+            return "Weekly rate must be greater than 0.";
+        }
+
+        if (!string.IsNullOrWhiteSpace(specialNotes) && specialNotes.Trim().Length > MaxSpecialNotesLength)
+        {
+            return $"Special notes must be {MaxSpecialNotesLength} characters or fewer.";
+        }
+
+        if (depositRequired)
+        {
+            if (!depositAmount.HasValue || depositAmount.Value <= 0m)
+            {
+                return "Deposit amount must be greater than 0 when a deposit is required.";
+            }
+        }
+        else if (depositAmount.HasValue && depositAmount.Value != 0m)
+        {
+            return "Deposit amount must be empty when a deposit is not required.";
+        }
+
+        return null;
+    }
+
+    private static string? ValidateImageUrl(string imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            return "At least one image is required before a tool/service can be saved.";
+        }
+
+        if (imageUrl.Trim().Length > MaxImageUrlLength)
+        {
+            return $"Image URL must be {MaxImageUrlLength} characters or fewer.";
+        }
+
+        return null;
     }
 
     private static string? ValidatePaging(int page, int pageSize)
@@ -430,13 +656,17 @@ public class ToolService : IToolService
             return Result<ToolDto>.NotFound($"Tool with ID {id} not found.");
         }
 
+        return Result<ToolDto>.Success(MapToolDetail(tool));
+    }
+
+    private static ToolDto MapToolDetail(Tool tool)
+    {
         ApplyRatingMetrics(tool);
         var (hasEnoughReviewsToRate, ratingMessage) = GetRatingDisplayState(tool);
-
-        return Result<ToolDto>.Success(new ToolDto(
+        return new ToolDto(
             tool.Id,
             tool.CategoryId,
-            tool.Category.Name,
+            tool.Category?.Name ?? string.Empty,
             tool.Name,
             tool.Description,
             tool.HourlyRate,
@@ -456,7 +686,7 @@ public class ToolService : IToolService
                 .Select(image => new ToolImageDto(image.Id, image.ImageUrl, image.DisplayOrder))
                 .ToList(),
             tool.CreatedDate,
-            tool.UpdatedDate));
+            tool.UpdatedDate);
     }
 
     private static (bool HasEnoughReviewsToRate, string? RatingMessage) GetRatingDisplayState(Tool tool)
@@ -486,5 +716,12 @@ public class ToolService : IToolService
     private sealed record RentalCombination(int Weeks, int Days, int Hours, int CoveredHours, decimal TotalCost)
     {
         public int UnitCount => Weeks + Days + Hours;
+    }
+
+    private static string? TrimOptional(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim();
     }
 }

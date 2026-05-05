@@ -277,7 +277,8 @@ public class AdminToolsControllerTests
             WeeklyRate: 180.00m,
             SpecialNotes: "Includes SDS bits.",
             DepositRequired: true,
-            DepositAmount: 50.00m);
+            DepositAmount: 50.00m,
+            ImageUrl: "/uploads/tools/rotary-hammer.jpg");
     }
 
     private static UpdateToolRequest UpdateToolRequest()

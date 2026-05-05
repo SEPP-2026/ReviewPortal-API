@@ -28,6 +28,7 @@ It is designed to answer:
 - Epic 2 review-threshold DTO support
 - Epic 2 comment and company-response seed data
 - Epic 3 admin tools controller
+- Epic 3 admin tool create/update/status service logic
 - Epic 3 image service and admin image endpoints
 - Epic 3 dashboard service and admin dashboard controller
 - Epic 3 admin category routing decision and `/api/admin/categories` controller
@@ -35,7 +36,6 @@ It is designed to answer:
 
 ### Still open
 
-- TASK-19: admin tool service logic
 - TASK-20: FluentValidation adoption
 - TASK-22: real API integration tests
 - TASK-23: CI/CD and coverage automation
@@ -67,6 +67,7 @@ The frontend must use the actual API routes that exist today:
 - `POST /api/tools/{id}/rental-calculation`
 - auth routes under `/api/auth/...`
 - admin tool routes under `/api/admin/tools` require an Admin bearer token
+- `POST /api/admin/tools` requires `imageUrl` in the JSON body so the first `ToolImage` is created with the tool/service
 - admin category routes under `/api/admin/categories` require an Admin bearer token
 
 Do not assume there is a `GET /api/tools` list endpoint. That route does not exist.
@@ -136,13 +137,13 @@ This is the main feature-delivery phase for Epic 3.
 
 ### Run in this order
 
-4. TASK-19: Implement admin tool management service methods and creation flow
+All core Epic 3 admin backend tasks from this phase are complete.
 
 ### Why this order
 
-- TASK-19 is the missing core business logic
-- TASK-2 controller routing is complete, but TASK-19 is still needed for real create/update/status behaviour
-- TASK-4 image upload/delete endpoints are already complete; TASK-19 still needs the remaining create/update/status business logic
+- TASK-19 is complete: admin create/update/status behaviour is implemented in `ToolService`
+- Tool creation requires `CreateToolRequest.ImageUrl` for the first image; additional image upload/delete uses the TASK-4 endpoints
+- TASK-4 image upload/delete endpoints are already complete
 - TASK-5 dashboard stats are already complete
 - TASK-16 is settled: admin category create/update/delete routes live under `/api/admin/categories`, and public `/api/categories` remains read-only
 
@@ -310,13 +311,12 @@ Use this checklist after every code task:
 If you want the shortest practical sequence, run these in exactly this order:
 
 1. TASK-24
-2. TASK-19
-3. TASK-20
-4. Either skip TASK-17 or implement it only if full ASP.NET Identity is mandatory
-5. TASK-22
-6. TASK-23
-7. Final Azure smoke test
-8. Final Next.js end-to-end check against Azure
+2. TASK-20
+3. Either skip TASK-17 or implement it only if full ASP.NET Identity is mandatory
+4. TASK-22
+5. TASK-23
+6. Final Azure smoke test
+7. Final Next.js end-to-end check against Azure
 
 ## Definition Of Done For The Whole Backend
 

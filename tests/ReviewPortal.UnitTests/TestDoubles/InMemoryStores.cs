@@ -123,6 +123,8 @@ internal sealed class InMemoryToolRepository : IToolRepository
         _tools = tools?.ToList() ?? [];
     }
 
+    public IReadOnlyList<Tool> Items => _tools;
+
     public Task<Tool?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(_tools.SingleOrDefault(tool => tool.Id == id));
