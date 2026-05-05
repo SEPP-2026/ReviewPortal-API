@@ -2,9 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using ReviewPortal.Application.Interfaces;
 using ReviewPortal.Application.Services;
 using ReviewPortal.Domain.Interfaces;
+using ReviewPortal.Infrastructure.Authentication;
 using ReviewPortal.Infrastructure.Data;
 using ReviewPortal.Infrastructure.Repositories;
-using ReviewPortal.Infrastructure.Authentication;
+using ReviewPortal.Infrastructure.Services;
 
 namespace ReviewPortal.API.Extensions;
 
@@ -36,6 +37,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IJwtProvider, JwtProvider>();
         services.AddScoped<IPasswordHasher, IdentityPasswordHasher>();
 
+        // File storage
+        services.Configure<ImageStorageOptions>(configuration.GetSection(ImageStorageOptions.SectionName));
+
         return services;
     }
 
@@ -46,6 +50,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IToolService, ToolService>();
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IImageService, ImageService>();
 
         return services;
     }
