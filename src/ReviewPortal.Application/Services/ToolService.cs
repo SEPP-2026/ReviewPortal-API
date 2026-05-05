@@ -1,7 +1,10 @@
 using System.Globalization;
+using FluentValidation;
 using ReviewPortal.Application.Common;
 using ReviewPortal.Application.DTOs.Tools;
 using ReviewPortal.Application.Interfaces;
+using ReviewPortal.Application.Validators;
+using ReviewPortal.Application.Validators.Tools;
 using ReviewPortal.Domain.Entities;
 using ReviewPortal.Domain.Enums;
 using ReviewPortal.Domain.Interfaces;
@@ -15,23 +18,28 @@ public class ToolService : IToolService
     private const int HoursInWeek = 168;
     private const int MinimumReviewsRequiredForRating = 2;
     private const string NotEnoughReviewsMessage = "Not enough reviews to rate";
-    private const int MaxNameLength = 200;
-    private const int MaxDescriptionLength = 2000;
-    private const int MaxSpecialNotesLength = 1000;
-    private const int MaxImageUrlLength = 500;
 
     private readonly IToolRepository _toolRepository;
     private readonly ICategoryRepository _categoryRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IValidator<RentalCalculationRequest> _rentalCalculationRequestValidator;
+    private readonly IValidator<CreateToolRequest> _createToolRequestValidator;
+    private readonly IValidator<UpdateToolRequest> _updateToolRequestValidator;
 
     public ToolService(
         IToolRepository toolRepository,
         ICategoryRepository categoryRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IValidator<RentalCalculationRequest>? rentalCalculationRequestValidator = null,
+        IValidator<CreateToolRequest>? createToolRequestValidator = null,
+        IValidator<UpdateToolRequest>? updateToolRequestValidator = null)
     {
         _toolRepository = toolRepository;
         _categoryRepository = categoryRepository;
         _unitOfWork = unitOfWork;
+        _rentalCalculationRequestValidator = rentalCalculationRequestValidator ?? new RentalCalculationRequestValidator();
+        _createToolRequestValidator = createToolRequestValidator ?? new CreateToolRequestValidator();
+        _updateToolRequestValidator = updateToolRequestValidator ?? new UpdateToolRequestValidator();
     }
 
     public async Task<Result<PagedList<ToolSummaryDto>>> GetToolsByCategoryAsync(
@@ -129,9 +137,10 @@ public class ToolService : IToolService
 
     public async Task<Result<RentalCalculationResponse>> CalculateRentalCostAsync(int toolId, RentalCalculationRequest request, CancellationToken cancellationToken = default)
     {
-        if (request.EndDateTime <= request.StartDateTime)
+        var validationError = RequestValidatorRunner.Validate(_rentalCalculationRequestValidator, request, "Rental calculation request is required.");
+        if (validationError is not null)
         {
-            return Result<RentalCalculationResponse>.Failure("End date/time must be after the start date/time.");
+            return Result<RentalCalculationResponse>.Failure(validationError);
         }
 
         var tool = await _toolRepository.GetByIdWithDetailsAsync(toolId, cancellationToken);
@@ -158,7 +167,7 @@ public class ToolService : IToolService
 
     public async Task<Result<ToolDto>> CreateToolAsync(CreateToolRequest request, CancellationToken cancellationToken = default)
     {
-        var validationError = ValidateCreateToolRequest(request);
+        var validationError = RequestValidatorRunner.Validate(_createToolRequestValidator, request, "Tool request is required.");
         if (validationError is not null)
         {
             return Result<ToolDto>.Failure(validationError);
@@ -211,7 +220,7 @@ public class ToolService : IToolService
 
     public async Task<Result<ToolDto>> UpdateToolAsync(int id, UpdateToolRequest request, CancellationToken cancellationToken = default)
     {
-        var validationError = ValidateUpdateToolRequest(request);
+        var validationError = RequestValidatorRunner.Validate(_updateToolRequestValidator, request, "Tool request is required.");
         if (validationError is not null)
         {
             return Result<ToolDto>.Failure(validationError);
@@ -261,131 +270,6 @@ public class ToolService : IToolService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result<bool>.Success(true);
-    }
-
-    private static string? ValidateCreateToolRequest(CreateToolRequest request)
-    {
-        if (request is null)
-        {
-            return "Tool request is required.";
-        }
-
-        return ValidateCommonToolFields(
-            request.CategoryId,
-            request.Name,
-            request.Description,
-            request.HourlyRate,
-            request.DailyRate,
-            request.WeeklyRate,
-            request.SpecialNotes,
-            request.DepositRequired,
-            request.DepositAmount)
-            ?? ValidateImageUrl(request.ImageUrl);
-    }
-
-    private static string? ValidateUpdateToolRequest(UpdateToolRequest request)
-    {
-        if (request is null)
-        {
-            return "Tool request is required.";
-        }
-
-        return ValidateCommonToolFields(
-            request.CategoryId,
-            request.Name,
-            request.Description,
-            request.HourlyRate,
-            request.DailyRate,
-            request.WeeklyRate,
-            request.SpecialNotes,
-            request.DepositRequired,
-            request.DepositAmount);
-    }
-
-    private static string? ValidateCommonToolFields(
-        int categoryId,
-        string name,
-        string description,
-        decimal hourlyRate,
-        decimal dailyRate,
-        decimal weeklyRate,
-        string? specialNotes,
-        bool depositRequired,
-        decimal? depositAmount)
-    {
-        if (categoryId <= 0)
-        {
-            return "Category ID must be greater than 0.";
-        }
-
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            return "Name is required.";
-        }
-
-        if (name.Trim().Length > MaxNameLength)
-        {
-            return $"Name must be {MaxNameLength} characters or fewer.";
-        }
-
-        if (string.IsNullOrWhiteSpace(description))
-        {
-            return "Description is required.";
-        }
-
-        if (description.Trim().Length > MaxDescriptionLength)
-        {
-            return $"Description must be {MaxDescriptionLength} characters or fewer.";
-        }
-
-        if (hourlyRate <= 0m)
-        {
-            return "Hourly rate must be greater than 0.";
-        }
-
-        if (dailyRate <= 0m)
-        {
-            return "Daily rate must be greater than 0.";
-        }
-
-        if (weeklyRate <= 0m)
-        {
-            return "Weekly rate must be greater than 0.";
-        }
-
-        if (!string.IsNullOrWhiteSpace(specialNotes) && specialNotes.Trim().Length > MaxSpecialNotesLength)
-        {
-            return $"Special notes must be {MaxSpecialNotesLength} characters or fewer.";
-        }
-
-        if (depositRequired)
-        {
-            if (!depositAmount.HasValue || depositAmount.Value <= 0m)
-            {
-                return "Deposit amount must be greater than 0 when a deposit is required.";
-            }
-        }
-        else if (depositAmount.HasValue && depositAmount.Value != 0m)
-        {
-            return "Deposit amount must be empty when a deposit is not required.";
-        }
-
-        return null;
-    }
-
-    private static string? ValidateImageUrl(string imageUrl)
-    {
-        if (string.IsNullOrWhiteSpace(imageUrl))
-        {
-            return "At least one image is required before a tool/service can be saved.";
-        }
-
-        if (imageUrl.Trim().Length > MaxImageUrlLength)
-        {
-            return $"Image URL must be {MaxImageUrlLength} characters or fewer.";
-        }
-
-        return null;
     }
 
     private static string? ValidatePaging(int page, int pageSize)

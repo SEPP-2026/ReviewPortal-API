@@ -340,12 +340,12 @@ Category CRUD previously existed on the public `CategoriesController` with `[Aut
 
 **Sub-tasks:**
 
-- [ ] **20.1** Add FluentValidation packages and register validators in the API startup/composition root
-- [ ] **20.2** Create validators for auth requests (`Register`, `Login`, `ChangePassword`, `ForgotPassword`, `ResetPassword`)
-- [ ] **20.3** Create validators for catalogue and review requests (`RentalCalculation`, `CreateReview`, `CreateComment`, `CreateCompanyResponse`, `ModerateReview`, `CreateCategory`, `UpdateCategory`, `CreateTool`, `UpdateTool`)
-- [ ] **20.4** Move request-shape validation out of services into validators while keeping cross-entity/business-rule validation in the service layer
-- [ ] **20.5** Add validator unit tests for every rule and at least one API/integration test that invalid payloads return consistent 400 validation responses
-- [ ] **20.6** Run `dotnet build` and `dotnet test` - confirm all tests pass
+- [x] **20.1** Add FluentValidation packages and register validators in the API startup/composition root
+- [x] **20.2** Create validators for auth requests (`Register`, `Login`, `ChangePassword`, `ForgotPassword`, `ResetPassword`)
+- [x] **20.3** Create validators for catalogue and review requests (`RentalCalculation`, `CreateReview`, `CreateComment`, `CreateCompanyResponse`, `ModerateReview`, `CreateCategory`, `UpdateCategory`, `CreateTool`, `UpdateTool`)
+- [x] **20.4** Move request-shape validation out of services into validators while keeping cross-entity/business-rule validation in the service layer
+- [x] **20.5** Add validator unit tests for every rule and at least one API/integration test that invalid payloads return consistent 400 validation responses
+- [x] **20.6** Run `dotnet build` and `dotnet test` - confirm all tests pass
 
 ---
 
@@ -561,7 +561,7 @@ TASK-16 (Admin category routing)     â€” independent
 | TASK-17: Identity auth alignment | Conditional / decision gate | |
 | TASK-18: Review comment status index | Done | 2026-04-26 |
 | TASK-19: Admin tool service logic | Done | 2026-05-05 |
-| TASK-20: FluentValidation adoption | â¬œ Not started | |
+| TASK-20: FluentValidation adoption | Done | 2026-05-05 |
 | TASK-21: Review rating DB constraints | Done | 2026-04-26 |
 | TASK-22: API integration tests | â¬œ Not started | |
 | TASK-23: CI and coverage automation | â¬œ Not started | |

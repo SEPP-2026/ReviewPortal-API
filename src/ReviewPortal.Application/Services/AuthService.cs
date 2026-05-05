@@ -1,10 +1,12 @@
 using ReviewPortal.Application.Common;
 using ReviewPortal.Application.DTOs.Users;
 using ReviewPortal.Application.Interfaces;
+using FluentValidation;
 using ReviewPortal.Domain.Entities;
 using ReviewPortal.Domain.Enums;
 using ReviewPortal.Domain.Interfaces;
-using System.Net.Mail;
+using ReviewPortal.Application.Validators;
+using ReviewPortal.Application.Validators.Users;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -19,22 +21,37 @@ public class AuthService : IAuthService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IJwtProvider _jwtProvider;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IValidator<RegisterRequest> _registerRequestValidator;
+    private readonly IValidator<LoginRequest> _loginRequestValidator;
+    private readonly IValidator<ChangePasswordRequest> _changePasswordRequestValidator;
+    private readonly IValidator<ForgotPasswordRequest> _forgotPasswordRequestValidator;
+    private readonly IValidator<ResetPasswordRequest> _resetPasswordRequestValidator;
 
     public AuthService(
         IUserRepository userRepository,
         IUnitOfWork unitOfWork,
         IJwtProvider jwtProvider,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        IValidator<RegisterRequest>? registerRequestValidator = null,
+        IValidator<LoginRequest>? loginRequestValidator = null,
+        IValidator<ChangePasswordRequest>? changePasswordRequestValidator = null,
+        IValidator<ForgotPasswordRequest>? forgotPasswordRequestValidator = null,
+        IValidator<ResetPasswordRequest>? resetPasswordRequestValidator = null)
     {
         _userRepository = userRepository;
         _unitOfWork = unitOfWork;
         _jwtProvider = jwtProvider;
         _passwordHasher = passwordHasher;
+        _registerRequestValidator = registerRequestValidator ?? new RegisterRequestValidator();
+        _loginRequestValidator = loginRequestValidator ?? new LoginRequestValidator();
+        _changePasswordRequestValidator = changePasswordRequestValidator ?? new ChangePasswordRequestValidator();
+        _forgotPasswordRequestValidator = forgotPasswordRequestValidator ?? new ForgotPasswordRequestValidator();
+        _resetPasswordRequestValidator = resetPasswordRequestValidator ?? new ResetPasswordRequestValidator();
     }
 
     public async Task<Result<AuthResponse>> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken = default)
     {
-        var validationError = ValidateRegistrationRequest(request);
+        var validationError = RequestValidatorRunner.Validate(_registerRequestValidator, request, "Registration request is required.");
         if (validationError is not null)
         {
             return Result<AuthResponse>.Failure(validationError);
@@ -71,9 +88,10 @@ public class AuthService : IAuthService
 
     public async Task<Result<AuthResponse>> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+        var validationError = RequestValidatorRunner.Validate(_loginRequestValidator, request, "Login request is required.");
+        if (validationError is not null)
         {
-            return Result<AuthResponse>.Failure("Email and password are required.");
+            return Result<AuthResponse>.Failure(validationError);
         }
 
         var user = await _userRepository.GetByEmailAsync(NormalizeEmail(request.Email), cancellationToken);
@@ -113,7 +131,7 @@ public class AuthService : IAuthService
 
     public async Task<Result<PasswordActionResponse>> ChangePasswordAsync(int userId, ChangePasswordRequest request, CancellationToken cancellationToken = default)
     {
-        var validationError = ValidateChangePasswordRequest(request);
+        var validationError = RequestValidatorRunner.Validate(_changePasswordRequestValidator, request, "Change password request is required.");
         if (validationError is not null)
         {
             return Result<PasswordActionResponse>.Failure(validationError);
@@ -146,7 +164,7 @@ public class AuthService : IAuthService
 
     public async Task<Result<ForgotPasswordResponse>> ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken cancellationToken = default)
     {
-        var validationError = ValidateEmail(request.Email);
+        var validationError = RequestValidatorRunner.Validate(_forgotPasswordRequestValidator, request, "Forgot password request is required.");
         if (validationError is not null)
         {
             return Result<ForgotPasswordResponse>.Failure(validationError);
@@ -174,7 +192,7 @@ public class AuthService : IAuthService
 
     public async Task<Result<PasswordActionResponse>> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default)
     {
-        var validationError = ValidateResetPasswordRequest(request);
+        var validationError = RequestValidatorRunner.Validate(_resetPasswordRequestValidator, request, "Reset password request is required.");
         if (validationError is not null)
         {
             return Result<PasswordActionResponse>.Failure(validationError);
@@ -193,99 +211,6 @@ public class AuthService : IAuthService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result<PasswordActionResponse>.Success(new PasswordActionResponse("Password has been reset successfully."));
-    }
-
-    private static string? ValidateRegistrationRequest(RegisterRequest request)
-    {
-        return ValidateName(request.Name)
-            ?? ValidateEmail(request.Email)
-            ?? ValidatePassword(request.Password, "Password");
-    }
-
-    private static string? ValidateChangePasswordRequest(ChangePasswordRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(request.CurrentPassword))
-        {
-            return "Current password is required.";
-        }
-
-        return ValidatePassword(request.NewPassword, "New password");
-    }
-
-    private static string? ValidateResetPasswordRequest(ResetPasswordRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(request.ResetToken))
-        {
-            return "Reset token is required.";
-        }
-
-        return ValidateEmail(request.Email)
-            ?? ValidatePassword(request.NewPassword, "New password");
-    }
-
-    private static string? ValidateName(string name)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            return "Name is required.";
-        }
-
-        if (name.Trim().Length > 100)
-        {
-            return "Name must be 100 characters or fewer.";
-        }
-
-        return null;
-    }
-
-    private static string? ValidateEmail(string email)
-    {
-        if (string.IsNullOrWhiteSpace(email))
-        {
-            return "Email is required.";
-        }
-
-        if (!IsValidEmail(email))
-        {
-            return "A valid email address is required.";
-        }
-
-        if (email.Trim().Length > 256)
-        {
-            return "Email must be 256 characters or fewer.";
-        }
-
-        return null;
-    }
-
-    private static string? ValidatePassword(string password, string fieldLabel)
-    {
-        if (string.IsNullOrWhiteSpace(password))
-        {
-            return $"{fieldLabel} is required.";
-        }
-
-        if (password.Length < 8)
-        {
-            return $"{fieldLabel} must be at least 8 characters long.";
-        }
-
-        if (!password.Any(char.IsUpper))
-        {
-            return $"{fieldLabel} must contain at least one uppercase letter.";
-        }
-
-        if (!password.Any(char.IsDigit))
-        {
-            return $"{fieldLabel} must contain at least one number.";
-        }
-
-        return null;
-    }
-
-    private static bool IsValidEmail(string email)
-    {
-        return MailAddress.TryCreate(email.Trim(), out _);
     }
 
     private static string GenerateResetToken()

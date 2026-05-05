@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using FluentValidation;
 using ReviewPortal.Application.Interfaces;
 using ReviewPortal.Application.Services;
+using ReviewPortal.Application.Validators.Users;
 using ReviewPortal.Domain.Interfaces;
 using ReviewPortal.Infrastructure.Authentication;
 using ReviewPortal.Infrastructure.Data;
@@ -52,6 +54,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IImageService, ImageService>();
         services.AddScoped<IDashboardService, DashboardService>();
+        services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
 
         return services;
     }
