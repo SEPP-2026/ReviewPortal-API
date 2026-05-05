@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
@@ -18,6 +19,7 @@ ValidateJwtSettings(jwtSettings);
 builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddProblemDetails();
 builder.Services.AddControllers();
+builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddEndpointsApiExplorer();
 
 // Add JWT Authentication
@@ -174,4 +176,8 @@ static string NormalizeRequestPath(string requestPath)
     return normalized.StartsWith('/')
         ? normalized
         : $"/{normalized}";
+}
+
+public partial class Program
+{
 }
