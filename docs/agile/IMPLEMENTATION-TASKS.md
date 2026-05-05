@@ -242,21 +242,21 @@ No image upload or delete functionality exists.
 
 **Sub-tasks:**
 
-- [ ] **4.1** Create `src/ReviewPortal.Application/Interfaces/IImageService.cs` with methods:
+- [x] **4.1** Create `src/ReviewPortal.Application/Interfaces/IImageService.cs` with methods:
   - `Task<Result<ToolImageDto>> UploadImageAsync(int toolId, Stream fileStream, string fileName, CancellationToken)`
   - `Task<Result<bool>> DeleteImageAsync(int toolId, int imageId, CancellationToken)`
-- [ ] **4.2** Create `src/ReviewPortal.Infrastructure/Services/ImageService.cs` implementing `IImageService`
-- [ ] **4.3** Upload validation: only allow `.jpg`, `.jpeg`, `.png`, `.webp`; max 5MB file size
-- [ ] **4.4** Upload storage: save files to a local `uploads/tools/` folder (configurable path in `appsettings.json`)
-- [ ] **4.5** Create a `ToolImage` record in the database with the file path, set `DisplayOrder` to max + 1
-- [ ] **4.6** Delete logic: look up image by `toolId` + `imageId`; if tool has only 1 image, return error "Cannot delete the last image"
-- [ ] **4.7** Delete the file from disk and remove the `ToolImage` record
-- [ ] **4.8** Register `IImageService` in DI (`Program.cs` or `DependencyInjection.cs`)
-- [ ] **4.9** Add endpoints to `AdminToolsController`:
+- [x] **4.2** Create `src/ReviewPortal.Infrastructure/Services/ImageService.cs` implementing `IImageService`
+- [x] **4.3** Upload validation: only allow `.jpg`, `.jpeg`, `.png`, `.webp`; max 5MB file size
+- [x] **4.4** Upload storage: save files to a local `uploads/tools/` folder (configurable path in `appsettings.json`)
+- [x] **4.5** Create a `ToolImage` record in the database with the file path, set `DisplayOrder` to max + 1
+- [x] **4.6** Delete logic: look up image by `toolId` + `imageId`; if tool has only 1 image, return error "Cannot delete the last image"
+- [x] **4.7** Delete the file from disk and remove the `ToolImage` record
+- [x] **4.8** Register `IImageService` in DI (`Program.cs` or `DependencyInjection.cs`)
+- [x] **4.9** Add endpoints to `AdminToolsController`:
   - `[HttpPost("{id:int}/images")]` accepting `IFormFile` â†’ calls `UploadImageAsync`
   - `[HttpDelete("{id:int}/images/{imageId:int}")]` â†’ calls `DeleteImageAsync`
-- [ ] **4.10** Write unit tests: upload success, upload invalid format (returns 400), upload too large (returns 400), delete success, delete last image (returns 400), delete image not found (returns 404)
-- [ ] **4.11** Run `dotnet build` and `dotnet test` â€” confirm all tests pass
+- [x] **4.10** Write unit tests: upload success, upload invalid format (returns 400), upload too large (returns 400), delete success, delete last image (returns 400), delete image not found (returns 404)
+- [x] **4.11** Run `dotnet build` and `dotnet test` â€” confirm all tests pass
 
 ---
 
@@ -520,7 +520,7 @@ TASK-13 (Fix company response) â€” independent, do anytime
 TASK-14 (Review threshold)     â€” independent, do anytime
 TASK-17 (Auth alignment)       - conditional decision gate only if full ASP.NET Identity is mandatory
 TASK-18 (Comment status index) - independent, do anytime
-TASK-19 (Tool service logic)   -> TASK-4 (TASK-2 controller route is complete)
+TASK-19 (Tool service logic)   - remaining admin create/update/status service logic; TASK-4 image endpoints are complete
 TASK-20 (FluentValidation)     -> supports TASK-17 and TASK-19
 TASK-21 (Rating DB checks)     -> pair with TASK-18
 TASK-22 (API integration)      -> after core API slices are stable
@@ -544,7 +544,7 @@ TASK-16 (Admin category routing)     â€” independent
 | TASK-1: Seed missing categories | Done | 2026-04-22 |
 | TASK-2: AdminToolsController | Done | 2026-04-26 |
 | TASK-3: AdminModerationController | Done | 2026-04-22 |
-| TASK-4: ImageService | â¬œ Not started | |
+| TASK-4: ImageService | Done | 2026-05-05 |
 | TASK-5: DashboardService | â¬œ Not started | |
 | TASK-6: Moderation service methods | Done | 2026-04-22 |
 | TASK-7: Docs â€“ tool/service wording | Done | 2026-04-23 |

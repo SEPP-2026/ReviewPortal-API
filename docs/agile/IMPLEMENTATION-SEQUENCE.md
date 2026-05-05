@@ -1,6 +1,6 @@
 # Implementation Sequence
 
-> Last updated: 2026-04-26
+> Last updated: 2026-05-05
 > Scope: remaining backend/API work for Epic 2, Epic 3, deployment hardening, Azure App Service readiness, and Next.js integration readiness.
 
 ## Goal
@@ -28,12 +28,12 @@ It is designed to answer:
 - Epic 2 review-threshold DTO support
 - Epic 2 comment and company-response seed data
 - Epic 3 admin tools controller
+- Epic 3 image service and admin image endpoints
 - documentation cleanup tasks (TASK-7, TASK-8, TASK-10, TASK-11, TASK-12)
 
 ### Still open
 
 - TASK-19: admin tool service logic
-- TASK-4: image service and image endpoints
 - TASK-5: dashboard service and admin dashboard controller
 - TASK-16: admin category routing decision
 - TASK-20: FluentValidation adoption
@@ -136,15 +136,14 @@ This is the main feature-delivery phase for Epic 3.
 ### Run in this order
 
 4. TASK-19: Implement admin tool management service methods and creation flow
-5. TASK-4: Implement `ImageService` and admin image endpoints
-6. TASK-5: Implement dashboard service and admin dashboard controller
-7. TASK-16: Decide admin category routing
+5. TASK-5: Implement dashboard service and admin dashboard controller
+6. TASK-16: Decide admin category routing
 
 ### Why this order
 
 - TASK-19 is the missing core business logic
 - TASK-2 controller routing is complete, but TASK-19 is still needed for real create/update/status behaviour
-- TASK-4 depends on the admin tools controller slice and service logic existing
+- TASK-4 image upload/delete endpoints are already complete; TASK-19 still needs the remaining create/update/status business logic
 - TASK-5 is independent of image handling but is still Epic 3 core admin functionality
 - TASK-16 is partly architectural and should be settled before frontend/admin integration is finalised
 
@@ -313,15 +312,14 @@ If you want the shortest practical sequence, run these in exactly this order:
 
 1. TASK-24
 2. TASK-19
-3. TASK-4
-4. TASK-5
-5. TASK-16
-6. TASK-20
-7. Either skip TASK-17 or implement it only if full ASP.NET Identity is mandatory
-8. TASK-22
-9. TASK-23
-10. Final Azure smoke test
-11. Final Next.js end-to-end check against Azure
+3. TASK-5
+4. TASK-16
+5. TASK-20
+6. Either skip TASK-17 or implement it only if full ASP.NET Identity is mandatory
+7. TASK-22
+8. TASK-23
+9. Final Azure smoke test
+10. Final Next.js end-to-end check against Azure
 
 ## Definition Of Done For The Whole Backend
 
