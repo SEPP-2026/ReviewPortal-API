@@ -9,5 +9,6 @@ public record CreateToolRequest(
     decimal WeeklyRate,
     string? SpecialNotes,
     bool DepositRequired,
-    decimal? DepositAmount
+    decimal? DepositAmount,
+    string ImageUrl
 );

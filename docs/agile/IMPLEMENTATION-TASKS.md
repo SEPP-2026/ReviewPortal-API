@@ -317,16 +317,16 @@ Category CRUD previously existed on the public `CategoriesController` with `[Aut
 **Links to:** [US-3.2 - Add new equipment or service to the catalogue](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-32--add-new-equipment-or-service-to-the-catalogue) | [US-3.3 - Edit existing equipment/service details and pricing](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-33--edit-existing-equipmentservice-details-and-pricing) | [US-3.5 - Deactivate or remove equipment/service](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-35--deactivate-or-remove-equipmentservice) | [US-3.9 - Admin API endpoints](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-39--admin-api-endpoints)
 **Priority:** Must | **Gap IDs:** GAP-SVC-8, GAP-FLOW-1
 
-`IToolService` exposes admin mutation methods, but `ToolService` still returns "not implemented" failures. The current request model also has no way to satisfy the "at least one image before save" acceptance criterion, so the add-tool flow is incomplete even before the controller is added.
+`IToolService` exposes admin mutation methods. The first-save image flow is handled by requiring `CreateToolRequest.ImageUrl`, which creates the first `ToolImage` record in the same create operation. Additional images are managed through the admin image upload endpoints from TASK-4.
 
 **Sub-tasks:**
 
-- [ ] **19.1** Implement `CreateToolAsync`, `UpdateToolAsync`, and `SetToolStatusAsync` in `ToolService` instead of returning stub failures
-- [ ] **19.2** Add validation for category existence, required text fields, non-negative/positive hire rates, and deposit amount consistency
-- [ ] **19.3** Decide and implement the first-save image flow so a tool/service cannot be successfully created without at least one image (for example: initial image payload, or draft tool plus first-image transaction), then update DTOs/controllers accordingly
-- [ ] **19.4** Ensure create returns a fully populated tool DTO, update returns refreshed data, and deactivate/reactivate uses `IsActive` without hard delete
-- [ ] **19.5** Add unit tests for create/update/status success, validation failures, not-found cases, and public-query behaviour for inactive tools
-- [ ] **19.6** Run `dotnet build` and `dotnet test` - confirm all tests pass
+- [x] **19.1** Implement `CreateToolAsync`, `UpdateToolAsync`, and `SetToolStatusAsync` in `ToolService` instead of returning stub failures
+- [x] **19.2** Add validation for category existence, required text fields, non-negative/positive hire rates, and deposit amount consistency
+- [x] **19.3** Decide and implement the first-save image flow so a tool/service cannot be successfully created without at least one image (for example: initial image payload, or draft tool plus first-image transaction), then update DTOs/controllers accordingly
+- [x] **19.4** Ensure create returns a fully populated tool DTO, update returns refreshed data, and deactivate/reactivate uses `IsActive` without hard delete
+- [x] **19.5** Add unit tests for create/update/status success, validation failures, not-found cases, and public-query behaviour for inactive tools
+- [x] **19.6** Run `dotnet build` and `dotnet test` - confirm all tests pass
 
 ---
 
@@ -522,7 +522,7 @@ TASK-13 (Fix company response) â€” independent, do anytime
 TASK-14 (Review threshold)     â€” independent, do anytime
 TASK-17 (Auth alignment)       - conditional decision gate only if full ASP.NET Identity is mandatory
 TASK-18 (Comment status index) - independent, do anytime
-TASK-19 (Tool service logic)   - remaining admin create/update/status service logic; TASK-4 image endpoints are complete
+TASK-19 (Tool service logic)   - complete; create requires initial `ImageUrl`, additional images use TASK-4 endpoints
 TASK-20 (FluentValidation)     -> supports TASK-17 and TASK-19
 TASK-21 (Rating DB checks)     -> pair with TASK-18
 TASK-22 (API integration)      -> after core API slices are stable
@@ -560,7 +560,7 @@ TASK-16 (Admin category routing)     â€” independent
 | TASK-15: Seed comments/responses | Done | 2026-04-23 |
 | TASK-17: Identity auth alignment | Conditional / decision gate | |
 | TASK-18: Review comment status index | Done | 2026-04-26 |
-| TASK-19: Admin tool service logic | â¬œ Not started | |
+| TASK-19: Admin tool service logic | Done | 2026-05-05 |
 | TASK-20: FluentValidation adoption | â¬œ Not started | |
 | TASK-21: Review rating DB constraints | Done | 2026-04-26 |
 | TASK-22: API integration tests | â¬œ Not started | |

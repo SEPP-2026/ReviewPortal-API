@@ -1,4 +1,5 @@
 using ReviewPortal.Application.Common;
+using ReviewPortal.Application.DTOs.Tools;
 using ReviewPortal.Application.Services;
 using ReviewPortal.Domain.Entities;
 using ReviewPortal.Domain.Enums;
@@ -835,29 +836,308 @@ public class ToolServiceTests
     }
 
     [Fact]
-    public async Task ToolMutationMethods_WhenNotImplemented_ReturnValidationFailures()
+    public async Task CreateToolAsync_WhenRequestIsValid_CreatesActiveToolWithInitialImage()
+    {
+        var category = new Category { Id = 3, Name = "Breaking & Drilling" };
+        var toolRepository = new InMemoryToolRepository();
+        var unitOfWork = new FakeUnitOfWork();
+        var service = CreateService(
+            categories: [category],
+            toolRepository: toolRepository,
+            unitOfWork: unitOfWork);
+
+        var result = await service.CreateToolAsync(ValidCreateToolRequest());
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(1, result.Value!.Id);
+        Assert.Equal("Rotary Hammer", result.Value.Name);
+        Assert.Equal("Breaking & Drilling", result.Value.CategoryName);
+        Assert.True(result.Value.IsActive);
+        Assert.Null(result.Value.OverallRating);
+        Assert.Equal(0, result.Value.ReviewCount);
+        var image = Assert.Single(result.Value.Images);
+        Assert.Equal("/uploads/tools/rotary-hammer.jpg", image.ImageUrl);
+        Assert.Equal(1, image.DisplayOrder);
+        Assert.Equal(1, unitOfWork.SaveChangesCallCount);
+
+        var savedTool = Assert.Single(toolRepository.Items);
+        Assert.Equal("Rotary Hammer", savedTool.Name);
+        Assert.True(savedTool.IsActive);
+        Assert.Equal(savedTool.Id, savedTool.Images.Single().ToolId);
+    }
+
+    [Fact]
+    public async Task CreateToolAsync_WhenInitialImageIsMissing_ReturnsValidationFailure()
+    {
+        var category = new Category { Id = 3, Name = "Breaking & Drilling" };
+        var toolRepository = new InMemoryToolRepository();
+        var unitOfWork = new FakeUnitOfWork();
+        var service = CreateService(
+            categories: [category],
+            toolRepository: toolRepository,
+            unitOfWork: unitOfWork);
+
+        var result = await service.CreateToolAsync(ValidCreateToolRequest() with { ImageUrl = "  " });
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("At least one image is required before a tool/service can be saved.", result.Error);
+        Assert.Empty(toolRepository.Items);
+        Assert.Equal(0, unitOfWork.SaveChangesCallCount);
+    }
+
+    [Fact]
+    public async Task CreateToolAsync_WhenCategoryDoesNotExist_ReturnsNotFound()
     {
         var service = CreateService();
 
-        var createResult = await service.CreateToolAsync(null!);
-        var updateResult = await service.UpdateToolAsync(1, null!);
-        var statusResult = await service.SetToolStatusAsync(1, true);
+        var result = await service.CreateToolAsync(ValidCreateToolRequest() with { CategoryId = 404 });
 
-        Assert.False(createResult.IsSuccess);
-        Assert.False(updateResult.IsSuccess);
-        Assert.False(statusResult.IsSuccess);
-        Assert.Equal("Tool creation is not implemented in this slice.", createResult.Error);
-        Assert.Equal("Tool updates are not implemented in this slice.", updateResult.Error);
-        Assert.Equal("Tool status changes are not implemented in this slice.", statusResult.Error);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.FailureType);
+        Assert.Equal("Category with ID 404 not found.", result.Error);
+    }
+
+    [Theory]
+    [InlineData("", "Name is required.")]
+    [InlineData("   ", "Name is required.")]
+    public async Task CreateToolAsync_WhenRequiredTextIsMissing_ReturnsValidationFailure(string name, string expectedError)
+    {
+        var category = new Category { Id = 3, Name = "Breaking & Drilling" };
+        var service = CreateService(categories: [category]);
+
+        var result = await service.CreateToolAsync(ValidCreateToolRequest() with { Name = name });
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal(expectedError, result.Error);
+    }
+
+    [Theory]
+    [InlineData(0, 45, 180, "Hourly rate must be greater than 0.")]
+    [InlineData(8.5, 0, 180, "Daily rate must be greater than 0.")]
+    [InlineData(8.5, 45, 0, "Weekly rate must be greater than 0.")]
+    public async Task CreateToolAsync_WhenRatesAreNotPositive_ReturnsValidationFailure(
+        decimal hourlyRate,
+        decimal dailyRate,
+        decimal weeklyRate,
+        string expectedError)
+    {
+        var category = new Category { Id = 3, Name = "Breaking & Drilling" };
+        var service = CreateService(categories: [category]);
+
+        var result = await service.CreateToolAsync(ValidCreateToolRequest() with
+        {
+            HourlyRate = hourlyRate,
+            DailyRate = dailyRate,
+            WeeklyRate = weeklyRate
+        });
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal(expectedError, result.Error);
+    }
+
+    [Fact]
+    public async Task CreateToolAsync_WhenDepositRequiredWithoutAmount_ReturnsValidationFailure()
+    {
+        var category = new Category { Id = 3, Name = "Breaking & Drilling" };
+        var service = CreateService(categories: [category]);
+
+        var result = await service.CreateToolAsync(ValidCreateToolRequest() with { DepositRequired = true, DepositAmount = null });
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Deposit amount must be greater than 0 when a deposit is required.", result.Error);
+    }
+
+    [Fact]
+    public async Task CreateToolAsync_WhenDepositNotRequiredWithAmount_ReturnsValidationFailure()
+    {
+        var category = new Category { Id = 3, Name = "Breaking & Drilling" };
+        var service = CreateService(categories: [category]);
+
+        var result = await service.CreateToolAsync(ValidCreateToolRequest() with { DepositRequired = false, DepositAmount = 10m });
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Deposit amount must be empty when a deposit is not required.", result.Error);
+    }
+
+    [Fact]
+    public async Task UpdateToolAsync_WhenRequestIsValid_UpdatesToolAndReturnsRefreshedDetail()
+    {
+        var oldCategory = new Category { Id = 1, Name = "Access & Lifting" };
+        var newCategory = new Category { Id = 2, Name = "Electrical & Heating" };
+        var tool = CreateTool(7, oldCategory, "Old Name", hourlyRate: 7m);
+        tool.Images =
+        [
+            new ToolImage { Id = 1, ToolId = 7, ImageUrl = "existing.jpg", DisplayOrder = 1 }
+        ];
+        var unitOfWork = new FakeUnitOfWork();
+        var service = CreateService(
+            categories: [oldCategory, newCategory],
+            tools: [tool],
+            unitOfWork: unitOfWork);
+        var request = new UpdateToolRequest(
+            newCategory.Id,
+            "50L Dehumidifier",
+            "Updated heating and drying equipment.",
+            11m,
+            40m,
+            135m,
+            "Keep upright during transport.",
+            true,
+            60m);
+
+        var result = await service.UpdateToolAsync(tool.Id, request);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("50L Dehumidifier", result.Value!.Name);
+        Assert.Equal("Electrical & Heating", result.Value.CategoryName);
+        Assert.Equal(11m, result.Value.HourlyRate);
+        Assert.Equal(40m, result.Value.DailyRate);
+        Assert.Equal(135m, result.Value.WeeklyRate);
+        Assert.Equal("Keep upright during transport.", result.Value.SpecialNotes);
+        Assert.True(result.Value.DepositRequired);
+        Assert.Equal(60m, result.Value.DepositAmount);
+        Assert.Equal(["existing.jpg"], result.Value.Images.Select(image => image.ImageUrl).ToArray());
+        Assert.Equal(1, unitOfWork.SaveChangesCallCount);
+    }
+
+    [Fact]
+    public async Task UpdateToolAsync_WhenToolDoesNotExist_ReturnsNotFound()
+    {
+        var category = new Category { Id = 2, Name = "Electrical & Heating" };
+        var service = CreateService(categories: [category]);
+
+        var result = await service.UpdateToolAsync(404, ValidUpdateToolRequest(category.Id));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.FailureType);
+        Assert.Equal("Tool with ID 404 not found.", result.Error);
+    }
+
+    [Fact]
+    public async Task UpdateToolAsync_WhenCategoryDoesNotExist_ReturnsNotFound()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var tool = CreateTool(7, category, "Tower Scaffold", hourlyRate: 20m);
+        var service = CreateService(categories: [category], tools: [tool]);
+
+        var result = await service.UpdateToolAsync(tool.Id, ValidUpdateToolRequest(categoryId: 404));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.FailureType);
+        Assert.Equal("Category with ID 404 not found.", result.Error);
+    }
+
+    [Fact]
+    public async Task UpdateToolAsync_WhenRequestIsInvalid_ReturnsValidationFailure()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var tool = CreateTool(7, category, "Tower Scaffold", hourlyRate: 20m);
+        var service = CreateService(categories: [category], tools: [tool]);
+
+        var result = await service.UpdateToolAsync(tool.Id, ValidUpdateToolRequest(category.Id) with { DailyRate = -1m });
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Daily rate must be greater than 0.", result.Error);
+    }
+
+    [Fact]
+    public async Task SetToolStatusAsync_WhenToolExists_UpdatesActiveFlagWithoutDeletingTool()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var tool = CreateTool(7, category, "Tower Scaffold", hourlyRate: 20m);
+        var toolRepository = new InMemoryToolRepository([tool]);
+        var unitOfWork = new FakeUnitOfWork();
+        var service = CreateService(
+            categories: [category],
+            toolRepository: toolRepository,
+            unitOfWork: unitOfWork);
+
+        var result = await service.SetToolStatusAsync(tool.Id, false);
+
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Value);
+        Assert.False(tool.IsActive);
+        Assert.Single(toolRepository.Items);
+        Assert.Equal(1, unitOfWork.SaveChangesCallCount);
+    }
+
+    [Fact]
+    public async Task SetToolStatusAsync_WhenToolDoesNotExist_ReturnsNotFound()
+    {
+        var service = CreateService();
+
+        var result = await service.SetToolStatusAsync(404, false);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.FailureType);
+        Assert.Equal("Tool with ID 404 not found.", result.Error);
+    }
+
+    [Fact]
+    public async Task PublicQueries_WhenToolIsInactive_ExcludeItFromBrowseSearchAndDetail()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var tool = CreateTool(7, category, "Tower Scaffold", hourlyRate: 20m);
+        var service = CreateService(categories: [category], tools: [tool]);
+
+        await service.SetToolStatusAsync(tool.Id, false);
+        var browseResult = await service.GetToolsByCategoryAsync(category.Id, 1, 12);
+        var searchResult = await service.SearchToolsAsync("tower", 1, 12);
+        var detailResult = await service.GetToolByIdAsync(tool.Id);
+
+        Assert.True(browseResult.IsSuccess);
+        Assert.Empty(browseResult.Value!.Items);
+        Assert.True(searchResult.IsSuccess);
+        Assert.Empty(searchResult.Value!.Items);
+        Assert.False(detailResult.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, detailResult.FailureType);
     }
 
     private static ToolService CreateService(
         IEnumerable<Category>? categories = null,
-        IEnumerable<Tool>? tools = null)
+        IEnumerable<Tool>? tools = null,
+        InMemoryToolRepository? toolRepository = null,
+        FakeUnitOfWork? unitOfWork = null)
     {
         return new ToolService(
-            new InMemoryToolRepository(tools),
-            new InMemoryCategoryRepository(categories));
+            toolRepository ?? new InMemoryToolRepository(tools),
+            new InMemoryCategoryRepository(categories),
+            unitOfWork ?? new FakeUnitOfWork());
+    }
+
+    private static CreateToolRequest ValidCreateToolRequest()
+    {
+        return new CreateToolRequest(
+            CategoryId: 3,
+            Name: "Rotary Hammer",
+            Description: "Heavy-duty hammer drill for masonry and concrete work.",
+            HourlyRate: 8.50m,
+            DailyRate: 45.00m,
+            WeeklyRate: 180.00m,
+            SpecialNotes: "Includes SDS bits.",
+            DepositRequired: true,
+            DepositAmount: 50.00m,
+            ImageUrl: "/uploads/tools/rotary-hammer.jpg");
+    }
+
+    private static UpdateToolRequest ValidUpdateToolRequest(int categoryId)
+    {
+        return new UpdateToolRequest(
+            CategoryId: categoryId,
+            Name: "Rotary Hammer Pro",
+            Description: "Updated heavy-duty hammer drill listing.",
+            HourlyRate: 9.00m,
+            DailyRate: 48.00m,
+            WeeklyRate: 190.00m,
+            SpecialNotes: "Includes SDS bits and carry case.",
+            DepositRequired: true,
+            DepositAmount: 55.00m);
     }
 
     private static Tool CreateTool(
