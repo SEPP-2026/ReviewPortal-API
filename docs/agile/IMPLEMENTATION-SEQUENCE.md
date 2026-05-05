@@ -30,12 +30,12 @@ It is designed to answer:
 - Epic 3 admin tools controller
 - Epic 3 image service and admin image endpoints
 - Epic 3 dashboard service and admin dashboard controller
+- Epic 3 admin category routing decision and `/api/admin/categories` controller
 - documentation cleanup tasks (TASK-7, TASK-8, TASK-10, TASK-11, TASK-12)
 
 ### Still open
 
 - TASK-19: admin tool service logic
-- TASK-16: admin category routing decision
 - TASK-20: FluentValidation adoption
 - TASK-22: real API integration tests
 - TASK-23: CI/CD and coverage automation
@@ -67,6 +67,7 @@ The frontend must use the actual API routes that exist today:
 - `POST /api/tools/{id}/rental-calculation`
 - auth routes under `/api/auth/...`
 - admin tool routes under `/api/admin/tools` require an Admin bearer token
+- admin category routes under `/api/admin/categories` require an Admin bearer token
 
 Do not assume there is a `GET /api/tools` list endpoint. That route does not exist.
 
@@ -136,7 +137,6 @@ This is the main feature-delivery phase for Epic 3.
 ### Run in this order
 
 4. TASK-19: Implement admin tool management service methods and creation flow
-5. TASK-16: Decide admin category routing
 
 ### Why this order
 
@@ -144,7 +144,7 @@ This is the main feature-delivery phase for Epic 3.
 - TASK-2 controller routing is complete, but TASK-19 is still needed for real create/update/status behaviour
 - TASK-4 image upload/delete endpoints are already complete; TASK-19 still needs the remaining create/update/status business logic
 - TASK-5 dashboard stats are already complete
-- TASK-16 is partly architectural and should be settled before frontend/admin integration is finalised
+- TASK-16 is settled: admin category create/update/delete routes live under `/api/admin/categories`, and public `/api/categories` remains read-only
 
 ### Epic 3 completion target after this phase
 
@@ -154,7 +154,7 @@ After Phase 2, the backend should support:
 - admin image upload and delete
 - admin dashboard stats
 - admin moderation queue
-- clear decision on category admin routes
+- admin category create/update/delete routes
 
 ### Verify
 
@@ -311,13 +311,12 @@ If you want the shortest practical sequence, run these in exactly this order:
 
 1. TASK-24
 2. TASK-19
-3. TASK-16
-4. TASK-20
-5. Either skip TASK-17 or implement it only if full ASP.NET Identity is mandatory
-6. TASK-22
-7. TASK-23
-8. Final Azure smoke test
-9. Final Next.js end-to-end check against Azure
+3. TASK-20
+4. Either skip TASK-17 or implement it only if full ASP.NET Identity is mandatory
+5. TASK-22
+6. TASK-23
+7. Final Azure smoke test
+8. Final Next.js end-to-end check against Azure
 
 ## Definition Of Done For The Whole Backend
 

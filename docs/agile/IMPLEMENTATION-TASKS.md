@@ -298,13 +298,15 @@ No dashboard service or controller exists.
 **Links to:** [US-3.7 â€“ Manage categories](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-37--manage-categories) | [US-3.9 â€“ Admin API endpoints](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-39--admin-api-endpoints)
 **Priority:** Could | **Gap ID:** GAP-API-10
 
-Category CRUD already exists on the public `CategoriesController` with `[Authorize(Roles = "Admin")]`. US-3.9 specifies `/api/admin/categories`.
+Category CRUD previously existed on the public `CategoriesController` with `[Authorize(Roles = "Admin")]`. US-3.9 specifies `/api/admin/categories`.
+
+**Decision:** Use a separate `AdminCategoriesController` at `/api/admin/categories` for admin-only create, update, and delete operations. Keep `CategoriesController` read-only for public catalogue browsing under `/api/categories`.
 
 **Sub-tasks:**
 
-- [ ] **16.1** Decide: keep the current pattern (public route with auth) or create a separate `AdminCategoriesController` at `/api/admin/categories`
-- [ ] **16.2** If separate: create controller, move admin-only methods (POST, PUT, DELETE), leave public GET methods on existing controller
-- [ ] **16.3** Document the decision in `PRODUCT-BACKLOG.md` or this file
+- [x] **16.1** Decide: keep the current pattern (public route with auth) or create a separate `AdminCategoriesController` at `/api/admin/categories`
+- [x] **16.2** If separate: create controller, move admin-only methods (POST, PUT, DELETE), leave public GET methods on existing controller
+- [x] **16.3** Document the decision in `PRODUCT-BACKLOG.md` or this file
 
 ---
 
@@ -564,5 +566,5 @@ TASK-16 (Admin category routing)     â€” independent
 | TASK-22: API integration tests | â¬œ Not started | |
 | TASK-23: CI and coverage automation | â¬œ Not started | |
 | TASK-24: Secret cleanup and config externalisation | â¬œ Not started | |
-| TASK-16: Admin category routing | â¬œ Not started | |
+| TASK-16: Admin category routing | Done | 2026-05-05 |
 
