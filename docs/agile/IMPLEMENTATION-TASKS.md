@@ -414,11 +414,12 @@ GitHub Actions currently runs unit tests only, only on PRs to `main` and pushes 
 
 **Sub-tasks:**
 
-- [ ] **24.1** Remove tracked secrets from `src/ReviewPortal.API/appsettings.Development.json` and keep only safe placeholders or sample values
+- [x] **24.1** Remove tracked secrets from `src/ReviewPortal.API/appsettings.Development.json` and keep only safe placeholders or sample values
 - [ ] **24.2** Rotate the exposed Azure SQL password and any other leaked secrets before further use
-- [ ] **24.3** Move local/development secrets to user secrets or environment variables and update setup/deployment docs accordingly
-- [ ] **24.4** Add a lightweight secret-scanning step or documented pre-commit/CI check to reduce repeat leaks
-- [ ] **24.5** Smoke-test local startup with configuration coming from user secrets/environment variables
+  - Manual external action required in Azure SQL / Azure Portal. Repository cleanup is complete, but the leaked password must still be rotated before reuse.
+- [x] **24.3** Move local/development secrets to user secrets or environment variables and update setup/deployment docs accordingly
+- [x] **24.4** Add a lightweight secret-scanning step or documented pre-commit/CI check to reduce repeat leaks
+- [x] **24.5** Smoke-test local startup with configuration coming from user secrets/environment variables
 
 ---
 
@@ -565,6 +566,6 @@ TASK-16 (Admin category routing)     â€” independent
 | TASK-21: Review rating DB constraints | Done | 2026-04-26 |
 | TASK-22: API integration tests | Done | 2026-05-05 |
 | TASK-23: CI and coverage automation | â¬œ Not started | |
-| TASK-24: Secret cleanup and config externalisation | â¬œ Not started | |
+| TASK-24: Secret cleanup and config externalisation | Repo cleanup done; Azure password rotation required | 2026-05-06 |
 | TASK-16: Admin category routing | Done | 2026-05-05 |
 

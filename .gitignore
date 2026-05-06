@@ -57,8 +57,13 @@ Desktop.ini
 
 ## Secrets / environment
 appsettings.Production.json
+appsettings.Local.json
+src/**/appsettings.Local.json
+*.local.secrets.json
+.env
 *.env
 .env.*
+!.env.example
 
 ## Node / Next.js (frontend)
 node_modules/

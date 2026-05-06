@@ -21,6 +21,11 @@ public static class ServiceCollectionExtensions
             throw new InvalidOperationException("Database connection string 'DefaultConnection' is not configured. Use user secrets or the ConnectionStrings__DefaultConnection environment variable.");
         }
 
+        if (ContainsPlaceholder(connectionString))
+        {
+            throw new InvalidOperationException("Database connection string 'DefaultConnection' still contains placeholder values. Replace them in user secrets, environment variables, or ignored appsettings.Local.json.");
+        }
+
         // Database
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlServer(
@@ -57,5 +62,10 @@ public static class ServiceCollectionExtensions
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
 
         return services;
+    }
+
+    private static bool ContainsPlaceholder(string value)
+    {
+        return value.Contains('<') || value.Contains('>');
     }
 }
