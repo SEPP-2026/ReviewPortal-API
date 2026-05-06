@@ -46,3 +46,21 @@ public record ReviewSummaryDto(
     DateTime CreatedDate,
     bool HasCompanyResponse
 );
+
+public record ModerationQueueItemDto(
+    string ItemType,
+    int ItemId,
+    int ReviewId,
+    int ToolId,
+    string ToolName,
+    string AuthorName,
+    string Text,
+    DateTime SubmittedDate,
+    string Status,
+    int? EquipmentRating,
+    int? CustomerServiceRating,
+    int? TechnicalSupportRating,
+    int? AfterSalesRating,
+    int? ValueForMoneyRating,
+    decimal? OverallRating
+);

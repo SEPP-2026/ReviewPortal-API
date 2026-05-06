@@ -42,9 +42,13 @@ public class ReviewLifecycleApiIntegrationTests : IAsyncLifetime
         Assert.NotNull(myPendingReviews);
         Assert.Contains(myPendingReviews!.Items, review => review.Id == approvedReview.Id && review.Status == "Pending");
 
-        var pendingQueue = await moderatorClient.GetFromJsonAsync<PagedList<ReviewDto>>("/api/admin/moderation/pending?page=1&pageSize=10");
+        var pendingQueue = await moderatorClient.GetFromJsonAsync<PagedList<ModerationQueueItemDto>>("/api/admin/moderation/pending?page=1&pageSize=10");
         Assert.NotNull(pendingQueue);
-        Assert.Contains(pendingQueue!.Items, review => review.Id == approvedReview.Id);
+        Assert.Contains(
+            pendingQueue!.Items,
+            item => item.ItemType == "Review" &&
+                    item.ItemId == approvedReview.Id &&
+                    item.ReviewId == approvedReview.Id);
 
         var approval = await moderatorClient.PutAsJsonAsync(
             $"/api/admin/moderation/reviews/{approvedReview.Id}",
@@ -56,6 +60,29 @@ public class ReviewLifecycleApiIntegrationTests : IAsyncLifetime
         Assert.NotNull(approvedList);
         Assert.Contains(approvedList!.Reviews.Items, review => review.Id == approvedReview.Id && review.Status == "Approved");
         Assert.Equal(3, approvedList.TotalApprovedReviews);
+
+        var pendingComment = await SubmitCommentAsync(
+            customerClient,
+            approvedReview.Id,
+            "This comment should enter moderation separately from the approved review.");
+
+        var commentQueue = await moderatorClient.GetFromJsonAsync<PagedList<ModerationQueueItemDto>>("/api/admin/moderation/pending?page=1&pageSize=10");
+        Assert.NotNull(commentQueue);
+        Assert.Contains(
+            commentQueue!.Items,
+            item => item.ItemType == "Comment" &&
+                    item.ItemId == pendingComment.Id &&
+                    item.ReviewId == approvedReview.Id &&
+                    item.EquipmentRating is null);
+
+        var commentApproval = await moderatorClient.PutAsJsonAsync(
+            $"/api/admin/moderation/comments/{pendingComment.Id}",
+            new ModerateReviewRequest(true, null));
+        Assert.Equal(HttpStatusCode.OK, commentApproval.StatusCode);
+
+        var approvedComments = await customerClient.GetFromJsonAsync<ReviewCommentDto[]>($"/api/reviews/{approvedReview.Id}/comments");
+        Assert.NotNull(approvedComments);
+        Assert.Contains(approvedComments!, comment => comment.Id == pendingComment.Id && comment.Status == "Approved");
 
         var rejectedReview = await SubmitReviewAsync(
             customerClient,
@@ -79,6 +106,19 @@ public class ReviewLifecycleApiIntegrationTests : IAsyncLifetime
             $"/api/tools/{_factory.TowerScaffoldToolId}/reviews?page=1&pageSize=10");
         Assert.NotNull(approvedListAfterRejection);
         Assert.DoesNotContain(approvedListAfterRejection!.Reviews.Items, review => review.Id == rejectedReview.Id);
+    }
+
+    private static async Task<ReviewCommentDto> SubmitCommentAsync(HttpClient client, int reviewId, string commentText)
+    {
+        var response = await client.PostAsJsonAsync(
+            $"/api/reviews/{reviewId}/comments",
+            new CreateCommentRequest(string.Empty, commentText));
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        var comment = await response.Content.ReadFromJsonAsync<ReviewCommentDto>();
+        Assert.NotNull(comment);
+        return comment!;
     }
 
     private async Task<ReviewDto> SubmitReviewAsync(HttpClient client, string reviewText, int equipmentRating)

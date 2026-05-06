@@ -276,33 +276,21 @@ internal sealed class InMemoryReviewRepository : IReviewRepository
         return Task.FromResult(_reviews.SingleOrDefault(review => review.Id == reviewId));
     }
 
-    public Task<IReadOnlyList<Review>> GetPendingWithDetailsAsync(
-        int page,
-        int pageSize,
-        CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<Review>> GetPendingWithDetailsAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult<IReadOnlyList<Review>>(
             _reviews
                 .Where(review =>
                     review.Status == ReviewStatus.Pending ||
                     review.Comments.Any(comment => comment.Status == ReviewStatus.Pending))
-                .OrderBy(review => review.Status == ReviewStatus.Pending
-                    ? review.CreatedDate
-                    : review.Comments
-                        .Where(comment => comment.Status == ReviewStatus.Pending)
-                        .Min(comment => comment.CreatedDate))
-                .ThenBy(review => review.Id)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
                 .ToList());
     }
 
     public Task<int> CountPendingAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(
-            _reviews.Count(review =>
-                review.Status == ReviewStatus.Pending ||
-                review.Comments.Any(comment => comment.Status == ReviewStatus.Pending)));
+            _reviews.Count(review => review.Status == ReviewStatus.Pending) +
+            _reviews.Sum(review => review.Comments.Count(comment => comment.Status == ReviewStatus.Pending)));
     }
 
     public Task<IReadOnlyList<Review>> GetByToolIdAsync(int toolId, CancellationToken cancellationToken = default)
