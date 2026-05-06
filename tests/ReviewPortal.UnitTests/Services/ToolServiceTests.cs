@@ -1099,6 +1099,124 @@ public class ToolServiceTests
         Assert.Equal(ErrorType.NotFound, detailResult.FailureType);
     }
 
+    [Fact]
+    public async Task GetAdminToolsAsync_DefaultQuery_ReturnsActiveAndInactiveTools()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var activeTool = CreateTool(7, category, "Tower Scaffold", hourlyRate: 20m, isActive: true);
+        activeTool.Images =
+        [
+            new ToolImage { Id = 1, ToolId = 7, ImageUrl = "tower.jpg", DisplayOrder = 1 }
+        ];
+        activeTool.Reviews =
+        [
+            CreateApprovedReview(1, activeTool, 5, 4, 5, 4, 5),
+            CreateApprovedReview(2, activeTool, 4, 4, 5, 4, 4)
+        ];
+        var inactiveTool = CreateTool(8, category, "Retired Ladder", hourlyRate: 5m, isActive: false);
+        inactiveTool.UpdatedDate = new DateTime(2026, 4, 10, 12, 0, 0, DateTimeKind.Utc);
+        var service = CreateService(categories: [category], tools: [activeTool, inactiveTool]);
+
+        var result = await service.GetAdminToolsAsync(new AdminToolQueryRequest());
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Value!.TotalCount);
+        Assert.Equal(["Retired Ladder", "Tower Scaffold"], result.Value.Items.Select(item => item.Name).ToArray());
+        Assert.Contains(result.Value.Items, item => item.Name == "Retired Ladder" && !item.IsActive);
+        var tower = result.Value.Items.Single(item => item.Name == "Tower Scaffold");
+        Assert.Equal("Access & Lifting", tower.CategoryName);
+        Assert.Equal("tower.jpg", tower.ThumbnailUrl);
+        Assert.True(tower.HasEnoughReviewsToRate);
+        Assert.Equal(2, tower.ReviewCount);
+    }
+
+    [Fact]
+    public async Task GetAdminToolsAsync_WhenFiltersProvided_ReturnsMatchingInactiveTools()
+    {
+        var access = new Category { Id = 1, Name = "Access & Lifting" };
+        var breaking = new Category { Id = 2, Name = "Breaking & Drilling" };
+        var service = CreateService(
+            categories: [access, breaking],
+            tools:
+            [
+                CreateTool(1, access, "Retired Ladder", hourlyRate: 5m, isActive: false),
+                CreateTool(2, access, "Tower Scaffold", hourlyRate: 20m, isActive: true),
+                CreateTool(3, breaking, "Retired Breaker", hourlyRate: 22m, isActive: false)
+            ]);
+
+        var result = await service.GetAdminToolsAsync(new AdminToolQueryRequest
+        {
+            SearchTerm = "retired",
+            CategoryId = access.Id,
+            Status = "inactive"
+        });
+
+        Assert.True(result.IsSuccess);
+        var item = Assert.Single(result.Value!.Items);
+        Assert.Equal("Retired Ladder", item.Name);
+        Assert.False(item.IsActive);
+        Assert.Equal(access.Id, item.CategoryId);
+    }
+
+    [Fact]
+    public async Task GetAdminToolsAsync_WhenSortedByUpdatedDescending_ReturnsNewestFirst()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var olderTool = CreateTool(1, category, "Older Tool", hourlyRate: 5m);
+        olderTool.UpdatedDate = new DateTime(2026, 4, 1, 12, 0, 0, DateTimeKind.Utc);
+        var newerTool = CreateTool(2, category, "Newer Tool", hourlyRate: 5m);
+        newerTool.UpdatedDate = new DateTime(2026, 4, 2, 12, 0, 0, DateTimeKind.Utc);
+        var service = CreateService(categories: [category], tools: [olderTool, newerTool]);
+
+        var result = await service.GetAdminToolsAsync(new AdminToolQueryRequest { SortBy = "updated_desc" });
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(["Newer Tool", "Older Tool"], result.Value!.Items.Select(item => item.Name).ToArray());
+    }
+
+    [Fact]
+    public async Task GetAdminToolsAsync_WhenStatusIsInvalid_ReturnsValidationFailure()
+    {
+        var service = CreateService();
+
+        var result = await service.GetAdminToolsAsync(new AdminToolQueryRequest { Status = "archived" });
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Invalid status value. Supported values are all, active, and inactive.", result.Error);
+    }
+
+    [Fact]
+    public async Task GetAdminToolByIdAsync_WhenInactiveToolExists_ReturnsFullDetail()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var tool = CreateTool(7, category, "Retired Ladder", hourlyRate: 5m, isActive: false);
+        tool.Images =
+        [
+            new ToolImage { Id = 1, ToolId = 7, ImageUrl = "retired-ladder.jpg", DisplayOrder = 1 }
+        ];
+        var service = CreateService(categories: [category], tools: [tool]);
+
+        var result = await service.GetAdminToolByIdAsync(tool.Id);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Retired Ladder", result.Value!.Name);
+        Assert.False(result.Value.IsActive);
+        Assert.Equal("retired-ladder.jpg", Assert.Single(result.Value.Images).ImageUrl);
+    }
+
+    [Fact]
+    public async Task GetAdminToolByIdAsync_WhenToolDoesNotExist_ReturnsNotFound()
+    {
+        var service = CreateService();
+
+        var result = await service.GetAdminToolByIdAsync(404);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.FailureType);
+        Assert.Equal("Tool with ID 404 not found.", result.Error);
+    }
+
     private static ToolService CreateService(
         IEnumerable<Category>? categories = null,
         IEnumerable<Tool>? tools = null,

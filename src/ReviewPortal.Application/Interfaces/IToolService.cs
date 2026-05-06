@@ -9,6 +9,10 @@ public interface IToolService
 
     Task<Result<ToolDto>> GetToolByIdAsync(int id, CancellationToken cancellationToken = default);
 
+    Task<Result<PagedList<AdminToolSummaryDto>>> GetAdminToolsAsync(AdminToolQueryRequest request, CancellationToken cancellationToken = default);
+
+    Task<Result<ToolDto>> GetAdminToolByIdAsync(int id, CancellationToken cancellationToken = default);
+
     Task<Result<PagedList<ToolSummaryDto>>> SearchToolsAsync(string query, int page, int pageSize, CancellationToken cancellationToken = default);
 
     Task<Result<PagedList<ToolSummaryDto>>> FilterByPriceRangeAsync(int categoryId, decimal? minPrice, decimal? maxPrice, int page, int pageSize, string? sortBy = null, CancellationToken cancellationToken = default);

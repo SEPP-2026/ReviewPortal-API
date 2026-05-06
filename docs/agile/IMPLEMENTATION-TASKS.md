@@ -323,14 +323,14 @@ The admin API can create, update, and activate/deactivate tools, but there is no
 
 **Sub-tasks:**
 
-- [ ] **25.1** Add admin query DTOs for tool management list filtering: page, page size, search term, category ID, active/inactive/all status, and sort order
-- [ ] **25.2** Add `IToolService.GetAdminToolsAsync(...)` returning paged tool/service summaries including inactive records, category name, image thumbnail, review count, rates, and `UpdatedDate`
-- [ ] **25.3** Add `IToolService.GetAdminToolByIdAsync(id)` returning full edit-form data even when `IsActive = false`
-- [ ] **25.4** Add `GET /api/admin/tools` and `GET /api/admin/tools/{id}` to `AdminToolsController` with `[Authorize(Roles = "Admin")]`
-- [ ] **25.5** Keep public `/api/tools/{id}`, category browsing, and search endpoints filtering out inactive tools/services
-- [ ] **25.6** Add unit tests for admin list/detail success, paging, inactive visibility, not-found, and public inactive hiding
-- [ ] **25.7** Add integration tests for Admin vs Customer/anonymous access to the new read endpoints
-- [ ] **25.8** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx`
+- [x] **25.1** Add admin query DTOs for tool management list filtering: page, page size, search term, category ID, active/inactive/all status, and sort order
+- [x] **25.2** Add `IToolService.GetAdminToolsAsync(...)` returning paged tool/service summaries including inactive records, category name, image thumbnail, review count, rates, and `UpdatedDate`
+- [x] **25.3** Add `IToolService.GetAdminToolByIdAsync(id)` returning full edit-form data even when `IsActive = false`
+- [x] **25.4** Add `GET /api/admin/tools` and `GET /api/admin/tools/{id}` to `AdminToolsController` with `[Authorize(Roles = "Admin")]`
+- [x] **25.5** Keep public `/api/tools/{id}`, category browsing, and search endpoints filtering out inactive tools/services
+- [x] **25.6** Add unit tests for admin list/detail success, paging, inactive visibility, not-found, and public inactive hiding
+- [x] **25.7** Add integration tests for Admin vs Customer/anonymous access to the new read endpoints
+- [x] **25.8** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx`
 
 ---
 
@@ -657,7 +657,7 @@ TASK-16 (Admin category routing)     â€” independent
 | TASK-23: CI and coverage automation | â¬œ Not started | |
 | TASK-24: Secret cleanup and config externalisation | Repo cleanup done; Azure password rotation required | 2026-05-06 |
 | TASK-16: Admin category routing | Done | 2026-05-05 |
-| TASK-25: Admin tool list/detail read endpoints | Not started | |
+| TASK-25: Admin tool list/detail read endpoints | Done | 2026-05-06 |
 | TASK-26: First-image upload create flow | Not started | |
 | TASK-27: Item-level moderation queue and exact count | Not started | |
 | TASK-28: Epic 3 admin API integration coverage | Not started | |

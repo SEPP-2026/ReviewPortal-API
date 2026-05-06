@@ -34,6 +34,16 @@ public class ToolRepository : Repository<Tool>, IToolRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Tool>> GetAllWithDetailsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .Include(tool => tool.Category)
+            .Include(tool => tool.Images)
+            .Include(tool => tool.Reviews.Where(review => review.Status == ReviewStatus.Approved))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<Tool?> GetByIdWithDetailsAsync(int id, CancellationToken cancellationToken = default)
     {
         return await _dbSet
