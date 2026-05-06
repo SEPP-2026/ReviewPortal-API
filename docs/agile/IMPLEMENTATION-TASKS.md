@@ -384,14 +384,14 @@ TASK-22 added the real HTTP test foundation and baseline admin authorization che
 
 **Sub-tasks:**
 
-- [ ] **28.1** Add admin tools integration tests for create, update, status change, validation failure, not found, and inactive visibility once TASK-25 is complete
-- [ ] **28.2** Add multipart image upload integration tests for success, missing file, invalid extension, too-large file, delete success, delete not found, and delete-last-image failure
-- [ ] **28.3** Add admin category integration tests for create, duplicate-name conflict, update, delete empty category, delete category with assigned tools, and not found
-- [ ] **28.4** Add moderation integration tests for item-level queue shape and exact pending counts once TASK-27 is complete
-- [ ] **28.5** Add dashboard integration tests proving active/inactive totals, pending moderation count, current-month approved reviews, top-rated, and most-reviewed results
-- [ ] **28.6** Assert consistent HTTP statuses: 200/201 success, 400 validation, 401 unauthenticated, 403 forbidden, 404 not found, 409 conflict
-- [ ] **28.7** Ensure uploaded test files are written to a temporary test directory and cleaned up after test execution
-- [ ] **28.8** Run `dotnet test ReviewPortal.slnx` locally and ensure the suite is suitable for CI
+- [x] **28.1** Add admin tools integration tests for create, update, status change, validation failure, not found, and inactive visibility once TASK-25 is complete
+- [x] **28.2** Add multipart image upload integration tests for success, missing file, invalid extension, too-large file, delete success, delete not found, and delete-last-image failure
+- [x] **28.3** Add admin category integration tests for create, duplicate-name conflict, update, delete empty category, delete category with assigned tools, and not found
+- [x] **28.4** Add moderation integration tests for item-level queue shape and exact pending counts once TASK-27 is complete
+- [x] **28.5** Add dashboard integration tests proving active/inactive totals, pending moderation count, current-month approved reviews, top-rated, and most-reviewed results
+- [x] **28.6** Assert consistent HTTP statuses: 200/201 success, 400 validation, 401 unauthenticated, 403 forbidden, 404 not found, 409 conflict
+- [x] **28.7** Ensure uploaded test files are written to a temporary test directory and cleaned up after test execution
+- [x] **28.8** Run `dotnet test ReviewPortal.slnx` locally and ensure the suite is suitable for CI
 
 ---
 
@@ -660,5 +660,5 @@ TASK-16 (Admin category routing)     â€” independent
 | TASK-25: Admin tool list/detail read endpoints | Done | 2026-05-06 |
 | TASK-26: First-image upload create flow | Not started | |
 | TASK-27: Item-level moderation queue and exact count | Done | 2026-05-06 |
-| TASK-28: Epic 3 admin API integration coverage | Not started | |
+| TASK-28: Epic 3 admin API integration coverage | Done | 2026-05-06 |
 
