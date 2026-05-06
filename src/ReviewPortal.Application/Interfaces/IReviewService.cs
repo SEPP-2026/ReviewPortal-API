@@ -21,7 +21,7 @@ public interface IReviewService
 
     Task<Result<PagedList<ReviewSummaryDto>>> GetUserReviewsAsync(int userId, int page, int pageSize, CancellationToken cancellationToken = default);
 
-    Task<Result<PagedList<ReviewDto>>> GetPendingReviewsAsync(int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<Result<PagedList<ModerationQueueItemDto>>> GetPendingReviewsAsync(int page, int pageSize, CancellationToken cancellationToken = default);
 
     Task<Result<bool>> ModerateReviewAsync(int reviewId, ModerateReviewRequest request, CancellationToken cancellationToken = default);
 

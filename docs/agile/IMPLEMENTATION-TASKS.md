@@ -363,15 +363,15 @@ The current moderation endpoint returns review DTOs and nests pending comments u
 
 **Sub-tasks:**
 
-- [ ] **27.1** Add a `ModerationQueueItemDto` with fields: `ItemType` (`Review` or `Comment`), `ItemId`, `ReviewId`, `ToolId`, `ToolName`, author name, text, submitted date, status, and ratings for review items only
-- [ ] **27.2** Add repository/service query logic that combines pending reviews and pending comments as separate queue items
-- [ ] **27.3** Sort combined queue items by submitted date ascending, then stable ID ascending
-- [ ] **27.4** Return `PagedList<ModerationQueueItemDto>` from `GET /api/admin/moderation/pending`
-- [ ] **27.5** Ensure the queue total count equals pending reviews plus pending comments, matching the admin dashboard pending count
-- [ ] **27.6** Keep existing approve/reject review and comment endpoints, but update tests and DTO expectations for the new queue response
-- [ ] **27.7** Add unit tests for mixed pending reviews/comments, multiple pending comments on one review, sort order, paging, and exact count
-- [ ] **27.8** Add integration tests for submit review/comment -> queue item -> approve/reject -> public visibility
-- [ ] **27.9** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx`
+- [x] **27.1** Add a `ModerationQueueItemDto` with fields: `ItemType` (`Review` or `Comment`), `ItemId`, `ReviewId`, `ToolId`, `ToolName`, author name, text, submitted date, status, and ratings for review items only
+- [x] **27.2** Add repository/service query logic that combines pending reviews and pending comments as separate queue items
+- [x] **27.3** Sort combined queue items by submitted date ascending, then stable ID ascending
+- [x] **27.4** Return `PagedList<ModerationQueueItemDto>` from `GET /api/admin/moderation/pending`
+- [x] **27.5** Ensure the queue total count equals pending reviews plus pending comments, matching the admin dashboard pending count
+- [x] **27.6** Keep existing approve/reject review and comment endpoints, but update tests and DTO expectations for the new queue response
+- [x] **27.7** Add unit tests for mixed pending reviews/comments, multiple pending comments on one review, sort order, paging, and exact count
+- [x] **27.8** Add integration tests for submit review/comment -> queue item -> approve/reject -> public visibility
+- [x] **27.9** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx`
 
 ---
 
@@ -659,6 +659,6 @@ TASK-16 (Admin category routing)     â€” independent
 | TASK-16: Admin category routing | Done | 2026-05-05 |
 | TASK-25: Admin tool list/detail read endpoints | Done | 2026-05-06 |
 | TASK-26: First-image upload create flow | Not started | |
-| TASK-27: Item-level moderation queue and exact count | Not started | |
+| TASK-27: Item-level moderation queue and exact count | Done | 2026-05-06 |
 | TASK-28: Epic 3 admin API integration coverage | Not started | |
 

@@ -360,28 +360,32 @@ public class ReviewService : IReviewService
         return Result<PagedList<ReviewSummaryDto>>.Success(pagedReviews);
     }
 
-    public async Task<Result<PagedList<ReviewDto>>> GetPendingReviewsAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<Result<PagedList<ModerationQueueItemDto>>> GetPendingReviewsAsync(int page, int pageSize, CancellationToken cancellationToken = default)
     {
         var validationError = ValidatePaging(page, pageSize);
         if (validationError is not null)
         {
-            return Result<PagedList<ReviewDto>>.Failure(validationError);
+            return Result<PagedList<ModerationQueueItemDto>>.Failure(validationError);
         }
 
-        var totalPendingReviews = await _reviewRepository.CountPendingAsync(cancellationToken);
-        var pendingReviews = totalPendingReviews == 0
-            ? Array.Empty<Review>()
-            : await _reviewRepository.GetPendingWithDetailsAsync(page, pageSize, cancellationToken);
+        var pendingReviews = await _reviewRepository.GetPendingWithDetailsAsync(cancellationToken);
+        var queueItems = pendingReviews
+            .SelectMany(CreateModerationQueueItems)
+            .OrderBy(item => item.SubmittedDate)
+            .ThenBy(item => GetModerationItemTypeSort(item.ItemType))
+            .ThenBy(item => item.ItemId)
+            .ToList();
 
-        var pagedReviews = new PagedList<ReviewDto>(
-            pendingReviews
-                .Select(review => MapReview(review, review.Tool?.Name ?? string.Empty, ReviewStatus.Pending))
+        var pagedQueueItems = new PagedList<ModerationQueueItemDto>(
+            queueItems
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToList(),
             page,
             pageSize,
-            totalPendingReviews);
+            queueItems.Count);
 
-        return Result<PagedList<ReviewDto>>.Success(pagedReviews);
+        return Result<PagedList<ModerationQueueItemDto>>.Success(pagedQueueItems);
     }
 
     public async Task<Result<bool>> ModerateReviewAsync(int reviewId, ModerateReviewRequest request, CancellationToken cancellationToken = default)
@@ -556,6 +560,64 @@ public class ReviewService : IReviewService
                 approvedReviews.Average(review => review.OverallRating),
                 2,
                 MidpointRounding.AwayFromZero);
+    }
+
+    private static IEnumerable<ModerationQueueItemDto> CreateModerationQueueItems(Review review)
+    {
+        if (review.Status == ReviewStatus.Pending)
+        {
+            yield return MapReviewModerationQueueItem(review);
+        }
+
+        foreach (var comment in review.Comments.Where(comment => comment.Status == ReviewStatus.Pending))
+        {
+            yield return MapCommentModerationQueueItem(review, comment);
+        }
+    }
+
+    private static ModerationQueueItemDto MapReviewModerationQueueItem(Review review)
+    {
+        return new ModerationQueueItemDto(
+            "Review",
+            review.Id,
+            review.Id,
+            review.ToolId,
+            review.Tool?.Name ?? string.Empty,
+            review.ReviewerName,
+            review.ReviewText,
+            review.CreatedDate,
+            review.Status.ToString(),
+            review.EquipmentRating,
+            review.CustomerServiceRating,
+            review.TechnicalSupportRating,
+            review.AfterSalesRating,
+            review.ValueForMoneyRating,
+            review.OverallRating);
+    }
+
+    private static ModerationQueueItemDto MapCommentModerationQueueItem(Review review, ReviewComment comment)
+    {
+        return new ModerationQueueItemDto(
+            "Comment",
+            comment.Id,
+            review.Id,
+            review.ToolId,
+            review.Tool?.Name ?? string.Empty,
+            comment.CommenterName,
+            comment.CommentText,
+            comment.CreatedDate,
+            comment.Status.ToString(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
+    }
+
+    private static int GetModerationItemTypeSort(string itemType)
+    {
+        return itemType == "Review" ? 0 : 1;
     }
 
     private static ReviewDto MapReview(Review review, string toolName, ReviewStatus commentStatus = ReviewStatus.Approved)
