@@ -51,6 +51,18 @@ public class AdminAuthorizationApiIntegrationTests : IAsyncLifetime
         yield return
         [
             new AdminRouteRequest(
+                "admin tool list",
+                (client, _) => client.GetAsync("/api/admin/tools"))
+        ];
+        yield return
+        [
+            new AdminRouteRequest(
+                "admin tool detail",
+                (client, _) => client.GetAsync("/api/admin/tools/1"))
+        ];
+        yield return
+        [
+            new AdminRouteRequest(
                 "admin tools",
                 (client, factory) => client.PostAsJsonAsync("/api/admin/tools", CreateToolRequest(factory.BreakingCategoryId)))
         ];

@@ -77,6 +77,44 @@ public class ToolService : IToolService
         return GetToolByIdInternalAsync(id, cancellationToken);
     }
 
+    public async Task<Result<PagedList<AdminToolSummaryDto>>> GetAdminToolsAsync(
+        AdminToolQueryRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var validationError = ValidateAdminToolQuery(request);
+        if (validationError is not null)
+        {
+            return Result<PagedList<AdminToolSummaryDto>>.Failure(validationError);
+        }
+
+        var activeFilter = GetAdminActiveFilter(request.Status, out validationError);
+        if (validationError is not null)
+        {
+            return Result<PagedList<AdminToolSummaryDto>>.Failure(validationError);
+        }
+
+        var tools = ApplyRatingMetrics(await _toolRepository.GetAllWithDetailsAsync(cancellationToken));
+        var filteredTools = ApplyAdminFilters(tools, request.SearchTerm, request.CategoryId, activeFilter);
+        var sortedTools = ApplyAdminSort(filteredTools, request.SortBy, out validationError);
+        if (validationError is not null)
+        {
+            return Result<PagedList<AdminToolSummaryDto>>.Failure(validationError);
+        }
+
+        return Result<PagedList<AdminToolSummaryDto>>.Success(CreatePagedAdminSummary(sortedTools, request.Page, request.PageSize));
+    }
+
+    public async Task<Result<ToolDto>> GetAdminToolByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var tool = await _toolRepository.GetByIdWithDetailsAsync(id, cancellationToken);
+        if (tool is null)
+        {
+            return Result<ToolDto>.NotFound($"Tool with ID {id} not found.");
+        }
+
+        return Result<ToolDto>.Success(MapToolDetail(tool));
+    }
+
     public async Task<Result<PagedList<ToolSummaryDto>>> SearchToolsAsync(string query, int page, int pageSize, CancellationToken cancellationToken = default)
     {
         var validationError = ValidatePaging(page, pageSize) ?? ValidateSearchQuery(query);
@@ -322,6 +360,127 @@ public class ToolService : IToolService
         return null;
     }
 
+    private static string? ValidateAdminToolQuery(AdminToolQueryRequest? request)
+    {
+        if (request is null)
+        {
+            return "Admin tool query request is required.";
+        }
+
+        var pagingError = ValidatePaging(request.Page, request.PageSize);
+        if (pagingError is not null)
+        {
+            return pagingError;
+        }
+
+        if (request.CategoryId is <= 0)
+        {
+            return "Category ID must be greater than 0.";
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.SearchTerm) && request.SearchTerm.Trim().Length > 200)
+        {
+            return "Search term must be 200 characters or fewer.";
+        }
+
+        return null;
+    }
+
+    private static bool? GetAdminActiveFilter(string? status, out string? validationError)
+    {
+        validationError = null;
+
+        if (string.IsNullOrWhiteSpace(status))
+        {
+            return null;
+        }
+
+        return status.Trim().ToLowerInvariant() switch
+        {
+            "all" => null,
+            "active" => true,
+            "inactive" => false,
+            _ => SetInvalidStatus(out validationError)
+        };
+    }
+
+    private static bool? SetInvalidStatus(out string validationError)
+    {
+        validationError = "Invalid status value. Supported values are all, active, and inactive.";
+        return null;
+    }
+
+    private static IEnumerable<Tool> ApplyAdminFilters(
+        IEnumerable<Tool> tools,
+        string? searchTerm,
+        int? categoryId,
+        bool? activeFilter)
+    {
+        var filteredTools = tools;
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var normalizedSearchTerm = searchTerm.Trim();
+            filteredTools = filteredTools.Where(tool =>
+                ContainsIgnoreCase(tool.Name, normalizedSearchTerm) ||
+                ContainsIgnoreCase(tool.Description, normalizedSearchTerm) ||
+                ContainsIgnoreCase(tool.Category.Name, normalizedSearchTerm));
+        }
+
+        if (categoryId.HasValue)
+        {
+            filteredTools = filteredTools.Where(tool => tool.CategoryId == categoryId.Value);
+        }
+
+        if (activeFilter.HasValue)
+        {
+            filteredTools = filteredTools.Where(tool => tool.IsActive == activeFilter.Value);
+        }
+
+        return filteredTools;
+    }
+
+    private static IEnumerable<Tool> ApplyAdminSort(IEnumerable<Tool> tools, string? sortBy, out string? validationError)
+    {
+        validationError = null;
+
+        var normalizedSort = NormalizeSort(sortBy);
+        if (normalizedSort is not ("name" or "name_desc" or "category" or "category_desc" or "status" or "status_desc" or "updated" or "updated_desc" or "price" or "price_asc" or "starting_price" or "price_desc" or "starting_price_desc" or "rating" or "rating_desc" or "rating_asc"))
+        {
+            validationError = "Invalid sortBy value. Supported values are name, category, status, updated, price, price_desc, rating, and rating_asc.";
+            return tools;
+        }
+
+        return normalizedSort switch
+        {
+            "category" => tools
+                .OrderBy(tool => tool.Category.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(tool => tool.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(tool => tool.Id),
+            "category_desc" => tools
+                .OrderByDescending(tool => tool.Category.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(tool => tool.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(tool => tool.Id),
+            "status" => tools
+                .OrderByDescending(tool => tool.IsActive)
+                .ThenBy(tool => tool.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(tool => tool.Id),
+            "status_desc" => tools
+                .OrderBy(tool => tool.IsActive)
+                .ThenBy(tool => tool.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(tool => tool.Id),
+            "updated" => tools
+                .OrderBy(tool => tool.UpdatedDate)
+                .ThenBy(tool => tool.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(tool => tool.Id),
+            "updated_desc" => tools
+                .OrderByDescending(tool => tool.UpdatedDate)
+                .ThenBy(tool => tool.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(tool => tool.Id),
+            _ => ApplySort(tools, sortBy, out validationError)
+        };
+    }
+
     private static IEnumerable<Tool> ApplySort(IEnumerable<Tool> tools, string? sortBy, out string? validationError)
     {
         validationError = null;
@@ -422,11 +581,7 @@ public class ToolService : IToolService
             tool.ReviewCount,
             hasEnoughReviewsToRate,
             ratingMessage,
-            tool.Images
-                .OrderBy(image => image.DisplayOrder)
-                .ThenBy(image => image.Id)
-                .Select(image => image.ImageUrl)
-                .FirstOrDefault());
+            GetThumbnailUrl(tool));
     }
 
     private static PagedList<ToolSummaryDto> CreatePagedSummary(IEnumerable<Tool> tools, int page, int pageSize)
@@ -439,6 +594,39 @@ public class ToolService : IToolService
             .ToList();
 
         return new PagedList<ToolSummaryDto>(items, page, pageSize, toolList.Count);
+    }
+
+    private static AdminToolSummaryDto MapAdminSummary(Tool tool)
+    {
+        var (hasEnoughReviewsToRate, ratingMessage) = GetRatingDisplayState(tool);
+
+        return new AdminToolSummaryDto(
+            tool.Id,
+            tool.CategoryId,
+            tool.Category.Name,
+            tool.Name,
+            tool.HourlyRate,
+            tool.DailyRate,
+            tool.WeeklyRate,
+            tool.IsActive,
+            tool.OverallRating,
+            tool.ReviewCount,
+            hasEnoughReviewsToRate,
+            ratingMessage,
+            GetThumbnailUrl(tool),
+            tool.UpdatedDate);
+    }
+
+    private static PagedList<AdminToolSummaryDto> CreatePagedAdminSummary(IEnumerable<Tool> tools, int page, int pageSize)
+    {
+        var toolList = tools.ToList();
+        var items = toolList
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(MapAdminSummary)
+            .ToList();
+
+        return new PagedList<AdminToolSummaryDto>(items, page, pageSize, toolList.Count);
     }
 
     private static bool ContainsIgnoreCase(string value, string query)
@@ -595,6 +783,15 @@ public class ToolService : IToolService
         {
             var rate => (rate.Item1, rate.Item2)
         };
+    }
+
+    private static string? GetThumbnailUrl(Tool tool)
+    {
+        return tool.Images
+            .OrderBy(image => image.DisplayOrder)
+            .ThenBy(image => image.Id)
+            .Select(image => image.ImageUrl)
+            .FirstOrDefault();
     }
 
     private sealed record RentalCombination(int Weeks, int Days, int Hours, int CoveredHours, decimal TotalCost)

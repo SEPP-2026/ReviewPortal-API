@@ -467,6 +467,18 @@ public class CatalogueControllerTests
             return Task.FromResult(ToolByIdResult);
         }
 
+        public Task<Result<PagedList<AdminToolSummaryDto>>> GetAdminToolsAsync(
+            AdminToolQueryRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(Result<PagedList<AdminToolSummaryDto>>.Failure("Not used by these tests."));
+        }
+
+        public Task<Result<ToolDto>> GetAdminToolByIdAsync(int id, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(Result<ToolDto>.Failure("Not used by these tests."));
+        }
+
         public Task<Result<PagedList<ToolSummaryDto>>> SearchToolsAsync(string query, int page, int pageSize, CancellationToken cancellationToken = default)
         {
             LastSearchQuery = query;

@@ -32,6 +32,7 @@ public sealed class ReviewPortalApiFactory : WebApplicationFactory<Program>
     public int BreakingCategoryId { get; private set; }
     public int TowerScaffoldToolId { get; private set; }
     public int RotaryHammerToolId { get; private set; }
+    public int RetiredLadderToolId { get; private set; }
 
     public string ConnectionString => $"Server=(localdb)\\MSSQLLocalDB;Database={_databaseName};Trusted_Connection=True;TrustServerCertificate=True;";
 
@@ -215,6 +216,7 @@ public sealed class ReviewPortalApiFactory : WebApplicationFactory<Program>
         BreakingCategoryId = breaking.Id;
         TowerScaffoldToolId = tower.Id;
         RotaryHammerToolId = rotaryHammer.Id;
+        RetiredLadderToolId = retiredLadder.Id;
     }
 
     private static User CreateUser(

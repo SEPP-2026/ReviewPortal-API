@@ -47,6 +47,68 @@ public class AdminToolsControllerTests
     }
 
     [Fact]
+    public async Task GetAll_WhenToolsExist_ReturnsOkAndPassesQuery()
+    {
+        var tools = new PagedList<AdminToolSummaryDto>(
+            [CreateAdminToolSummaryDto(id: 12, isActive: false)],
+            page: 2,
+            pageSize: 5,
+            totalCount: 9);
+        var toolService = new FakeToolService
+        {
+            GetAdminToolsResult = Result<PagedList<AdminToolSummaryDto>>.Success(tools)
+        };
+        var controller = CreateController(toolService);
+        var request = new AdminToolQueryRequest
+        {
+            Page = 2,
+            PageSize = 5,
+            SearchTerm = "ladder",
+            CategoryId = 3,
+            Status = "inactive",
+            SortBy = "updated_desc"
+        };
+
+        var result = await controller.GetAll(request, CancellationToken.None);
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Same(tools, okResult.Value);
+        Assert.Same(request, toolService.LastAdminToolQueryRequest);
+    }
+
+    [Fact]
+    public async Task GetById_WhenToolExists_ReturnsOkAndPassesId()
+    {
+        var tool = CreateToolDto(id: 12) with { IsActive = false };
+        var toolService = new FakeToolService
+        {
+            GetAdminToolByIdResult = Result<ToolDto>.Success(tool)
+        };
+        var controller = CreateController(toolService);
+
+        var result = await controller.GetById(12, CancellationToken.None);
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Same(tool, okResult.Value);
+        Assert.Equal(12, toolService.LastGetAdminToolById);
+    }
+
+    [Fact]
+    public async Task GetById_WhenToolDoesNotExist_ReturnsNotFoundProblem()
+    {
+        var toolService = new FakeToolService
+        {
+            GetAdminToolByIdResult = Result<ToolDto>.NotFound("Tool with ID 404 not found.")
+        };
+        var controller = CreateController(toolService);
+
+        var result = await controller.GetById(404, CancellationToken.None);
+
+        var problemResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status404NotFound, problemResult.StatusCode);
+    }
+
+    [Fact]
     public async Task Create_WhenToolIsCreated_ReturnsCreatedAndPassesRequest()
     {
         var tool = CreateToolDto(id: 12);
@@ -319,6 +381,25 @@ public class AdminToolsControllerTests
             UpdatedDate: new DateTime(2026, 4, 20, 9, 0, 0, DateTimeKind.Utc));
     }
 
+    private static AdminToolSummaryDto CreateAdminToolSummaryDto(int id, bool isActive = true)
+    {
+        return new AdminToolSummaryDto(
+            Id: id,
+            CategoryId: 3,
+            CategoryName: "Power Tools",
+            Name: "Rotary Hammer",
+            HourlyRate: 8.50m,
+            DailyRate: 45.00m,
+            WeeklyRate: 180.00m,
+            IsActive: isActive,
+            OverallRating: 4.6m,
+            ReviewCount: 8,
+            HasEnoughReviewsToRate: true,
+            RatingMessage: null,
+            ThumbnailUrl: "/uploads/tools/rotary-hammer.jpg",
+            UpdatedDate: new DateTime(2026, 4, 20, 9, 0, 0, DateTimeKind.Utc));
+    }
+
     private sealed class FakeImageService : IImageService
     {
         public int? LastUploadToolId { get; private set; }
@@ -368,6 +449,10 @@ public class AdminToolsControllerTests
     {
         public CreateToolRequest? LastCreateToolRequest { get; private set; }
 
+        public AdminToolQueryRequest? LastAdminToolQueryRequest { get; private set; }
+
+        public int? LastGetAdminToolById { get; private set; }
+
         public int? LastUpdateToolId { get; private set; }
 
         public UpdateToolRequest? LastUpdateToolRequest { get; private set; }
@@ -384,6 +469,12 @@ public class AdminToolsControllerTests
 
         public Result<bool> SetToolStatusResult { get; set; } = Result<bool>.Success(true);
 
+        public Result<PagedList<AdminToolSummaryDto>> GetAdminToolsResult { get; set; } =
+            Result<PagedList<AdminToolSummaryDto>>.Success(new PagedList<AdminToolSummaryDto>([], 1, 20, 0));
+
+        public Result<ToolDto> GetAdminToolByIdResult { get; set; } =
+            Result<ToolDto>.Success(CreateToolDto(id: 1));
+
         public Task<Result<PagedList<ToolSummaryDto>>> GetToolsByCategoryAsync(
             int categoryId,
             int page,
@@ -397,6 +488,20 @@ public class AdminToolsControllerTests
         public Task<Result<ToolDto>> GetToolByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             throw new NotSupportedException();
+        }
+
+        public Task<Result<PagedList<AdminToolSummaryDto>>> GetAdminToolsAsync(
+            AdminToolQueryRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            LastAdminToolQueryRequest = request;
+            return Task.FromResult(GetAdminToolsResult);
+        }
+
+        public Task<Result<ToolDto>> GetAdminToolByIdAsync(int id, CancellationToken cancellationToken = default)
+        {
+            LastGetAdminToolById = id;
+            return Task.FromResult(GetAdminToolByIdResult);
         }
 
         public Task<Result<PagedList<ToolSummaryDto>>> SearchToolsAsync(

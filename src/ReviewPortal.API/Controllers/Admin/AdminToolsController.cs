@@ -22,6 +22,22 @@ public class AdminToolsController : ControllerBase
         _imageService = imageService;
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetAll(
+        [FromQuery] AdminToolQueryRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _toolService.GetAdminToolsAsync(request, cancellationToken);
+        return this.ToActionResult(result, Ok);
+    }
+
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
+    {
+        var result = await _toolService.GetAdminToolByIdAsync(id, cancellationToken);
+        return this.ToActionResult(result, Ok);
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create(
         [FromBody] CreateToolRequest request,
