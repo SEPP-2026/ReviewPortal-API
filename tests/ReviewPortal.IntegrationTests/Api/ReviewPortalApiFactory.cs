@@ -26,6 +26,7 @@ public sealed class ReviewPortalApiFactory : WebApplicationFactory<Program>
     public const string ModeratorPassword = "Moderator123";
 
     private readonly string _databaseName = $"ReviewPortalApiTests_{Guid.NewGuid():N}";
+    private readonly string _uploadRootPath = Path.Combine(Path.GetTempPath(), $"ReviewPortalApiTests_Uploads_{Guid.NewGuid():N}");
     private bool _databaseDeleted;
 
     public int AccessCategoryId { get; private set; }
@@ -35,6 +36,8 @@ public sealed class ReviewPortalApiFactory : WebApplicationFactory<Program>
     public int RetiredLadderToolId { get; private set; }
 
     public string ConnectionString => $"Server=(localdb)\\MSSQLLocalDB;Database={_databaseName};Trusted_Connection=True;TrustServerCertificate=True;";
+
+    public string UploadRootPath => _uploadRootPath;
 
     public ReviewPortalApiFactory()
     {
@@ -59,6 +62,7 @@ public sealed class ReviewPortalApiFactory : WebApplicationFactory<Program>
         await context.Database.MigrateAsync();
         await ClearSeededDataAsync(context);
         await SeedTestDataAsync(context);
+        ClearUploadDirectory();
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -80,6 +84,7 @@ public sealed class ReviewPortalApiFactory : WebApplicationFactory<Program>
 
             using var context = new AppDbContext(options);
             context.Database.EnsureDeleted();
+            ClearUploadDirectory();
             _databaseDeleted = true;
         }
 
@@ -93,7 +98,7 @@ public sealed class ReviewPortalApiFactory : WebApplicationFactory<Program>
         Environment.SetEnvironmentVariable("Jwt__Issuer", "ReviewPortal.IntegrationTests");
         Environment.SetEnvironmentVariable("Jwt__Audience", "ReviewPortal.IntegrationTests");
         Environment.SetEnvironmentVariable("Jwt__ExpiryMinutes", "60");
-        Environment.SetEnvironmentVariable("ImageStorage__RootPath", "TestUploads");
+        Environment.SetEnvironmentVariable("ImageStorage__RootPath", _uploadRootPath);
         Environment.SetEnvironmentVariable("ImageStorage__RequestPath", "/uploads/tools");
     }
 
@@ -106,9 +111,17 @@ public sealed class ReviewPortalApiFactory : WebApplicationFactory<Program>
             ["Jwt:Issuer"] = "ReviewPortal.IntegrationTests",
             ["Jwt:Audience"] = "ReviewPortal.IntegrationTests",
             ["Jwt:ExpiryMinutes"] = "60",
-            ["ImageStorage:RootPath"] = "TestUploads",
+            ["ImageStorage:RootPath"] = _uploadRootPath,
             ["ImageStorage:RequestPath"] = "/uploads/tools"
         };
+    }
+
+    private void ClearUploadDirectory()
+    {
+        if (Directory.Exists(_uploadRootPath))
+        {
+            Directory.Delete(_uploadRootPath, recursive: true);
+        }
     }
 
     private static async Task ClearSeededDataAsync(AppDbContext context)
