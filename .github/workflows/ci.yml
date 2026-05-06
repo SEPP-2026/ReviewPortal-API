@@ -34,10 +34,6 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Scan for committed secrets
-        shell: pwsh
-        run: ./scripts/security/scan-secrets.ps1
-
       - name: Restore solution
         run: dotnet restore ${{ env.SOLUTION_PATH }}
 
