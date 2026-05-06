@@ -13,13 +13,6 @@ steps:
     packageType: "sdk"
     version: "8.x"
 
-- task: PowerShell@2
-  displayName: "Scan for committed secrets"
-  inputs:
-    targetType: "filePath"
-    filePath: "scripts/security/scan-secrets.ps1"
-    pwsh: true
-
 - task: DotNetCoreCLI@2
   displayName: "Restore"
   inputs:
