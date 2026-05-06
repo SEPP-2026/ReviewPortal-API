@@ -12,6 +12,9 @@ using ReviewPortal.Application.Common;
 using ReviewPortal.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+AddLocalConfiguration(builder);
+builder.Configuration.AddEnvironmentVariables();
+
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>() ?? new JwtSettings();
 ValidateJwtSettings(jwtSettings);
 
@@ -149,9 +152,19 @@ static void ValidateJwtSettings(JwtSettings settings)
         throw new InvalidOperationException("JWT configuration is missing a secure secret. Set Jwt:Secret via user secrets or environment variables.");
     }
 
+    if (ContainsPlaceholder(settings.Secret))
+    {
+        throw new InvalidOperationException("JWT configuration still contains a placeholder value. Replace Jwt:Secret in user secrets, environment variables, or ignored appsettings.Local.json.");
+    }
+
     if (string.IsNullOrWhiteSpace(settings.Issuer))
     {
         throw new InvalidOperationException("JWT configuration is missing Jwt:Issuer.");
+    }
+
+    if (ContainsPlaceholder(settings.Issuer))
+    {
+        throw new InvalidOperationException("JWT configuration still contains a placeholder issuer. Replace Jwt:Issuer in user secrets, environment variables, or ignored appsettings.Local.json.");
     }
 
     if (string.IsNullOrWhiteSpace(settings.Audience))
@@ -159,10 +172,40 @@ static void ValidateJwtSettings(JwtSettings settings)
         throw new InvalidOperationException("JWT configuration is missing Jwt:Audience.");
     }
 
+    if (ContainsPlaceholder(settings.Audience))
+    {
+        throw new InvalidOperationException("JWT configuration still contains a placeholder audience. Replace Jwt:Audience in user secrets, environment variables, or ignored appsettings.Local.json.");
+    }
+
     if (settings.ExpiryMinutes <= 0)
     {
         throw new InvalidOperationException("JWT configuration must use a positive ExpiryMinutes value.");
     }
+}
+
+static void AddLocalConfiguration(WebApplicationBuilder builder)
+{
+    const string localSettingsFile = "appsettings.Local.json";
+    var localSettingsPath = Path.Combine(builder.Environment.ContentRootPath, localSettingsFile);
+
+    if (!File.Exists(localSettingsPath))
+    {
+        return;
+    }
+
+    var localSettings = File.ReadAllText(localSettingsPath);
+    if (ContainsPlaceholder(localSettings))
+    {
+        Console.WriteLine($"{localSettingsFile} contains placeholders and was not loaded. Replace placeholders before using it, or use user secrets/environment variables.");
+        return;
+    }
+
+    builder.Configuration.AddJsonFile(localSettingsFile, optional: true, reloadOnChange: true);
+}
+
+static bool ContainsPlaceholder(string? value)
+{
+    return value?.Contains('<') == true || value?.Contains('>') == true;
 }
 
 static string NormalizeRequestPath(string requestPath)
