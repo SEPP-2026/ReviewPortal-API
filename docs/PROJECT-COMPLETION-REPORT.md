@@ -72,7 +72,7 @@ The project should not be marked as 100 percent final-signed-off until the remai
 | Requirements specification | Complete, with completion status added | `docs/REQUIREMENTS-SPECIFICATION.md` |
 | Non-functional requirements | Complete, with completion status added | `docs/NON-FUNCTIONAL-REQUIREMENTS.md` |
 | Gap analysis | Updated to current backend status | `docs/GAP-ANALYSIS.md` |
-| Functional design diagrams | Complete | `docs/FUNCTIONAL-DESIGN-DIAGRAMS.md` and generated `Digrams_V2.docx` |
+| Functional design diagrams | Complete | `docs/FUNCTIONAL-DESIGN-DIAGRAMS.md` and generated `Digrams_V3.docx` |
 | Database design | Complete | `docs/DATABASE-DESIGN.md` |
 | ERD | Complete | `docs/ERD.md` |
 | Test plan | Complete as a plan | `docs/TEST-PLAN.md` |

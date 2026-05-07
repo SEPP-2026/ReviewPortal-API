@@ -184,57 +184,65 @@ This section provides the document-level traceability summary from the project b
 The extended submission-ready functional design diagrams are maintained in [FUNCTIONAL-DESIGN-DIAGRAMS.md](FUNCTIONAL-DESIGN-DIAGRAMS.md), including use case, class, activity, architecture, sequence, DFD, and ERD diagrams.
 
 ```mermaid
-graph TB
-    subgraph "Public Portal"
-        UC1["Browse Categories"]
-        UC2["View Tool Detail"]
-        UC3["Search for Tools"]
-        UC4["Calculate Rental Cost"]
-        UC5["Submit Review"]
-        UC6["Read Reviews"]
-        UC7["Comment on Review"]
-        UC8["Register / Login"]
-        UC9["View My Reviews"]
+flowchart LR
+    Visitor["Customer / Visitor"]
+    RegisteredUser["Registered User"]
+    Admin["Admin"]
+    Moderator["Moderator"]
+
+    subgraph PublicPortal["Public Portal"]
+        UC1(("Browse categories"))
+        UC2(("View tool/service details"))
+        UC3(("Search tools/services"))
+        UC4(("Filter and sort catalogue"))
+        UC5(("Calculate rental cost"))
+        UC6(("Read approved reviews"))
+        UC7(("Register account"))
+        UC8(("Log in"))
+        UC9(("Submit review"))
+        UC10(("Comment on approved review"))
+        UC11(("View my reviews"))
     end
 
-    subgraph "Back-Office"
-        UC10["Login as Admin"]
-        UC11["Add Equipment"]
-        UC12["Edit Equipment & Pricing"]
-        UC13["Manage Images"]
-        UC14["Deactivate Equipment"]
-        UC15["Moderate Reviews & Comments"]
-        UC16["Respond to Review"]
-        UC17["Manage Categories"]
-        UC18["View Dashboard"]
+    subgraph BackOffice["Back-Office Portal"]
+        UC12(("Manage tools/services"))
+        UC13(("Create tool/service"))
+        UC14(("Edit details and pricing"))
+        UC15(("Activate/deactivate tool/service"))
+        UC16(("Upload/delete images"))
+        UC17(("Manage categories"))
+        UC18(("View moderation queue"))
+        UC19(("Approve/reject reviews"))
+        UC20(("Approve/reject comments"))
+        UC21(("Post company response"))
+        UC22(("View dashboard statistics"))
     end
 
-    Customer(("👤 Customer"))
-    Staff(("👔 Staff / Admin"))
-    Moderator(("🛡️ Moderator"))
-
-    Customer --> UC1
-    Customer --> UC2
-    Customer --> UC3
-    Customer --> UC4
-    Customer --> UC5
-    Customer --> UC6
-    Customer --> UC7
-    Customer --> UC8
-    Customer --> UC9
-
-    Staff --> UC10
-    Staff --> UC11
-    Staff --> UC12
-    Staff --> UC13
-    Staff --> UC14
-    Staff --> UC16
-    Staff --> UC17
-    Staff --> UC18
-
-    Moderator --> UC10
-    Moderator --> UC15
-    Moderator --> UC16
+    Visitor --> UC1
+    Visitor --> UC2
+    Visitor --> UC3
+    Visitor --> UC4
+    Visitor --> UC5
+    Visitor --> UC6
+    Visitor --> UC7
+    Visitor --> UC8
+    RegisteredUser --> UC9
+    RegisteredUser --> UC10
+    RegisteredUser --> UC11
+    Admin --> UC12
+    Admin --> UC13
+    Admin --> UC14
+    Admin --> UC15
+    Admin --> UC16
+    Admin --> UC17
+    Admin --> UC18
+    Admin --> UC19
+    Admin --> UC20
+    Admin --> UC21
+    Admin --> UC22
+    Moderator --> UC18
+    Moderator --> UC19
+    Moderator --> UC20
 ```
 
 ---

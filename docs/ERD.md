@@ -11,7 +11,7 @@ erDiagram
     Users {
         int Id PK
         string Name
-        string Email
+        string Email UK
         string PasswordHash
         string PasswordResetTokenHash
         datetime PasswordResetTokenExpiryUtc
@@ -21,7 +21,7 @@ erDiagram
 
     Categories {
         int Id PK
-        string Name
+        string Name UK
         string Description
         string ImageUrl
     }
@@ -83,21 +83,21 @@ erDiagram
 
     CompanyResponses {
         int Id PK
-        int ReviewId FK
+        int ReviewId FK,UK
         int StaffUserId FK
         string ResponseText
         datetime CreatedDate
         datetime UpdatedDate
     }
 
-    Categories ||--o{ Tools : "has many"
-    Tools ||--o{ ToolImages : "has many"
-    Tools ||--o{ Reviews : "has many"
-    Users ||--o{ Reviews : "writes"
-    Reviews ||--o{ ReviewComments : "has many"
-    Users ||--o{ ReviewComments : "comments"
-    Reviews ||--|| CompanyResponses : "has one"
-    Users ||--o{ CompanyResponses : "responds as staff"
+    Categories ||--o{ Tools : contains
+    Tools ||--o{ ToolImages : has
+    Tools ||--o{ Reviews : receives
+    Users ||--o{ Reviews : writes
+    Reviews ||--o{ ReviewComments : has
+    Users ||--o{ ReviewComments : writes
+    Reviews ||--o| CompanyResponses : has
+    Users ||--o{ CompanyResponses : authors
 ```
 
 ---
