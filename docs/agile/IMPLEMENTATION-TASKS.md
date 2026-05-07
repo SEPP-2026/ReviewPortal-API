@@ -242,21 +242,21 @@ No image upload or delete functionality exists.
 
 **Sub-tasks:**
 
-- [ ] **4.1** Create `src/ReviewPortal.Application/Interfaces/IImageService.cs` with methods:
+- [x] **4.1** Create `src/ReviewPortal.Application/Interfaces/IImageService.cs` with methods:
   - `Task<Result<ToolImageDto>> UploadImageAsync(int toolId, Stream fileStream, string fileName, CancellationToken)`
   - `Task<Result<bool>> DeleteImageAsync(int toolId, int imageId, CancellationToken)`
-- [ ] **4.2** Create `src/ReviewPortal.Infrastructure/Services/ImageService.cs` implementing `IImageService`
-- [ ] **4.3** Upload validation: only allow `.jpg`, `.jpeg`, `.png`, `.webp`; max 5MB file size
-- [ ] **4.4** Upload storage: save files to a local `uploads/tools/` folder (configurable path in `appsettings.json`)
-- [ ] **4.5** Create a `ToolImage` record in the database with the file path, set `DisplayOrder` to max + 1
-- [ ] **4.6** Delete logic: look up image by `toolId` + `imageId`; if tool has only 1 image, return error "Cannot delete the last image"
-- [ ] **4.7** Delete the file from disk and remove the `ToolImage` record
-- [ ] **4.8** Register `IImageService` in DI (`Program.cs` or `DependencyInjection.cs`)
-- [ ] **4.9** Add endpoints to `AdminToolsController`:
+- [x] **4.2** Create `src/ReviewPortal.Infrastructure/Services/ImageService.cs` implementing `IImageService`
+- [x] **4.3** Upload validation: only allow `.jpg`, `.jpeg`, `.png`, `.webp`; max 5MB file size
+- [x] **4.4** Upload storage: save files to a local `uploads/tools/` folder (configurable path in `appsettings.json`)
+- [x] **4.5** Create a `ToolImage` record in the database with the file path, set `DisplayOrder` to max + 1
+- [x] **4.6** Delete logic: look up image by `toolId` + `imageId`; if tool has only 1 image, return error "Cannot delete the last image"
+- [x] **4.7** Delete the file from disk and remove the `ToolImage` record
+- [x] **4.8** Register `IImageService` in DI (`Program.cs` or `DependencyInjection.cs`)
+- [x] **4.9** Add endpoints to `AdminToolsController`:
   - `[HttpPost("{id:int}/images")]` accepting `IFormFile` â†’ calls `UploadImageAsync`
   - `[HttpDelete("{id:int}/images/{imageId:int}")]` â†’ calls `DeleteImageAsync`
-- [ ] **4.10** Write unit tests: upload success, upload invalid format (returns 400), upload too large (returns 400), delete success, delete last image (returns 400), delete image not found (returns 404)
-- [ ] **4.11** Run `dotnet build` and `dotnet test` â€” confirm all tests pass
+- [x] **4.10** Write unit tests: upload success, upload invalid format (returns 400), upload too large (returns 400), delete success, delete last image (returns 400), delete image not found (returns 404)
+- [x] **4.11** Run `dotnet build` and `dotnet test` â€” confirm all tests pass
 
 ---
 
@@ -269,27 +269,27 @@ No dashboard service or controller exists.
 
 **Sub-tasks:**
 
-- [ ] **5.1** Create `src/ReviewPortal.Application/DTOs/Dashboard/DashboardStatsDto.cs` with properties:
+- [x] **5.1** Create `src/ReviewPortal.Application/DTOs/Dashboard/DashboardStatsDto.cs` with properties:
   - `int TotalActiveTools`, `int TotalInactiveTools`
   - `int PendingModerationCount`
   - `int ReviewsPublishedThisMonth`
   - `IReadOnlyList<ToolRankingDto> TopRatedTools` (top 5)
   - `IReadOnlyList<ToolRankingDto> MostReviewedTools` (top 5)
-- [ ] **5.2** Create `ToolRankingDto` record: `int ToolId`, `string ToolName`, `decimal? OverallRating`, `int ReviewCount`
-- [ ] **5.3** Create `src/ReviewPortal.Application/Interfaces/IDashboardService.cs` with `Task<Result<DashboardStatsDto>> GetDashboardStatsAsync(CancellationToken)`
-- [ ] **5.4** Create `src/ReviewPortal.Application/Services/DashboardService.cs` implementing `IDashboardService`
+- [x] **5.2** Create `ToolRankingDto` record: `int ToolId`, `string ToolName`, `decimal? OverallRating`, `int ReviewCount`
+- [x] **5.3** Create `src/ReviewPortal.Application/Interfaces/IDashboardService.cs` with `Task<Result<DashboardStatsDto>> GetDashboardStatsAsync(CancellationToken)`
+- [x] **5.4** Create `src/ReviewPortal.Application/Services/DashboardService.cs` implementing `IDashboardService`
   - Query `Tools` for active/inactive counts
   - Query pending reviews plus pending comments and return a combined moderation count
   - Query `Reviews` with `Status == Approved` and `CreatedDate` in current month for monthly count
   - Query `Tools` ordered by `OverallRating` desc (where `ReviewCount >= 2`) for top rated
   - Query `Tools` ordered by `ReviewCount` desc for most reviewed
-- [ ] **5.5** Register `IDashboardService` in DI
-- [ ] **5.6** Create `src/ReviewPortal.API/Controllers/Admin/AdminDashboardController.cs`
+- [x] **5.5** Register `IDashboardService` in DI
+- [x] **5.6** Create `src/ReviewPortal.API/Controllers/Admin/AdminDashboardController.cs`
   - Route: `[Route("api/admin/dashboard")]`, `[Authorize(Roles = "Admin")]`
   - `[HttpGet("stats")]` â†’ calls `GetDashboardStatsAsync` â†’ returns `200 OK`
-- [ ] **5.7** Write unit tests for `DashboardService`: all-zero case, mixed data, top 5 ordering, monthly boundary
-- [ ] **5.8** Write unit tests for `AdminDashboardController`: success, unauthorised
-- [ ] **5.9** Run `dotnet build` and `dotnet test` â€” confirm all tests pass
+- [x] **5.7** Write unit tests for `DashboardService`: all-zero case, mixed data, top 5 ordering, monthly boundary
+- [x] **5.8** Write unit tests for `AdminDashboardController`: success, unauthorised
+- [x] **5.9** Run `dotnet build` and `dotnet test` â€” confirm all tests pass
 
 ---
 
@@ -298,13 +298,100 @@ No dashboard service or controller exists.
 **Links to:** [US-3.7 â€“ Manage categories](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-37--manage-categories) | [US-3.9 â€“ Admin API endpoints](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-39--admin-api-endpoints)
 **Priority:** Could | **Gap ID:** GAP-API-10
 
-Category CRUD already exists on the public `CategoriesController` with `[Authorize(Roles = "Admin")]`. US-3.9 specifies `/api/admin/categories`.
+Category CRUD previously existed on the public `CategoriesController` with `[Authorize(Roles = "Admin")]`. US-3.9 specifies `/api/admin/categories`.
+
+**Decision:** Use a separate `AdminCategoriesController` at `/api/admin/categories` for admin-only create, update, and delete operations. Keep `CategoriesController` read-only for public catalogue browsing under `/api/categories`.
 
 **Sub-tasks:**
 
-- [ ] **16.1** Decide: keep the current pattern (public route with auth) or create a separate `AdminCategoriesController` at `/api/admin/categories`
-- [ ] **16.2** If separate: create controller, move admin-only methods (POST, PUT, DELETE), leave public GET methods on existing controller
-- [ ] **16.3** Document the decision in `PRODUCT-BACKLOG.md` or this file
+- [x] **16.1** Decide: keep the current pattern (public route with auth) or create a separate `AdminCategoriesController` at `/api/admin/categories`
+- [x] **16.2** If separate: create controller, move admin-only methods (POST, PUT, DELETE), leave public GET methods on existing controller
+- [x] **16.3** Document the decision in `PRODUCT-BACKLOG.md` or this file
+
+---
+
+### Epic 3 Gap Audit - 6 May 2026
+
+Backend admin mutation routes, category admin routes, image upload/delete, moderation approve/reject, dashboard stats, FluentValidation, and baseline HTTP integration tests now exist. The remaining Epic 3 gaps below are backend-only API/service/test gaps for this repository. Next.js/front-end admin work is tracked separately in the front-end project.
+
+### TASK-25: Add admin tool list/detail read endpoints
+
+**Links to:** [US-3.3 - Edit existing equipment/service details and pricing](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-33--edit-existing-equipmentservice-details-and-pricing) | [US-3.5 - Deactivate or remove equipment/service](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-35--deactivate-or-remove-equipmentservice) | [US-3.9 - Admin API endpoints](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-39--admin-api-endpoints)
+**Priority:** Must | **Gap IDs:** GAP-API-11, GAP-FLOW-2
+
+The admin API can create, update, and activate/deactivate tools, but there is no admin read endpoint for management clients to list all tools/services or fetch edit-form data. Public tool endpoints intentionally hide inactive tools, so the backend needs admin-only read routes that include inactive records.
+
+**Sub-tasks:**
+
+- [x] **25.1** Add admin query DTOs for tool management list filtering: page, page size, search term, category ID, active/inactive/all status, and sort order
+- [x] **25.2** Add `IToolService.GetAdminToolsAsync(...)` returning paged tool/service summaries including inactive records, category name, image thumbnail, review count, rates, and `UpdatedDate`
+- [x] **25.3** Add `IToolService.GetAdminToolByIdAsync(id)` returning full edit-form data even when `IsActive = false`
+- [x] **25.4** Add `GET /api/admin/tools` and `GET /api/admin/tools/{id}` to `AdminToolsController` with `[Authorize(Roles = "Admin")]`
+- [x] **25.5** Keep public `/api/tools/{id}`, category browsing, and search endpoints filtering out inactive tools/services
+- [x] **25.6** Add unit tests for admin list/detail success, paging, inactive visibility, not-found, and public inactive hiding
+- [x] **25.7** Add integration tests for Admin vs Customer/anonymous access to the new read endpoints
+- [x] **25.8** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx`
+
+---
+
+### TASK-26: Align create-tool first-image flow with upload requirement
+
+**Links to:** [US-3.2 - Add new equipment or service to the catalogue](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-32--add-new-equipment-or-service-to-the-catalogue) | [US-3.4 - Manage tool/service images](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-34--manage-toolservice-images) | [US-3.9 - Admin API endpoints](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-39--admin-api-endpoints)
+**Priority:** Must | **Gap IDs:** GAP-FLOW-3, GAP-API-12
+
+`CreateToolRequest` currently requires an `ImageUrl` and creates the first `ToolImage` row, but the Epic 3 acceptance criteria says at least one image must be uploaded before the item can be saved. Additional images use the upload endpoint, but the first-save backend flow is still a URL shortcut rather than a real upload-backed flow.
+
+**Sub-tasks:**
+
+- [ ] **26.1** Decide the API shape for first-image creation: multipart `POST /api/admin/tools` with metadata plus file, or a draft/create transaction that uploads the first image before publishing
+- [ ] **26.2** Reuse `IImageService` validation rules for the first image: JPG/JPEG/PNG/WebP only and max 5MB
+- [ ] **26.3** Ensure tool creation and first `ToolImage` creation succeed or fail together so a tool/service cannot be saved without an image
+- [ ] **26.4** Preserve a migration-free path unless the chosen design requires schema changes; if schema changes are needed, add migration and SQL script
+- [ ] **26.5** Update request DTOs, validators, controller action signatures, and Swagger/OpenAPI shape if present
+- [ ] **26.6** Add unit tests for successful create with image, missing image, invalid file type, too-large file, category not found, and transaction failure cleanup
+- [ ] **26.7** Add integration tests using multipart form data for the create flow
+- [ ] **26.8** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx`
+
+---
+
+### TASK-27: Return an item-level moderation queue with exact pending counts
+
+**Links to:** [US-3.6 - Review moderation queue](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-36--review-moderation-queue) | [US-3.8 - Admin dashboard with overview stats](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-38--admin-dashboard-with-overview-stats) | [US-3.9 - Admin API endpoints](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-39--admin-api-endpoints)
+**Priority:** Must | **Gap IDs:** GAP-SVC-9, GAP-API-13
+
+The current moderation endpoint returns review DTOs and nests pending comments under their parent review. This works for basic demos, but the Epic requires one queue showing all pending reviews and comments sorted oldest first, and the navigation badge must show the exact pending review + comment total. Multiple pending comments under one review are currently counted as one queue row by `CountPendingAsync`.
+
+**Sub-tasks:**
+
+- [x] **27.1** Add a `ModerationQueueItemDto` with fields: `ItemType` (`Review` or `Comment`), `ItemId`, `ReviewId`, `ToolId`, `ToolName`, author name, text, submitted date, status, and ratings for review items only
+- [x] **27.2** Add repository/service query logic that combines pending reviews and pending comments as separate queue items
+- [x] **27.3** Sort combined queue items by submitted date ascending, then stable ID ascending
+- [x] **27.4** Return `PagedList<ModerationQueueItemDto>` from `GET /api/admin/moderation/pending`
+- [x] **27.5** Ensure the queue total count equals pending reviews plus pending comments, matching the admin dashboard pending count
+- [x] **27.6** Keep existing approve/reject review and comment endpoints, but update tests and DTO expectations for the new queue response
+- [x] **27.7** Add unit tests for mixed pending reviews/comments, multiple pending comments on one review, sort order, paging, and exact count
+- [x] **27.8** Add integration tests for submit review/comment -> queue item -> approve/reject -> public visibility
+- [x] **27.9** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx`
+
+---
+
+### TASK-28: Expand Epic 3 admin API integration coverage
+
+**Links to:** [US-3.2 - Add new equipment or service to the catalogue](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-32--add-new-equipment-or-service-to-the-catalogue) | [US-3.4 - Manage tool/service images](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-34--manage-toolservice-images) | [US-3.7 - Manage categories](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-37--manage-categories) | [US-3.8 - Admin dashboard with overview stats](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-38--admin-dashboard-with-overview-stats) | [US-3.9 - Admin API endpoints](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-39--admin-api-endpoints)
+**Priority:** Must | **Gap IDs:** GAP-QA-2, GAP-QA-3
+
+TASK-22 added the real HTTP test foundation and baseline admin authorization checks. Epic 3 still needs deeper API integration tests for successful admin flows, validation failures, not-found responses, multipart image upload, category deletion conflicts, and dashboard data correctness.
+
+**Sub-tasks:**
+
+- [x] **28.1** Add admin tools integration tests for create, update, status change, validation failure, not found, and inactive visibility once TASK-25 is complete
+- [x] **28.2** Add multipart image upload integration tests for success, missing file, invalid extension, too-large file, delete success, delete not found, and delete-last-image failure
+- [x] **28.3** Add admin category integration tests for create, duplicate-name conflict, update, delete empty category, delete category with assigned tools, and not found
+- [x] **28.4** Add moderation integration tests for item-level queue shape and exact pending counts once TASK-27 is complete
+- [x] **28.5** Add dashboard integration tests proving active/inactive totals, pending moderation count, current-month approved reviews, top-rated, and most-reviewed results
+- [x] **28.6** Assert consistent HTTP statuses: 200/201 success, 400 validation, 401 unauthenticated, 403 forbidden, 404 not found, 409 conflict
+- [x] **28.7** Ensure uploaded test files are written to a temporary test directory and cleaned up after test execution
+- [x] **28.8** Run `dotnet test ReviewPortal.slnx` locally and ensure the suite is suitable for CI
 
 ---
 
@@ -315,16 +402,16 @@ Category CRUD already exists on the public `CategoriesController` with `[Authori
 **Links to:** [US-3.2 - Add new equipment or service to the catalogue](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-32--add-new-equipment-or-service-to-the-catalogue) | [US-3.3 - Edit existing equipment/service details and pricing](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-33--edit-existing-equipmentservice-details-and-pricing) | [US-3.5 - Deactivate or remove equipment/service](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-35--deactivate-or-remove-equipmentservice) | [US-3.9 - Admin API endpoints](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-39--admin-api-endpoints)
 **Priority:** Must | **Gap IDs:** GAP-SVC-8, GAP-FLOW-1
 
-`IToolService` exposes admin mutation methods, but `ToolService` still returns "not implemented" failures. The current request model also has no way to satisfy the "at least one image before save" acceptance criterion, so the add-tool flow is incomplete even before the controller is added.
+`IToolService` exposes admin mutation methods. The first-save image flow is handled by requiring `CreateToolRequest.ImageUrl`, which creates the first `ToolImage` record in the same create operation. Additional images are managed through the admin image upload endpoints from TASK-4.
 
 **Sub-tasks:**
 
-- [ ] **19.1** Implement `CreateToolAsync`, `UpdateToolAsync`, and `SetToolStatusAsync` in `ToolService` instead of returning stub failures
-- [ ] **19.2** Add validation for category existence, required text fields, non-negative/positive hire rates, and deposit amount consistency
-- [ ] **19.3** Decide and implement the first-save image flow so a tool/service cannot be successfully created without at least one image (for example: initial image payload, or draft tool plus first-image transaction), then update DTOs/controllers accordingly
-- [ ] **19.4** Ensure create returns a fully populated tool DTO, update returns refreshed data, and deactivate/reactivate uses `IsActive` without hard delete
-- [ ] **19.5** Add unit tests for create/update/status success, validation failures, not-found cases, and public-query behaviour for inactive tools
-- [ ] **19.6** Run `dotnet build` and `dotnet test` - confirm all tests pass
+- [x] **19.1** Implement `CreateToolAsync`, `UpdateToolAsync`, and `SetToolStatusAsync` in `ToolService` instead of returning stub failures
+- [x] **19.2** Add validation for category existence, required text fields, non-negative/positive hire rates, and deposit amount consistency
+- [x] **19.3** Decide and implement the first-save image flow so a tool/service cannot be successfully created without at least one image (for example: initial image payload, or draft tool plus first-image transaction), then update DTOs/controllers accordingly
+- [x] **19.4** Ensure create returns a fully populated tool DTO, update returns refreshed data, and deactivate/reactivate uses `IsActive` without hard delete
+- [x] **19.5** Add unit tests for create/update/status success, validation failures, not-found cases, and public-query behaviour for inactive tools
+- [x] **19.6** Run `dotnet build` and `dotnet test` - confirm all tests pass
 
 ---
 
@@ -338,12 +425,12 @@ Category CRUD already exists on the public `CategoriesController` with `[Authori
 
 **Sub-tasks:**
 
-- [ ] **20.1** Add FluentValidation packages and register validators in the API startup/composition root
-- [ ] **20.2** Create validators for auth requests (`Register`, `Login`, `ChangePassword`, `ForgotPassword`, `ResetPassword`)
-- [ ] **20.3** Create validators for catalogue and review requests (`RentalCalculation`, `CreateReview`, `CreateComment`, `CreateCompanyResponse`, `ModerateReview`, `CreateCategory`, `UpdateCategory`, `CreateTool`, `UpdateTool`)
-- [ ] **20.4** Move request-shape validation out of services into validators while keeping cross-entity/business-rule validation in the service layer
-- [ ] **20.5** Add validator unit tests for every rule and at least one API/integration test that invalid payloads return consistent 400 validation responses
-- [ ] **20.6** Run `dotnet build` and `dotnet test` - confirm all tests pass
+- [x] **20.1** Add FluentValidation packages and register validators in the API startup/composition root
+- [x] **20.2** Create validators for auth requests (`Register`, `Login`, `ChangePassword`, `ForgotPassword`, `ResetPassword`)
+- [x] **20.3** Create validators for catalogue and review requests (`RentalCalculation`, `CreateReview`, `CreateComment`, `CreateCompanyResponse`, `ModerateReview`, `CreateCategory`, `UpdateCategory`, `CreateTool`, `UpdateTool`)
+- [x] **20.4** Move request-shape validation out of services into validators while keeping cross-entity/business-rule validation in the service layer
+- [x] **20.5** Add validator unit tests for every rule and at least one API/integration test that invalid payloads return consistent 400 validation responses
+- [x] **20.6** Run `dotnet build` and `dotnet test` - confirm all tests pass
 
 ---
 
@@ -374,12 +461,12 @@ The current `ReviewPortal.IntegrationTests` project only checks JWT generation, 
 
 **Sub-tasks:**
 
-- [ ] **22.1** Create a `WebApplicationFactory<Program>`-based test host with isolated SQL Server/LocalDB or Testcontainers setup and deterministic data reset
-- [ ] **22.2** Add public API integration tests for categories, category tools, search, tool detail, and rental calculation
-- [ ] **22.3** Add auth integration tests for register, login, `GET /api/auth/me`, change-password, forgot-password, and reset-password
-- [ ] **22.4** Add review lifecycle tests covering submit review -> moderation queue -> approve/reject -> approved list / my reviews visibility
-- [ ] **22.5** Add admin authorization tests for 401/403 behaviour on admin tools, moderation, and dashboard routes
-- [ ] **22.6** Run the integration suite through `dotnet test ReviewPortal.slnx`
+- [x] **22.1** Create a `WebApplicationFactory<Program>`-based test host with isolated SQL Server/LocalDB or Testcontainers setup and deterministic data reset
+- [x] **22.2** Add public API integration tests for categories, category tools, search, tool detail, and rental calculation
+- [x] **22.3** Add auth integration tests for register, login, `GET /api/auth/me`, change-password, forgot-password, and reset-password
+- [x] **22.4** Add review lifecycle tests covering submit review -> moderation queue -> approve/reject -> approved list / my reviews visibility
+- [x] **22.5** Add admin authorization tests for 401/403 behaviour on admin tools, moderation, and dashboard routes
+- [x] **22.6** Run the integration suite through `dotnet test ReviewPortal.slnx`
 
 ---
 
@@ -412,11 +499,12 @@ GitHub Actions currently runs unit tests only, only on PRs to `main` and pushes 
 
 **Sub-tasks:**
 
-- [ ] **24.1** Remove tracked secrets from `src/ReviewPortal.API/appsettings.Development.json` and keep only safe placeholders or sample values
+- [x] **24.1** Remove tracked secrets from `src/ReviewPortal.API/appsettings.Development.json` and keep only safe placeholders or sample values
 - [ ] **24.2** Rotate the exposed Azure SQL password and any other leaked secrets before further use
-- [ ] **24.3** Move local/development secrets to user secrets or environment variables and update setup/deployment docs accordingly
-- [ ] **24.4** Add a lightweight secret-scanning step or documented pre-commit/CI check to reduce repeat leaks
-- [ ] **24.5** Smoke-test local startup with configuration coming from user secrets/environment variables
+  - Manual external action required in Azure SQL / Azure Portal. Repository cleanup is complete, but the leaked password must still be rotated before reuse.
+- [x] **24.3** Move local/development secrets to user secrets or environment variables and update setup/deployment docs accordingly
+- [x] **24.4** Add a lightweight secret-scanning step or documented pre-commit/CI check to reduce repeat leaks
+- [x] **24.5** Smoke-test local startup with configuration coming from user secrets/environment variables
 
 ---
 
@@ -520,12 +608,16 @@ TASK-13 (Fix company response) â€” independent, do anytime
 TASK-14 (Review threshold)     â€” independent, do anytime
 TASK-17 (Auth alignment)       - conditional decision gate only if full ASP.NET Identity is mandatory
 TASK-18 (Comment status index) - independent, do anytime
-TASK-19 (Tool service logic)   -> TASK-4 (TASK-2 controller route is complete)
+TASK-19 (Tool service logic)   - complete; interim create flow requires initial `ImageUrl`; TASK-26 will align this with real upload
 TASK-20 (FluentValidation)     -> supports TASK-17 and TASK-19
 TASK-21 (Rating DB checks)     -> pair with TASK-18
 TASK-22 (API integration)      -> after core API slices are stable
 TASK-23 (CI + coverage)        -> after TASK-22
 TASK-24 (Secret cleanup)       - immediate, independent
+TASK-25 (Admin read endpoints) -> needed so admin clients can list inactive tools and fetch edit data
+TASK-26 (First-image upload)   -> replaces the interim `ImageUrl` create shortcut with upload-backed creation
+TASK-27 (Moderation queue DTO) -> needed before final moderation queue UI and exact badge count
+TASK-28 (Epic 3 API tests)     -> after TASK-25, TASK-26, and TASK-27
 
 TASK-7  (Docs: tool/service wording) â€” independent
 TASK-8  (Docs: moderation wording)   â€” independent
@@ -544,8 +636,8 @@ TASK-16 (Admin category routing)     â€” independent
 | TASK-1: Seed missing categories | Done | 2026-04-22 |
 | TASK-2: AdminToolsController | Done | 2026-04-26 |
 | TASK-3: AdminModerationController | Done | 2026-04-22 |
-| TASK-4: ImageService | â¬œ Not started | |
-| TASK-5: DashboardService | â¬œ Not started | |
+| TASK-4: ImageService | Done | 2026-05-05 |
+| TASK-5: DashboardService | Done | 2026-05-05 |
 | TASK-6: Moderation service methods | Done | 2026-04-22 |
 | TASK-7: Docs â€“ tool/service wording | Done | 2026-04-23 |
 | TASK-8: Docs â€“ moderation wording | Done | 2026-04-23 |
@@ -558,11 +650,15 @@ TASK-16 (Admin category routing)     â€” independent
 | TASK-15: Seed comments/responses | Done | 2026-04-23 |
 | TASK-17: Identity auth alignment | Conditional / decision gate | |
 | TASK-18: Review comment status index | Done | 2026-04-26 |
-| TASK-19: Admin tool service logic | â¬œ Not started | |
-| TASK-20: FluentValidation adoption | â¬œ Not started | |
+| TASK-19: Admin tool service logic | Done | 2026-05-05 |
+| TASK-20: FluentValidation adoption | Done | 2026-05-05 |
 | TASK-21: Review rating DB constraints | Done | 2026-04-26 |
-| TASK-22: API integration tests | â¬œ Not started | |
+| TASK-22: API integration tests | Done | 2026-05-05 |
 | TASK-23: CI and coverage automation | â¬œ Not started | |
-| TASK-24: Secret cleanup and config externalisation | â¬œ Not started | |
-| TASK-16: Admin category routing | â¬œ Not started | |
+| TASK-24: Secret cleanup and config externalisation | Repo cleanup done; Azure password rotation required | 2026-05-06 |
+| TASK-16: Admin category routing | Done | 2026-05-05 |
+| TASK-25: Admin tool list/detail read endpoints | Done | 2026-05-06 |
+| TASK-26: First-image upload create flow | Not started | |
+| TASK-27: Item-level moderation queue and exact count | Done | 2026-05-06 |
+| TASK-28: Epic 3 admin API integration coverage | Done | 2026-05-06 |
 

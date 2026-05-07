@@ -82,10 +82,7 @@ public class ReviewRepository : Repository<Review>, IReviewRepository
             .FirstOrDefaultAsync(review => review.Id == reviewId, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Review>> GetPendingWithDetailsAsync(
-        int page,
-        int pageSize,
-        CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Review>> GetPendingWithDetailsAsync(CancellationToken cancellationToken = default)
     {
         return await _dbSet
             .AsNoTracking()
@@ -93,27 +90,22 @@ public class ReviewRepository : Repository<Review>, IReviewRepository
             .Where(review =>
                 review.Status == ReviewStatus.Pending ||
                 review.Comments.Any(comment => comment.Status == ReviewStatus.Pending))
-            .OrderBy(review => review.Status == ReviewStatus.Pending
-                ? review.CreatedDate
-                : review.Comments
-                    .Where(comment => comment.Status == ReviewStatus.Pending)
-                    .Select(comment => comment.CreatedDate)
-                    .Min())
-            .ThenBy(review => review.Id)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+            .OrderBy(review => review.Id)
             .Include(review => review.Tool)
             .Include(review => review.Comments.Where(comment => comment.Status == ReviewStatus.Pending))
             .ToListAsync(cancellationToken);
     }
 
-    public Task<int> CountPendingAsync(CancellationToken cancellationToken = default)
+    public async Task<int> CountPendingAsync(CancellationToken cancellationToken = default)
     {
-        return _dbSet.CountAsync(
-            review =>
-                review.Status == ReviewStatus.Pending ||
-                review.Comments.Any(comment => comment.Status == ReviewStatus.Pending),
+        var pendingReviewsCount = await _dbSet.CountAsync(
+            review => review.Status == ReviewStatus.Pending,
             cancellationToken);
+        var pendingCommentsCount = await _context.ReviewComments.CountAsync(
+            comment => comment.Status == ReviewStatus.Pending,
+            cancellationToken);
+
+        return pendingReviewsCount + pendingCommentsCount;
     }
 
     public async Task<IReadOnlyList<Review>> GetByToolIdAsync(int toolId, CancellationToken cancellationToken = default)

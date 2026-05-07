@@ -1156,7 +1156,7 @@ public class ReviewServiceTests
     }
 
     [Fact]
-    public async Task GetPendingReviewsAsync_WhenPendingReviewsExist_ReturnsOldestFirstWithPendingComments()
+    public async Task GetPendingReviewsAsync_WhenPendingItemsExist_ReturnsItemLevelQueueOldestFirst()
     {
         var category = new Category { Id = 1, Name = "Breaking & Drilling" };
         var tool = CreateTool(12, category, isActive: true);
@@ -1219,15 +1219,23 @@ public class ReviewServiceTests
         var result = await service.GetPendingReviewsAsync(page: 1, pageSize: 10);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(2, result.Value!.TotalCount);
-        Assert.Equal(["Older Reviewer", "Newer Reviewer"], result.Value.Items.Select(review => review.ReviewerName).ToArray());
-        Assert.All(result.Value.Items, review => Assert.Equal("Pending", review.Status));
-        var pendingComment = Assert.Single(result.Value.Items.First().Comments);
-        Assert.Equal("Pending commenter", pendingComment.CommenterName);
+        Assert.Equal(3, result.Value!.TotalCount);
+        Assert.Equal(["Review", "Comment", "Review"], result.Value.Items.Select(item => item.ItemType).ToArray());
+        Assert.Equal(["Older Reviewer", "Pending commenter", "Newer Reviewer"], result.Value.Items.Select(item => item.AuthorName).ToArray());
+        Assert.Equal([olderPendingReview.Id, 4, newerPendingReview.Id], result.Value.Items.Select(item => item.ItemId).ToArray());
+        Assert.All(result.Value.Items, item => Assert.Equal("Pending", item.Status));
+        var reviewItem = result.Value.Items.First();
+        Assert.Equal(tool.Id, reviewItem.ToolId);
+        Assert.Equal("Tool 12", reviewItem.ToolName);
+        Assert.Equal(5, reviewItem.EquipmentRating);
+        var commentItem = result.Value.Items[1];
+        Assert.Equal(olderPendingReview.Id, commentItem.ReviewId);
+        Assert.Null(commentItem.EquipmentRating);
+        Assert.Null(commentItem.OverallRating);
     }
 
     [Fact]
-    public async Task GetPendingReviewsAsync_WhenApprovedReviewHasPendingComment_IncludesItInModerationQueue()
+    public async Task GetPendingReviewsAsync_WhenApprovedReviewHasPendingComment_ReturnsCommentItem()
     {
         var category = new Category { Id = 1, Name = "Cleaning & Maintenance" };
         var tool = CreateTool(13, category, isActive: true);
@@ -1280,13 +1288,61 @@ public class ReviewServiceTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(2, result.Value!.TotalCount);
-        Assert.Equal(["Pending Review Author", "Approved Review Author"], result.Value.Items.Select(review => review.ReviewerName).ToArray());
+        Assert.Equal(["Review", "Comment"], result.Value.Items.Select(item => item.ItemType).ToArray());
+        Assert.Equal(["Pending Review Author", "Pending commenter"], result.Value.Items.Select(item => item.AuthorName).ToArray());
 
-        var reviewWithPendingComment = Assert.Single(result.Value.Items.Where(review => review.Id == approvedReviewWithPendingComment.Id));
-        Assert.Equal("Approved", reviewWithPendingComment.Status);
-        var pendingComment = Assert.Single(reviewWithPendingComment.Comments);
-        Assert.Equal("Pending commenter", pendingComment.CommenterName);
+        var pendingComment = Assert.Single(result.Value.Items.Where(item => item.ItemType == "Comment"));
+        Assert.Equal(approvedReviewWithPendingComment.Id, pendingComment.ReviewId);
+        Assert.Equal(9, pendingComment.ItemId);
         Assert.Equal("Pending", pendingComment.Status);
+        Assert.Null(pendingComment.EquipmentRating);
+    }
+
+    [Fact]
+    public async Task GetPendingReviewsAsync_WhenReviewHasMultiplePendingComments_CountsEachCommentSeparately()
+    {
+        var category = new Category { Id = 1, Name = "Cleaning & Maintenance" };
+        var tool = CreateTool(15, category, isActive: true);
+        var approvedReview = CreateReview(
+            1,
+            tool,
+            "Approved Review Author",
+            ReviewStatus.Approved,
+            new DateTime(2026, 4, 8, 8, 0, 0, DateTimeKind.Utc),
+            5,
+            5,
+            5,
+            4,
+            4);
+        approvedReview.Comments =
+        [
+            new ReviewComment
+            {
+                Id = 10,
+                ReviewId = approvedReview.Id,
+                CommenterName = "First pending commenter",
+                CommentText = "First pending comment for exact count coverage.",
+                Status = ReviewStatus.Pending,
+                CreatedDate = new DateTime(2026, 4, 11, 9, 0, 0, DateTimeKind.Utc)
+            },
+            new ReviewComment
+            {
+                Id = 11,
+                ReviewId = approvedReview.Id,
+                CommenterName = "Second pending commenter",
+                CommentText = "Second pending comment for exact count coverage.",
+                Status = ReviewStatus.Pending,
+                CreatedDate = new DateTime(2026, 4, 11, 10, 0, 0, DateTimeKind.Utc)
+            }
+        ];
+        var service = CreateService(reviews: [approvedReview], tools: [tool]);
+
+        var result = await service.GetPendingReviewsAsync(page: 1, pageSize: 10);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Value!.TotalCount);
+        Assert.Equal(["First pending commenter", "Second pending commenter"], result.Value.Items.Select(item => item.AuthorName).ToArray());
+        Assert.All(result.Value.Items, item => Assert.Equal("Comment", item.ItemType));
     }
 
     [Fact]
@@ -1314,7 +1370,8 @@ public class ReviewServiceTests
         Assert.True(result.IsSuccess);
         Assert.Equal(12, result.Value!.TotalCount);
         Assert.Equal(3, result.Value.TotalPages);
-        Assert.Equal(["Pending Reviewer 6", "Pending Reviewer 7", "Pending Reviewer 8", "Pending Reviewer 9", "Pending Reviewer 10"], result.Value.Items.Select(review => review.ReviewerName).ToArray());
+        Assert.Equal(["Pending Reviewer 6", "Pending Reviewer 7", "Pending Reviewer 8", "Pending Reviewer 9", "Pending Reviewer 10"], result.Value.Items.Select(item => item.AuthorName).ToArray());
+        Assert.All(result.Value.Items, item => Assert.Equal("Review", item.ItemType));
     }
 
     [Fact]

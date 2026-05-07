@@ -95,7 +95,7 @@ Add these application settings:
 
 For the database, recommended:
 
-- `ConnectionStrings__DefaultConnection = Server=tcp:reviewportal.database.windows.net,1433;Initial Catalog=ReviewPortal;Persist Security Info=False;User ID=CB018407;Password=<password>;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;`
+- `ConnectionStrings__DefaultConnection = Server=tcp:<azure-sql-server>.database.windows.net,1433;Initial Catalog=<database-name>;Persist Security Info=False;User ID=<azure-sql-user>;Password=<rotated-password>;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;`
 
 Alternative:
 
@@ -107,6 +107,32 @@ Optional if you have a frontend calling this API:
 - `Cors__AllowedOrigins__1 = http://localhost:3000`
 
 After saving configuration, restart the App Service.
+
+## Local Azure SQL migrations without committing secrets
+
+For local migration testing against Azure SQL:
+
+1. Copy `src/ReviewPortal.API/appsettings.Local.example.json` to `src/ReviewPortal.API/appsettings.Local.json`
+2. Fill the local file with the rotated Azure SQL password and local JWT secret
+3. Run:
+
+```powershell
+.\scripts\local\Update-AzureDatabase.ps1
+```
+
+To run the API locally against the same configured database:
+
+```powershell
+.\scripts\local\Run-ApiLocal.ps1
+```
+
+`appsettings.Local.json` is ignored by git. Do not paste Azure SQL passwords, publish profiles, or JWT secrets into checked-in appsettings or documentation files.
+
+Before committing, run:
+
+```powershell
+.\scripts\security\scan-secrets.ps1
+```
 
 ## First deployment steps
 

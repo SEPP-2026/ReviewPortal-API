@@ -8,5 +8,7 @@ public interface IToolRepository : IRepository<Tool>
 
     Task<IReadOnlyList<Tool>> GetAllActiveWithDetailsAsync(CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Tool>> GetAllWithDetailsAsync(CancellationToken cancellationToken = default);
+
     Task<Tool?> GetByIdWithDetailsAsync(int id, CancellationToken cancellationToken = default);
 }

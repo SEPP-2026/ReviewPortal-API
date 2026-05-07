@@ -9,6 +9,7 @@
     <IsTestProject>true</IsTestProject>
     <ReviewPortalDomainBinaryPath Condition="'$(ReviewPortalDomainBinaryPath)' == ''">..\..\src\ReviewPortal.Domain\bin\$(Configuration)\net8.0\ReviewPortal.Domain.dll</ReviewPortalDomainBinaryPath>
     <ReviewPortalApplicationBinaryPath Condition="'$(ReviewPortalApplicationBinaryPath)' == ''">..\..\src\ReviewPortal.Application\bin\$(Configuration)\net8.0\ReviewPortal.Application.dll</ReviewPortalApplicationBinaryPath>
+    <ReviewPortalInfrastructureBinaryPath Condition="'$(ReviewPortalInfrastructureBinaryPath)' == ''">..\..\src\ReviewPortal.Infrastructure\bin\$(Configuration)\net8.0\ReviewPortal.Infrastructure.dll</ReviewPortalInfrastructureBinaryPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,6 +29,8 @@
 
   <ItemGroup>
     <Compile Include="..\..\src\ReviewPortal.API\Controllers\AuthController.cs" Link="Controllers\AuthController.cs" />
+    <Compile Include="..\..\src\ReviewPortal.API\Controllers\Admin\AdminCategoriesController.cs" Link="Controllers\Admin\AdminCategoriesController.cs" />
+    <Compile Include="..\..\src\ReviewPortal.API\Controllers\Admin\AdminDashboardController.cs" Link="Controllers\Admin\AdminDashboardController.cs" />
     <Compile Include="..\..\src\ReviewPortal.API\Controllers\Admin\AdminModerationController.cs" Link="Controllers\Admin\AdminModerationController.cs" />
     <Compile Include="..\..\src\ReviewPortal.API\Controllers\Admin\AdminToolsController.cs" Link="Controllers\Admin\AdminToolsController.cs" />
     <Compile Include="..\..\src\ReviewPortal.API\Controllers\CategoriesController.cs" Link="Controllers\CategoriesController.cs" />
@@ -42,6 +45,7 @@
   <ItemGroup Condition="'$(UseBinaryProjectReferences)' != 'true'">
     <ProjectReference Include="..\..\src\ReviewPortal.Domain\ReviewPortal.Domain.csproj" />
     <ProjectReference Include="..\..\src\ReviewPortal.Application\ReviewPortal.Application.csproj" />
+    <ProjectReference Include="..\..\src\ReviewPortal.Infrastructure\ReviewPortal.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(UseBinaryProjectReferences)' == 'true'">
@@ -50,6 +54,9 @@
     </Reference>
     <Reference Include="ReviewPortal.Application">
       <HintPath>$(ReviewPortalApplicationBinaryPath)</HintPath>
+    </Reference>
+    <Reference Include="ReviewPortal.Infrastructure">
+      <HintPath>$(ReviewPortalInfrastructureBinaryPath)</HintPath>
     </Reference>
   </ItemGroup>
 

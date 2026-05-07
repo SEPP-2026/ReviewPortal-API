@@ -1,7 +1,9 @@
-using System.ComponentModel.DataAnnotations;
+using FluentValidation;
 using ReviewPortal.Application.Common;
 using ReviewPortal.Application.DTOs.Reviews;
 using ReviewPortal.Application.Interfaces;
+using ReviewPortal.Application.Validators;
+using ReviewPortal.Application.Validators.Reviews;
 using ReviewPortal.Domain.Entities;
 using ReviewPortal.Domain.Enums;
 using ReviewPortal.Domain.Interfaces;
@@ -13,12 +15,6 @@ public class ReviewService : IReviewService
     private const int DefaultMaxPageSize = 100;
     private const string NoReviewsMessage = "No reviews yet - be the first to share your experience";
     private const int ReviewSnippetLength = 140;
-    private const int MinCommentLength = 10;
-    private const int MaxCommentLength = 1000;
-    private const int MaxCompanyResponseLength = 2000;
-    private const int MinReviewLength = 20;
-    private const int MaxReviewLength = 2000;
-    private const int MaxRejectionReasonLength = 500;
 
     private readonly IReviewRepository _reviewRepository;
     private readonly IRepository<CompanyResponse> _companyResponseRepository;
@@ -26,6 +22,10 @@ public class ReviewService : IReviewService
     private readonly IToolRepository _toolRepository;
     private readonly IUserRepository _userRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IValidator<CreateReviewRequest> _createReviewRequestValidator;
+    private readonly IValidator<CreateCommentRequest> _createCommentRequestValidator;
+    private readonly IValidator<CreateCompanyResponseRequest> _createCompanyResponseRequestValidator;
+    private readonly IValidator<ModerateReviewRequest> _moderateReviewRequestValidator;
 
     public ReviewService(
         IReviewRepository reviewRepository,
@@ -33,7 +33,11 @@ public class ReviewService : IReviewService
         IRepository<ReviewComment> reviewCommentRepository,
         IToolRepository toolRepository,
         IUserRepository userRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IValidator<CreateReviewRequest>? createReviewRequestValidator = null,
+        IValidator<CreateCommentRequest>? createCommentRequestValidator = null,
+        IValidator<CreateCompanyResponseRequest>? createCompanyResponseRequestValidator = null,
+        IValidator<ModerateReviewRequest>? moderateReviewRequestValidator = null)
     {
         _reviewRepository = reviewRepository;
         _companyResponseRepository = companyResponseRepository;
@@ -41,6 +45,10 @@ public class ReviewService : IReviewService
         _toolRepository = toolRepository;
         _userRepository = userRepository;
         _unitOfWork = unitOfWork;
+        _createReviewRequestValidator = createReviewRequestValidator ?? new CreateReviewRequestValidator();
+        _createCommentRequestValidator = createCommentRequestValidator ?? new CreateCommentRequestValidator();
+        _createCompanyResponseRequestValidator = createCompanyResponseRequestValidator ?? new CreateCompanyResponseRequestValidator();
+        _moderateReviewRequestValidator = moderateReviewRequestValidator ?? new ModerateReviewRequestValidator();
     }
 
     public async Task<Result<ReviewDto>> CreateReviewAsync(
@@ -55,7 +63,8 @@ public class ReviewService : IReviewService
             return Result<ReviewDto>.NotFound($"Tool with ID {toolId} not found.");
         }
 
-        var validationError = ValidateReviewRequest(request, userId);
+        var validationError = RequestValidatorRunner.Validate(_createReviewRequestValidator, request, "Review request is required.")
+            ?? ValidateAnonymousReviewerDetails(request, userId);
         if (validationError is not null)
         {
             return Result<ReviewDto>.Failure(validationError);
@@ -138,7 +147,8 @@ public class ReviewService : IReviewService
         int? userId = null,
         CancellationToken cancellationToken = default)
     {
-        var validationError = ValidateCommentRequest(request, userId);
+        var validationError = RequestValidatorRunner.Validate(_createCommentRequestValidator, request, "Comment request is required.")
+            ?? ValidateAnonymousCommenterName(request, userId);
         if (validationError is not null)
         {
             return Result<ReviewCommentDto>.Failure(validationError);
@@ -197,7 +207,7 @@ public class ReviewService : IReviewService
         int staffUserId,
         CancellationToken cancellationToken = default)
     {
-        var validationError = ValidateCompanyResponseRequest(request);
+        var validationError = RequestValidatorRunner.Validate(_createCompanyResponseRequestValidator, request, "Company response request is required.");
         if (validationError is not null)
         {
             return Result<CompanyResponseDto>.Failure(validationError);
@@ -251,7 +261,7 @@ public class ReviewService : IReviewService
         int staffUserId,
         CancellationToken cancellationToken = default)
     {
-        var validationError = ValidateCompanyResponseRequest(request);
+        var validationError = RequestValidatorRunner.Validate(_createCompanyResponseRequestValidator, request, "Company response request is required.");
         if (validationError is not null)
         {
             return Result<CompanyResponseDto>.Failure(validationError);
@@ -350,33 +360,37 @@ public class ReviewService : IReviewService
         return Result<PagedList<ReviewSummaryDto>>.Success(pagedReviews);
     }
 
-    public async Task<Result<PagedList<ReviewDto>>> GetPendingReviewsAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<Result<PagedList<ModerationQueueItemDto>>> GetPendingReviewsAsync(int page, int pageSize, CancellationToken cancellationToken = default)
     {
         var validationError = ValidatePaging(page, pageSize);
         if (validationError is not null)
         {
-            return Result<PagedList<ReviewDto>>.Failure(validationError);
+            return Result<PagedList<ModerationQueueItemDto>>.Failure(validationError);
         }
 
-        var totalPendingReviews = await _reviewRepository.CountPendingAsync(cancellationToken);
-        var pendingReviews = totalPendingReviews == 0
-            ? Array.Empty<Review>()
-            : await _reviewRepository.GetPendingWithDetailsAsync(page, pageSize, cancellationToken);
+        var pendingReviews = await _reviewRepository.GetPendingWithDetailsAsync(cancellationToken);
+        var queueItems = pendingReviews
+            .SelectMany(CreateModerationQueueItems)
+            .OrderBy(item => item.SubmittedDate)
+            .ThenBy(item => GetModerationItemTypeSort(item.ItemType))
+            .ThenBy(item => item.ItemId)
+            .ToList();
 
-        var pagedReviews = new PagedList<ReviewDto>(
-            pendingReviews
-                .Select(review => MapReview(review, review.Tool?.Name ?? string.Empty, ReviewStatus.Pending))
+        var pagedQueueItems = new PagedList<ModerationQueueItemDto>(
+            queueItems
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToList(),
             page,
             pageSize,
-            totalPendingReviews);
+            queueItems.Count);
 
-        return Result<PagedList<ReviewDto>>.Success(pagedReviews);
+        return Result<PagedList<ModerationQueueItemDto>>.Success(pagedQueueItems);
     }
 
     public async Task<Result<bool>> ModerateReviewAsync(int reviewId, ModerateReviewRequest request, CancellationToken cancellationToken = default)
     {
-        var validationError = ValidateModerationRequest(request);
+        var validationError = RequestValidatorRunner.Validate(_moderateReviewRequestValidator, request, "Moderation request is required.");
         if (validationError is not null)
         {
             return Result<bool>.Failure(validationError);
@@ -407,7 +421,7 @@ public class ReviewService : IReviewService
 
     public async Task<Result<bool>> ModerateCommentAsync(int commentId, ModerateReviewRequest request, CancellationToken cancellationToken = default)
     {
-        var validationError = ValidateModerationRequest(request);
+        var validationError = RequestValidatorRunner.Validate(_moderateReviewRequestValidator, request, "Moderation request is required.");
         if (validationError is not null)
         {
             return Result<bool>.Failure(validationError);
@@ -428,152 +442,34 @@ public class ReviewService : IReviewService
         return Result<bool>.Success(true);
     }
 
-    private static string? ValidateReviewRequest(CreateReviewRequest request, int? userId)
+    private static string? ValidateAnonymousReviewerDetails(CreateReviewRequest request, int? userId)
     {
-        if (request is null)
+        if (userId.HasValue)
         {
-            return "Review request is required.";
+            return null;
         }
 
-        if (!userId.HasValue)
+        if (string.IsNullOrWhiteSpace(request.ReviewerName))
         {
-            if (string.IsNullOrWhiteSpace(request.ReviewerName))
-            {
-                return "Reviewer name is required when submitting anonymously.";
-            }
-
-            if (request.ReviewerName.Trim().Length > 100)
-            {
-                return "Reviewer name must be 100 characters or fewer.";
-            }
-
-            if (string.IsNullOrWhiteSpace(request.ReviewerEmail))
-            {
-                return "Reviewer email is required when submitting anonymously.";
-            }
-
-            if (request.ReviewerEmail.Trim().Length > 256)
-            {
-                return "Reviewer email must be 256 characters or fewer.";
-            }
-
-            var emailAttribute = new EmailAddressAttribute();
-            if (!emailAttribute.IsValid(request.ReviewerEmail.Trim()))
-            {
-                return "Reviewer email must be a valid email address.";
-            }
+            return "Reviewer name is required when submitting anonymously.";
         }
 
-        if (string.IsNullOrWhiteSpace(request.ReviewText))
+        if (string.IsNullOrWhiteSpace(request.ReviewerEmail))
         {
-            return "Review text is required.";
-        }
-
-        var reviewText = request.ReviewText.Trim();
-        if (reviewText.Length < MinReviewLength)
-        {
-            return $"Review text must be at least {MinReviewLength} characters.";
-        }
-
-        if (reviewText.Length > MaxReviewLength)
-        {
-            return $"Review text must be {MaxReviewLength} characters or fewer.";
-        }
-
-        return ValidateRating(request.EquipmentRating, "Equipment rating")
-            ?? ValidateRating(request.CustomerServiceRating, "Customer service rating")
-            ?? ValidateRating(request.TechnicalSupportRating, "Technical support rating")
-            ?? ValidateRating(request.AfterSalesRating, "After-sales rating")
-            ?? ValidateRating(request.ValueForMoneyRating, "Value for money rating");
-    }
-
-    private static string? ValidateCommentRequest(CreateCommentRequest request, int? userId)
-    {
-        if (request is null)
-        {
-            return "Comment request is required.";
-        }
-
-        if (!userId.HasValue && string.IsNullOrWhiteSpace(request.CommenterName))
-        {
-            return "Commenter name is required.";
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.CommenterName) && request.CommenterName.Trim().Length > 100)
-        {
-            return "Commenter name must be 100 characters or fewer.";
-        }
-
-        if (string.IsNullOrWhiteSpace(request.CommentText))
-        {
-            return "Comment text is required.";
-        }
-
-        var commentText = request.CommentText.Trim();
-        if (commentText.Length < MinCommentLength)
-        {
-            return $"Comment text must be at least {MinCommentLength} characters.";
-        }
-
-        if (commentText.Length > MaxCommentLength)
-        {
-            return $"Comment text must be {MaxCommentLength} characters or fewer.";
+            return "Reviewer email is required when submitting anonymously.";
         }
 
         return null;
     }
 
-    private static string? ValidateCompanyResponseRequest(CreateCompanyResponseRequest request)
+    private static string? ValidateAnonymousCommenterName(CreateCommentRequest request, int? userId)
     {
-        if (request is null)
+        if (userId.HasValue || !string.IsNullOrWhiteSpace(request.CommenterName))
         {
-            return "Company response request is required.";
+            return null;
         }
 
-        if (string.IsNullOrWhiteSpace(request.ResponseText))
-        {
-            return "Response text is required.";
-        }
-
-        if (request.ResponseText.Trim().Length > MaxCompanyResponseLength)
-        {
-            return $"Response text must be {MaxCompanyResponseLength} characters or fewer.";
-        }
-
-        return null;
-    }
-
-    private static string? ValidateModerationRequest(ModerateReviewRequest request)
-    {
-        if (request is null)
-        {
-            return "Moderation request is required.";
-        }
-
-        if (!request.Approved)
-        {
-            if (string.IsNullOrWhiteSpace(request.RejectionReason))
-            {
-                return "Rejection reason is required when rejecting.";
-            }
-
-            if (request.RejectionReason.Trim().Length > MaxRejectionReasonLength)
-            {
-                return $"Rejection reason must be {MaxRejectionReasonLength} characters or fewer.";
-            }
-        }
-
-        return null;
-    }
-
-    private static string? ValidateRating(int rating, string fieldName)
-    {
-        if (rating is < 1 or > 5)
-        {
-            return $"{fieldName} must be between 1 and 5.";
-        }
-
-        return null;
+        return "Commenter name is required.";
     }
 
     private static string? ValidatePaging(int page, int pageSize)
@@ -664,6 +560,64 @@ public class ReviewService : IReviewService
                 approvedReviews.Average(review => review.OverallRating),
                 2,
                 MidpointRounding.AwayFromZero);
+    }
+
+    private static IEnumerable<ModerationQueueItemDto> CreateModerationQueueItems(Review review)
+    {
+        if (review.Status == ReviewStatus.Pending)
+        {
+            yield return MapReviewModerationQueueItem(review);
+        }
+
+        foreach (var comment in review.Comments.Where(comment => comment.Status == ReviewStatus.Pending))
+        {
+            yield return MapCommentModerationQueueItem(review, comment);
+        }
+    }
+
+    private static ModerationQueueItemDto MapReviewModerationQueueItem(Review review)
+    {
+        return new ModerationQueueItemDto(
+            "Review",
+            review.Id,
+            review.Id,
+            review.ToolId,
+            review.Tool?.Name ?? string.Empty,
+            review.ReviewerName,
+            review.ReviewText,
+            review.CreatedDate,
+            review.Status.ToString(),
+            review.EquipmentRating,
+            review.CustomerServiceRating,
+            review.TechnicalSupportRating,
+            review.AfterSalesRating,
+            review.ValueForMoneyRating,
+            review.OverallRating);
+    }
+
+    private static ModerationQueueItemDto MapCommentModerationQueueItem(Review review, ReviewComment comment)
+    {
+        return new ModerationQueueItemDto(
+            "Comment",
+            comment.Id,
+            review.Id,
+            review.ToolId,
+            review.Tool?.Name ?? string.Empty,
+            comment.CommenterName,
+            comment.CommentText,
+            comment.CreatedDate,
+            comment.Status.ToString(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
+    }
+
+    private static int GetModerationItemTypeSort(string itemType)
+    {
+        return itemType == "Review" ? 0 : 1;
     }
 
     private static ReviewDto MapReview(Review review, string toolName, ReviewStatus commentStatus = ReviewStatus.Approved)

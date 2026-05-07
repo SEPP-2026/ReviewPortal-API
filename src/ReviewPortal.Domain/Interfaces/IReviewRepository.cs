@@ -24,10 +24,7 @@ public interface IReviewRepository : IRepository<Review>
 
     Task<Review?> GetByIdWithDetailsAsync(int reviewId, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<Review>> GetPendingWithDetailsAsync(
-        int page,
-        int pageSize,
-        CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Review>> GetPendingWithDetailsAsync(CancellationToken cancellationToken = default);
 
     Task<int> CountPendingAsync(CancellationToken cancellationToken = default);
 

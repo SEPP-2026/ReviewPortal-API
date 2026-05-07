@@ -160,7 +160,7 @@ public class UserReviewsControllerTests
             return Task.FromResult(GetUserReviewsResult);
         }
 
-        public Task<Result<PagedList<ReviewDto>>> GetPendingReviewsAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+        public Task<Result<PagedList<ModerationQueueItemDto>>> GetPendingReviewsAsync(int page, int pageSize, CancellationToken cancellationToken = default)
         {
             throw new NotSupportedException();
         }

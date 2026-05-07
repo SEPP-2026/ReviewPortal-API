@@ -1,7 +1,10 @@
 using System.Globalization;
+using FluentValidation;
 using ReviewPortal.Application.Common;
 using ReviewPortal.Application.DTOs.Tools;
 using ReviewPortal.Application.Interfaces;
+using ReviewPortal.Application.Validators;
+using ReviewPortal.Application.Validators.Tools;
 using ReviewPortal.Domain.Entities;
 using ReviewPortal.Domain.Enums;
 using ReviewPortal.Domain.Interfaces;
@@ -18,11 +21,25 @@ public class ToolService : IToolService
 
     private readonly IToolRepository _toolRepository;
     private readonly ICategoryRepository _categoryRepository;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IValidator<RentalCalculationRequest> _rentalCalculationRequestValidator;
+    private readonly IValidator<CreateToolRequest> _createToolRequestValidator;
+    private readonly IValidator<UpdateToolRequest> _updateToolRequestValidator;
 
-    public ToolService(IToolRepository toolRepository, ICategoryRepository categoryRepository)
+    public ToolService(
+        IToolRepository toolRepository,
+        ICategoryRepository categoryRepository,
+        IUnitOfWork unitOfWork,
+        IValidator<RentalCalculationRequest>? rentalCalculationRequestValidator = null,
+        IValidator<CreateToolRequest>? createToolRequestValidator = null,
+        IValidator<UpdateToolRequest>? updateToolRequestValidator = null)
     {
         _toolRepository = toolRepository;
         _categoryRepository = categoryRepository;
+        _unitOfWork = unitOfWork;
+        _rentalCalculationRequestValidator = rentalCalculationRequestValidator ?? new RentalCalculationRequestValidator();
+        _createToolRequestValidator = createToolRequestValidator ?? new CreateToolRequestValidator();
+        _updateToolRequestValidator = updateToolRequestValidator ?? new UpdateToolRequestValidator();
     }
 
     public async Task<Result<PagedList<ToolSummaryDto>>> GetToolsByCategoryAsync(
@@ -58,6 +75,44 @@ public class ToolService : IToolService
     public Task<Result<ToolDto>> GetToolByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         return GetToolByIdInternalAsync(id, cancellationToken);
+    }
+
+    public async Task<Result<PagedList<AdminToolSummaryDto>>> GetAdminToolsAsync(
+        AdminToolQueryRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var validationError = ValidateAdminToolQuery(request);
+        if (validationError is not null)
+        {
+            return Result<PagedList<AdminToolSummaryDto>>.Failure(validationError);
+        }
+
+        var activeFilter = GetAdminActiveFilter(request.Status, out validationError);
+        if (validationError is not null)
+        {
+            return Result<PagedList<AdminToolSummaryDto>>.Failure(validationError);
+        }
+
+        var tools = ApplyRatingMetrics(await _toolRepository.GetAllWithDetailsAsync(cancellationToken));
+        var filteredTools = ApplyAdminFilters(tools, request.SearchTerm, request.CategoryId, activeFilter);
+        var sortedTools = ApplyAdminSort(filteredTools, request.SortBy, out validationError);
+        if (validationError is not null)
+        {
+            return Result<PagedList<AdminToolSummaryDto>>.Failure(validationError);
+        }
+
+        return Result<PagedList<AdminToolSummaryDto>>.Success(CreatePagedAdminSummary(sortedTools, request.Page, request.PageSize));
+    }
+
+    public async Task<Result<ToolDto>> GetAdminToolByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var tool = await _toolRepository.GetByIdWithDetailsAsync(id, cancellationToken);
+        if (tool is null)
+        {
+            return Result<ToolDto>.NotFound($"Tool with ID {id} not found.");
+        }
+
+        return Result<ToolDto>.Success(MapToolDetail(tool));
     }
 
     public async Task<Result<PagedList<ToolSummaryDto>>> SearchToolsAsync(string query, int page, int pageSize, CancellationToken cancellationToken = default)
@@ -120,9 +175,10 @@ public class ToolService : IToolService
 
     public async Task<Result<RentalCalculationResponse>> CalculateRentalCostAsync(int toolId, RentalCalculationRequest request, CancellationToken cancellationToken = default)
     {
-        if (request.EndDateTime <= request.StartDateTime)
+        var validationError = RequestValidatorRunner.Validate(_rentalCalculationRequestValidator, request, "Rental calculation request is required.");
+        if (validationError is not null)
         {
-            return Result<RentalCalculationResponse>.Failure("End date/time must be after the start date/time.");
+            return Result<RentalCalculationResponse>.Failure(validationError);
         }
 
         var tool = await _toolRepository.GetByIdWithDetailsAsync(toolId, cancellationToken);
@@ -147,19 +203,111 @@ public class ToolService : IToolService
             cheapestCombination.TotalCost));
     }
 
-    public Task<Result<ToolDto>> CreateToolAsync(CreateToolRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result<ToolDto>> CreateToolAsync(CreateToolRequest request, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(Result<ToolDto>.Failure("Tool creation is not implemented in this slice."));
+        var validationError = RequestValidatorRunner.Validate(_createToolRequestValidator, request, "Tool request is required.");
+        if (validationError is not null)
+        {
+            return Result<ToolDto>.Failure(validationError);
+        }
+
+        var category = await _categoryRepository.GetByIdAsync(request.CategoryId, cancellationToken);
+        if (category is null)
+        {
+            return Result<ToolDto>.NotFound($"Category with ID {request.CategoryId} not found.");
+        }
+
+        var utcNow = DateTime.UtcNow;
+        var tool = new Tool
+        {
+            CategoryId = request.CategoryId,
+            Category = category,
+            Name = request.Name.Trim(),
+            Description = request.Description.Trim(),
+            HourlyRate = request.HourlyRate,
+            DailyRate = request.DailyRate,
+            WeeklyRate = request.WeeklyRate,
+            SpecialNotes = TrimOptional(request.SpecialNotes),
+            DepositRequired = request.DepositRequired,
+            DepositAmount = request.DepositRequired ? request.DepositAmount : null,
+            IsActive = true,
+            OverallRating = null,
+            ReviewCount = 0,
+            CreatedDate = utcNow,
+            UpdatedDate = utcNow
+        };
+
+        tool.Images.Add(new ToolImage
+        {
+            Tool = tool,
+            ImageUrl = request.ImageUrl.Trim(),
+            DisplayOrder = 1,
+            UploadedDate = utcNow
+        });
+
+        await _toolRepository.AddAsync(tool, cancellationToken);
+        foreach (var image in tool.Images)
+        {
+            image.ToolId = tool.Id;
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result<ToolDto>.Success(MapToolDetail(tool));
     }
 
-    public Task<Result<ToolDto>> UpdateToolAsync(int id, UpdateToolRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result<ToolDto>> UpdateToolAsync(int id, UpdateToolRequest request, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(Result<ToolDto>.Failure("Tool updates are not implemented in this slice."));
+        var validationError = RequestValidatorRunner.Validate(_updateToolRequestValidator, request, "Tool request is required.");
+        if (validationError is not null)
+        {
+            return Result<ToolDto>.Failure(validationError);
+        }
+
+        var tool = await _toolRepository.GetByIdAsync(id, cancellationToken);
+        if (tool is null)
+        {
+            return Result<ToolDto>.NotFound($"Tool with ID {id} not found.");
+        }
+
+        var category = await _categoryRepository.GetByIdAsync(request.CategoryId, cancellationToken);
+        if (category is null)
+        {
+            return Result<ToolDto>.NotFound($"Category with ID {request.CategoryId} not found.");
+        }
+
+        tool.CategoryId = request.CategoryId;
+        tool.Category = category;
+        tool.Name = request.Name.Trim();
+        tool.Description = request.Description.Trim();
+        tool.HourlyRate = request.HourlyRate;
+        tool.DailyRate = request.DailyRate;
+        tool.WeeklyRate = request.WeeklyRate;
+        tool.SpecialNotes = TrimOptional(request.SpecialNotes);
+        tool.DepositRequired = request.DepositRequired;
+        tool.DepositAmount = request.DepositRequired ? request.DepositAmount : null;
+
+        await _toolRepository.UpdateAsync(tool, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var refreshedTool = await _toolRepository.GetByIdWithDetailsAsync(id, cancellationToken);
+        return Result<ToolDto>.Success(MapToolDetail(refreshedTool ?? tool));
     }
 
-    public Task<Result<bool>> SetToolStatusAsync(int id, bool isActive, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> SetToolStatusAsync(int id, bool isActive, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(Result<bool>.Failure("Tool status changes are not implemented in this slice."));
+        var tool = await _toolRepository.GetByIdAsync(id, cancellationToken);
+        if (tool is null)
+        {
+            return Result<bool>.NotFound($"Tool with ID {id} not found.");
+        }
+
+        tool.IsActive = isActive;
+
+        await _toolRepository.UpdateAsync(tool, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result<bool>.Success(true);
     }
 
     private static string? ValidatePaging(int page, int pageSize)
@@ -210,6 +358,127 @@ public class ToolService : IToolService
         }
 
         return null;
+    }
+
+    private static string? ValidateAdminToolQuery(AdminToolQueryRequest? request)
+    {
+        if (request is null)
+        {
+            return "Admin tool query request is required.";
+        }
+
+        var pagingError = ValidatePaging(request.Page, request.PageSize);
+        if (pagingError is not null)
+        {
+            return pagingError;
+        }
+
+        if (request.CategoryId is <= 0)
+        {
+            return "Category ID must be greater than 0.";
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.SearchTerm) && request.SearchTerm.Trim().Length > 200)
+        {
+            return "Search term must be 200 characters or fewer.";
+        }
+
+        return null;
+    }
+
+    private static bool? GetAdminActiveFilter(string? status, out string? validationError)
+    {
+        validationError = null;
+
+        if (string.IsNullOrWhiteSpace(status))
+        {
+            return null;
+        }
+
+        return status.Trim().ToLowerInvariant() switch
+        {
+            "all" => null,
+            "active" => true,
+            "inactive" => false,
+            _ => SetInvalidStatus(out validationError)
+        };
+    }
+
+    private static bool? SetInvalidStatus(out string validationError)
+    {
+        validationError = "Invalid status value. Supported values are all, active, and inactive.";
+        return null;
+    }
+
+    private static IEnumerable<Tool> ApplyAdminFilters(
+        IEnumerable<Tool> tools,
+        string? searchTerm,
+        int? categoryId,
+        bool? activeFilter)
+    {
+        var filteredTools = tools;
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var normalizedSearchTerm = searchTerm.Trim();
+            filteredTools = filteredTools.Where(tool =>
+                ContainsIgnoreCase(tool.Name, normalizedSearchTerm) ||
+                ContainsIgnoreCase(tool.Description, normalizedSearchTerm) ||
+                ContainsIgnoreCase(tool.Category.Name, normalizedSearchTerm));
+        }
+
+        if (categoryId.HasValue)
+        {
+            filteredTools = filteredTools.Where(tool => tool.CategoryId == categoryId.Value);
+        }
+
+        if (activeFilter.HasValue)
+        {
+            filteredTools = filteredTools.Where(tool => tool.IsActive == activeFilter.Value);
+        }
+
+        return filteredTools;
+    }
+
+    private static IEnumerable<Tool> ApplyAdminSort(IEnumerable<Tool> tools, string? sortBy, out string? validationError)
+    {
+        validationError = null;
+
+        var normalizedSort = NormalizeSort(sortBy);
+        if (normalizedSort is not ("name" or "name_desc" or "category" or "category_desc" or "status" or "status_desc" or "updated" or "updated_desc" or "price" or "price_asc" or "starting_price" or "price_desc" or "starting_price_desc" or "rating" or "rating_desc" or "rating_asc"))
+        {
+            validationError = "Invalid sortBy value. Supported values are name, category, status, updated, price, price_desc, rating, and rating_asc.";
+            return tools;
+        }
+
+        return normalizedSort switch
+        {
+            "category" => tools
+                .OrderBy(tool => tool.Category.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(tool => tool.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(tool => tool.Id),
+            "category_desc" => tools
+                .OrderByDescending(tool => tool.Category.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(tool => tool.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(tool => tool.Id),
+            "status" => tools
+                .OrderByDescending(tool => tool.IsActive)
+                .ThenBy(tool => tool.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(tool => tool.Id),
+            "status_desc" => tools
+                .OrderBy(tool => tool.IsActive)
+                .ThenBy(tool => tool.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(tool => tool.Id),
+            "updated" => tools
+                .OrderBy(tool => tool.UpdatedDate)
+                .ThenBy(tool => tool.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(tool => tool.Id),
+            "updated_desc" => tools
+                .OrderByDescending(tool => tool.UpdatedDate)
+                .ThenBy(tool => tool.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(tool => tool.Id),
+            _ => ApplySort(tools, sortBy, out validationError)
+        };
     }
 
     private static IEnumerable<Tool> ApplySort(IEnumerable<Tool> tools, string? sortBy, out string? validationError)
@@ -312,11 +581,7 @@ public class ToolService : IToolService
             tool.ReviewCount,
             hasEnoughReviewsToRate,
             ratingMessage,
-            tool.Images
-                .OrderBy(image => image.DisplayOrder)
-                .ThenBy(image => image.Id)
-                .Select(image => image.ImageUrl)
-                .FirstOrDefault());
+            GetThumbnailUrl(tool));
     }
 
     private static PagedList<ToolSummaryDto> CreatePagedSummary(IEnumerable<Tool> tools, int page, int pageSize)
@@ -329,6 +594,39 @@ public class ToolService : IToolService
             .ToList();
 
         return new PagedList<ToolSummaryDto>(items, page, pageSize, toolList.Count);
+    }
+
+    private static AdminToolSummaryDto MapAdminSummary(Tool tool)
+    {
+        var (hasEnoughReviewsToRate, ratingMessage) = GetRatingDisplayState(tool);
+
+        return new AdminToolSummaryDto(
+            tool.Id,
+            tool.CategoryId,
+            tool.Category.Name,
+            tool.Name,
+            tool.HourlyRate,
+            tool.DailyRate,
+            tool.WeeklyRate,
+            tool.IsActive,
+            tool.OverallRating,
+            tool.ReviewCount,
+            hasEnoughReviewsToRate,
+            ratingMessage,
+            GetThumbnailUrl(tool),
+            tool.UpdatedDate);
+    }
+
+    private static PagedList<AdminToolSummaryDto> CreatePagedAdminSummary(IEnumerable<Tool> tools, int page, int pageSize)
+    {
+        var toolList = tools.ToList();
+        var items = toolList
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(MapAdminSummary)
+            .ToList();
+
+        return new PagedList<AdminToolSummaryDto>(items, page, pageSize, toolList.Count);
     }
 
     private static bool ContainsIgnoreCase(string value, string query)
@@ -430,13 +728,17 @@ public class ToolService : IToolService
             return Result<ToolDto>.NotFound($"Tool with ID {id} not found.");
         }
 
+        return Result<ToolDto>.Success(MapToolDetail(tool));
+    }
+
+    private static ToolDto MapToolDetail(Tool tool)
+    {
         ApplyRatingMetrics(tool);
         var (hasEnoughReviewsToRate, ratingMessage) = GetRatingDisplayState(tool);
-
-        return Result<ToolDto>.Success(new ToolDto(
+        return new ToolDto(
             tool.Id,
             tool.CategoryId,
-            tool.Category.Name,
+            tool.Category?.Name ?? string.Empty,
             tool.Name,
             tool.Description,
             tool.HourlyRate,
@@ -456,7 +758,7 @@ public class ToolService : IToolService
                 .Select(image => new ToolImageDto(image.Id, image.ImageUrl, image.DisplayOrder))
                 .ToList(),
             tool.CreatedDate,
-            tool.UpdatedDate));
+            tool.UpdatedDate);
     }
 
     private static (bool HasEnoughReviewsToRate, string? RatingMessage) GetRatingDisplayState(Tool tool)
@@ -483,8 +785,24 @@ public class ToolService : IToolService
         };
     }
 
+    private static string? GetThumbnailUrl(Tool tool)
+    {
+        return tool.Images
+            .OrderBy(image => image.DisplayOrder)
+            .ThenBy(image => image.Id)
+            .Select(image => image.ImageUrl)
+            .FirstOrDefault();
+    }
+
     private sealed record RentalCombination(int Weeks, int Days, int Hours, int CoveredHours, decimal TotalCost)
     {
         public int UnitCount => Weeks + Days + Hours;
+    }
+
+    private static string? TrimOptional(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim();
     }
 }

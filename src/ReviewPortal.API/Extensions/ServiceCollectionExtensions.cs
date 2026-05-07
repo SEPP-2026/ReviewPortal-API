@@ -1,10 +1,13 @@
 using Microsoft.EntityFrameworkCore;
+using FluentValidation;
 using ReviewPortal.Application.Interfaces;
 using ReviewPortal.Application.Services;
+using ReviewPortal.Application.Validators.Users;
 using ReviewPortal.Domain.Interfaces;
+using ReviewPortal.Infrastructure.Authentication;
 using ReviewPortal.Infrastructure.Data;
 using ReviewPortal.Infrastructure.Repositories;
-using ReviewPortal.Infrastructure.Authentication;
+using ReviewPortal.Infrastructure.Services;
 
 namespace ReviewPortal.API.Extensions;
 
@@ -16,6 +19,11 @@ public static class ServiceCollectionExtensions
         if (string.IsNullOrWhiteSpace(connectionString))
         {
             throw new InvalidOperationException("Database connection string 'DefaultConnection' is not configured. Use user secrets or the ConnectionStrings__DefaultConnection environment variable.");
+        }
+
+        if (ContainsPlaceholder(connectionString))
+        {
+            throw new InvalidOperationException("Database connection string 'DefaultConnection' still contains placeholder values. Replace them in user secrets, environment variables, or ignored appsettings.Local.json.");
         }
 
         // Database
@@ -36,6 +44,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IJwtProvider, JwtProvider>();
         services.AddScoped<IPasswordHasher, IdentityPasswordHasher>();
 
+        // File storage
+        services.Configure<ImageStorageOptions>(configuration.GetSection(ImageStorageOptions.SectionName));
+
         return services;
     }
 
@@ -46,7 +57,15 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IToolService, ToolService>();
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IImageService, ImageService>();
+        services.AddScoped<IDashboardService, DashboardService>();
+        services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
 
         return services;
+    }
+
+    private static bool ContainsPlaceholder(string value)
+    {
+        return value.Contains('<') || value.Contains('>');
     }
 }

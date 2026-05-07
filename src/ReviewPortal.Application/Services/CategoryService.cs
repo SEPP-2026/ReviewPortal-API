@@ -1,6 +1,9 @@
+using FluentValidation;
 using ReviewPortal.Application.Common;
 using ReviewPortal.Application.DTOs.Categories;
 using ReviewPortal.Application.Interfaces;
+using ReviewPortal.Application.Validators;
+using ReviewPortal.Application.Validators.Categories;
 using ReviewPortal.Domain.Interfaces;
 
 namespace ReviewPortal.Application.Services;
@@ -9,11 +12,19 @@ public class CategoryService : ICategoryService
 {
     private readonly ICategoryRepository _categoryRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IValidator<CreateCategoryRequest> _createCategoryRequestValidator;
+    private readonly IValidator<UpdateCategoryRequest> _updateCategoryRequestValidator;
 
-    public CategoryService(ICategoryRepository categoryRepository, IUnitOfWork unitOfWork)
+    public CategoryService(
+        ICategoryRepository categoryRepository,
+        IUnitOfWork unitOfWork,
+        IValidator<CreateCategoryRequest>? createCategoryRequestValidator = null,
+        IValidator<UpdateCategoryRequest>? updateCategoryRequestValidator = null)
     {
         _categoryRepository = categoryRepository;
         _unitOfWork = unitOfWork;
+        _createCategoryRequestValidator = createCategoryRequestValidator ?? new CreateCategoryRequestValidator();
+        _updateCategoryRequestValidator = updateCategoryRequestValidator ?? new UpdateCategoryRequestValidator();
     }
 
     public async Task<Result<IReadOnlyList<CategoryDto>>> GetAllCategoriesAsync(CancellationToken cancellationToken = default)
@@ -59,7 +70,7 @@ public class CategoryService : ICategoryService
 
     public async Task<Result<CategoryDto>> CreateCategoryAsync(CreateCategoryRequest request, CancellationToken cancellationToken = default)
     {
-        var validationError = ValidateName(request.Name);
+        var validationError = RequestValidatorRunner.Validate(_createCategoryRequestValidator, request, "Category request is required.");
         if (validationError is not null)
         {
             return Result<CategoryDto>.Failure(validationError);
@@ -94,7 +105,7 @@ public class CategoryService : ICategoryService
 
     public async Task<Result<CategoryDto>> UpdateCategoryAsync(int id, UpdateCategoryRequest request, CancellationToken cancellationToken = default)
     {
-        var validationError = ValidateName(request.Name);
+        var validationError = RequestValidatorRunner.Validate(_updateCategoryRequestValidator, request, "Category request is required.");
         if (validationError is not null)
         {
             return Result<CategoryDto>.Failure(validationError);
@@ -147,21 +158,6 @@ public class CategoryService : ICategoryService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result<bool>.Success(true);
-    }
-
-    private static string? ValidateName(string name)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            return "Category name is required.";
-        }
-
-        if (name.Trim().Length > 100)
-        {
-            return "Category name must be 100 characters or fewer.";
-        }
-
-        return null;
     }
 
     private static string? NormalizeOptionalValue(string? value)

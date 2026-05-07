@@ -80,6 +80,15 @@ dotnet user-secrets set "Jwt:Issuer" "ReviewPortalAPI" --project src/ReviewPorta
 dotnet user-secrets set "Jwt:Audience" "ReviewPortalClient" --project src/ReviewPortal.API
 ```
 
+For Azure SQL migration smoke tests or running the API locally against Azure SQL, you can also use the ignored local settings file:
+
+```powershell
+Copy-Item src/ReviewPortal.API/appsettings.Local.example.json src/ReviewPortal.API/appsettings.Local.json
+notepad src/ReviewPortal.API/appsettings.Local.json
+```
+
+Fill `appsettings.Local.json` with the rotated Azure SQL password and a local JWT secret. This file is ignored by git and is loaded after checked-in appsettings files.
+
 ### 2. Restore and build
 
 ```powershell
@@ -91,6 +100,12 @@ dotnet build ReviewPortal.slnx
 
 ```powershell
 dotnet ef database update --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
+```
+
+To apply migrations to the Azure SQL database using `appsettings.Local.json`:
+
+```powershell
+.\scripts\local\Update-AzureDatabase.ps1
 ```
 
 ### 4. Optional: seed full demonstration data
@@ -108,6 +123,12 @@ sqlcmd -S "<server>" -d "<database>" -U "<username>" -P "<password>" -i "scripts
 dotnet run --project src/ReviewPortal.API
 ```
 
+To run using the ignored local settings file:
+
+```powershell
+.\scripts\local\Run-ApiLocal.ps1
+```
+
 Useful endpoints during development:
 
 - `/swagger`
@@ -117,6 +138,14 @@ Useful endpoints during development:
 
 ```powershell
 dotnet test ReviewPortal.slnx
+```
+
+### 7. Scan for committed secrets
+
+Run this before opening a PR:
+
+```powershell
+.\scripts\security\scan-secrets.ps1
 ```
 
 ## Seeded Test Users
@@ -132,6 +161,9 @@ dotnet test ReviewPortal.slnx
 ```powershell
 dotnet build ReviewPortal.slnx
 dotnet test ReviewPortal.slnx
+.\scripts\security\scan-secrets.ps1
+.\scripts\local\Run-ApiLocal.ps1
+.\scripts\local\Update-AzureDatabase.ps1
 dotnet run --project src/ReviewPortal.API
 dotnet ef migrations add <MigrationName> --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
 dotnet ef migrations script <FromMigration> <ToMigration> --idempotent --output scripts/sql/<MigrationName>.sql --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API

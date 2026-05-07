@@ -40,10 +40,10 @@ public class AdminModerationControllerTests
     [Fact]
     public async Task GetPending_WhenReviewsExist_ReturnsOkAndPassesPaging()
     {
-        var response = new PagedList<ReviewDto>([CreateReviewDto("Pending")], 2, 5, 12);
+        var response = new PagedList<ModerationQueueItemDto>([CreateModerationQueueItemDto("Review")], 2, 5, 12);
         var reviewService = new FakeReviewService
         {
-            PendingReviewsResult = Result<PagedList<ReviewDto>>.Success(response)
+            PendingReviewsResult = Result<PagedList<ModerationQueueItemDto>>.Success(response)
         };
         var controller = new AdminModerationController(reviewService);
 
@@ -72,7 +72,7 @@ public class AdminModerationControllerTests
     {
         var reviewService = new FakeReviewService
         {
-            PendingReviewsResult = Result<PagedList<ReviewDto>>.Failure("Page must be greater than or equal to 1.")
+            PendingReviewsResult = Result<PagedList<ModerationQueueItemDto>>.Failure("Page must be greater than or equal to 1.")
         };
         var controller = new AdminModerationController(reviewService);
 
@@ -167,25 +167,24 @@ public class AdminModerationControllerTests
         Assert.Equal(request, reviewService.LastModerateCommentRequest);
     }
 
-    private static ReviewDto CreateReviewDto(string status)
+    private static ModerationQueueItemDto CreateModerationQueueItemDto(string itemType)
     {
-        return new ReviewDto(
+        return new ModerationQueueItemDto(
+            itemType,
+            7,
             7,
             15,
             "Pressure Washer",
             "Sam",
             "Excellent tool condition and a really helpful pickup handover.",
-            5,
-            4,
-            4,
-            5,
-            4,
-            4.4m,
-            status,
-            null,
             new DateTime(2026, 4, 12, 10, 0, 0, DateTimeKind.Utc),
-            [],
-            null);
+            "Pending",
+            5,
+            4,
+            4,
+            5,
+            4,
+            4.4m);
     }
 
     private sealed class FakeReviewService : IReviewService
@@ -202,8 +201,8 @@ public class AdminModerationControllerTests
 
         public ModerateReviewRequest? LastModerateCommentRequest { get; private set; }
 
-        public Result<PagedList<ReviewDto>> PendingReviewsResult { get; set; } =
-            Result<PagedList<ReviewDto>>.Success(new PagedList<ReviewDto>([], 1, 20, 0));
+        public Result<PagedList<ModerationQueueItemDto>> PendingReviewsResult { get; set; } =
+            Result<PagedList<ModerationQueueItemDto>>.Success(new PagedList<ModerationQueueItemDto>([], 1, 20, 0));
 
         public Result<bool> ModerateReviewResult { get; set; } = Result<bool>.Success(true);
 
@@ -249,7 +248,7 @@ public class AdminModerationControllerTests
             throw new NotSupportedException();
         }
 
-        public Task<Result<PagedList<ReviewDto>>> GetPendingReviewsAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+        public Task<Result<PagedList<ModerationQueueItemDto>>> GetPendingReviewsAsync(int page, int pageSize, CancellationToken cancellationToken = default)
         {
             LastPendingPage = page;
             LastPendingPageSize = pageSize;
