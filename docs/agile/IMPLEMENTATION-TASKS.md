@@ -395,6 +395,46 @@ TASK-22 added the real HTTP test foundation and baseline admin authorization che
 
 ---
 
+### TASK-29: Final Epic 1 public catalogue API contract coverage
+
+**Links to:** [US-1.1 - Homepage with featured categories](EPIC-1-CATALOGUE-AND-CALCULATOR.md#us-11--homepage-with-featured-categories) | [US-1.2 - Category browsing page](EPIC-1-CATALOGUE-AND-CALCULATOR.md#us-12--category-browsing-page) | [US-1.3 - Tool/service detail page](EPIC-1-CATALOGUE-AND-CALCULATOR.md#us-13--toolservice-detail-page) | [US-1.4 - Search for tools/services](EPIC-1-CATALOGUE-AND-CALCULATOR.md#us-14--search-for-toolsservices) | [US-1.5 - Rental cost calculator](EPIC-1-CATALOGUE-AND-CALCULATOR.md#us-15--rental-cost-calculator) | [US-1.6 - Filter tools/services by price range](EPIC-1-CATALOGUE-AND-CALCULATOR.md#us-16--filter-toolsservices-by-price-range) | [US-1.8 - API endpoints for tools and categories](EPIC-1-CATALOGUE-AND-CALCULATOR.md#us-18--api-endpoints-for-tools-and-categories)
+**Priority:** Must | **Gap IDs:** GAP-QA-4, GAP-CONTRACT-1
+
+Epic 1 backend implementation exists, but the Jira child items should have final API-level proof before they are moved to Done. TASK-22 has a baseline catalogue integration test; this task expands that into a full contract check for the public endpoints the Next.js app will call.
+
+**Sub-tasks:**
+
+- [ ] **29.1** Add integration coverage for `GET /api/categories/featured` used by the homepage featured category grid
+- [ ] **29.2** Add category browsing integration coverage for pagination metadata, name sort, price ascending/descending sort, and inactive-tool exclusion
+- [ ] **29.3** Add price-filter integration coverage for min/max daily rate, invalid negative ranges, and no-match results
+- [ ] **29.4** Add search integration coverage for case-insensitive matches by tool/service name, description, category, no-result responses, empty query validation, and special-character input
+- [ ] **29.5** Add tool/detail integration coverage for multiple images, hire rates, special notes, deposit fields, rating display state, and `404` for inactive/missing tools
+- [ ] **29.6** Add rental-calculator integration coverage for hours-only, days-only, weekly threshold, mixed/cheapest combination, invalid date range, and missing/inactive tool
+- [ ] **29.7** Confirm the frontend contract note remains accurate: there is no `GET /api/tools`; category pages must call `GET /api/categories/{id}/tools`
+- [ ] **29.8** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx`
+
+---
+
+### TASK-30: Final Epic 2 reviews/auth/community API contract coverage
+
+**Links to:** [US-2.1 - Submit a review for a tool/service](EPIC-2-REVIEWS-AND-RATINGS.md#us-21--submit-a-review-for-a-toolservice) | [US-2.2 - Display approved reviews on the tool/service page](EPIC-2-REVIEWS-AND-RATINGS.md#us-22--display-approved-reviews-on-the-toolservice-page) | [US-2.3 - Overall tool/service ranking based on ratings](EPIC-2-REVIEWS-AND-RATINGS.md#us-23--overall-toolservice-ranking-based-on-ratings) | [US-2.4 - Comment on a review](EPIC-2-REVIEWS-AND-RATINGS.md#us-24--comment-on-someone-elses-review) | [US-2.5 - Company response to a review](EPIC-2-REVIEWS-AND-RATINGS.md#us-25--company-response-to-a-review) | [US-2.6 - Review API endpoints](EPIC-2-REVIEWS-AND-RATINGS.md#us-26--review-api-endpoints) | [US-2.7 - User registration and login](EPIC-2-REVIEWS-AND-RATINGS.md#us-27--user-registration-and-login) | [US-2.8 - My reviews page](EPIC-2-REVIEWS-AND-RATINGS.md#us-28--my-reviews-page)
+**Priority:** Must | **Gap IDs:** GAP-QA-5, GAP-CONTRACT-2, GAP-AUTH-6
+
+Epic 2 backend implementation exists, but the Jira child items still need final HTTP-level proof, especially company response behaviour and exact auth/review contracts. This task does not require a full ASP.NET Identity migration; it verifies the current custom JWT flow unless TASK-17 is explicitly chosen.
+
+**Sub-tasks:**
+
+- [ ] **30.1** Add auth integration coverage for duplicate registration, invalid registration/password rules, invalid login, `GET /api/auth/me` without token, change-password validation, forgot/reset invalid token, and generic login failure behaviour
+- [ ] **30.2** Add review submission integration coverage for anonymous submit with name/email, logged-in submit using account details, invalid ratings, too-short review text, missing/inactive tool, and `Pending` visibility rules
+- [ ] **30.3** Add approved-review retrieval integration coverage for newest-first ordering, pagination, no-approved-review message, rating average, and rejection exclusion
+- [ ] **30.4** Add comment integration coverage for pending-on-create, approved-only public visibility, invalid/too-short comment text, missing review, and rejected comment exclusion
+- [ ] **30.5** Add company response integration coverage for create/update/delete, one-response conflict, approved-review-only guard, public response inclusion under approved reviews, and missing response not-found paths
+- [ ] **30.6** Decide and document the backend role policy for company responses: keep current `Admin,Moderator` staff access or restrict to `Admin` only to match the strict wording "admin users"
+- [ ] **30.7** Add my-reviews integration coverage for pending/approved/rejected statuses, rejection reason visibility, company-response flag, pagination, and `401` without token
+- [ ] **30.8** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx`
+
+---
+
 ## Cross-Cutting Technical Quality & Automation
 
 ### TASK-19: Implement admin tool management service methods and creation flow
@@ -612,12 +652,14 @@ TASK-19 (Tool service logic)   - complete; interim create flow requires initial 
 TASK-20 (FluentValidation)     -> supports TASK-17 and TASK-19
 TASK-21 (Rating DB checks)     -> pair with TASK-18
 TASK-22 (API integration)      -> after core API slices are stable
-TASK-23 (CI + coverage)        -> after TASK-22
+TASK-23 (CI + coverage)        -> after TASK-22, TASK-28, TASK-29, and TASK-30
 TASK-24 (Secret cleanup)       - immediate, independent
 TASK-25 (Admin read endpoints) -> needed so admin clients can list inactive tools and fetch edit data
 TASK-26 (First-image upload)   -> replaces the interim `ImageUrl` create shortcut with upload-backed creation
 TASK-27 (Moderation queue DTO) -> needed before final moderation queue UI and exact badge count
-TASK-28 (Epic 3 API tests)     -> after TASK-25, TASK-26, and TASK-27
+TASK-28 (Epic 3 API tests)     -> complete; keep TASK-26 separate because it changes the create contract
+TASK-29 (Epic 1 API contract)  -> after TASK-22; before TASK-23
+TASK-30 (Epic 2 API contract)  -> after TASK-22 and TASK-27; before TASK-23
 
 TASK-7  (Docs: tool/service wording) â€” independent
 TASK-8  (Docs: moderation wording)   â€” independent
@@ -661,4 +703,5 @@ TASK-16 (Admin category routing)     â€” independent
 | TASK-26: First-image upload create flow | Not started | |
 | TASK-27: Item-level moderation queue and exact count | Done | 2026-05-06 |
 | TASK-28: Epic 3 admin API integration coverage | Done | 2026-05-06 |
-
+| TASK-29: Epic 1 public catalogue API contract coverage | Not started | |
+| TASK-30: Epic 2 reviews/auth/community API contract coverage | Not started | |
