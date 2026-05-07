@@ -34,15 +34,15 @@ Conclusion: Epic 1 feature API and final public catalogue API contract coverage 
 
 | Jira item | Backend/API status | Remaining backend task |
 |----------|--------------------|------------------------|
-| MP-24 User Registration and Login | API exists under `/api/auth/...` with JWT and role claims | TASK-30 final contract coverage |
-| MP-18 Submit a Review for a Tools/Service | API exists: `POST /api/tools/{toolId}/reviews` | TASK-30 final contract coverage |
-| MP-19 Display Approved Reviews on the Tools/Service Page | API exists: `GET /api/tools/{toolId}/reviews` | TASK-30 final contract coverage |
-| MP-20 Overall Tools/service Rating | API DTOs expose rating/count/threshold state | TASK-30 final contract coverage |
-| MP-21 Comment on a Review | API exists: `POST /api/reviews/{reviewId}/comments` and `GET /api/reviews/{reviewId}/comments` | TASK-30 final contract coverage |
-| MP-23 Company Response to a Review | API exists: `POST/PUT/DELETE /api/reviews/{reviewId}/response` | TASK-30 role-policy and contract coverage |
-| MP-25 My Reviews Page | API exists: `GET /api/users/me/reviews` | TASK-30 final contract coverage |
+| MP-24 User Registration and Login | API exists under `/api/auth/...` with JWT and role claims | Done by TASK-30 |
+| MP-18 Submit a Review for a Tools/Service | API exists: `POST /api/tools/{toolId}/reviews` | Done by TASK-30 |
+| MP-19 Display Approved Reviews on the Tools/Service Page | API exists: `GET /api/tools/{toolId}/reviews` | Done by TASK-30 |
+| MP-20 Overall Tools/service Rating | API DTOs expose rating/count/threshold state | Done by TASK-30 |
+| MP-21 Comment on a Review | API exists: `POST /api/reviews/{reviewId}/comments` and `GET /api/reviews/{reviewId}/comments` | Done by TASK-30 |
+| MP-23 Company Response to a Review | API exists: `POST/PUT/DELETE /api/reviews/{reviewId}/response`; staff policy is `Admin,Moderator` | Done by TASK-30 |
+| MP-25 My Reviews Page | API exists: `GET /api/users/me/reviews` | Done by TASK-30 |
 
-Conclusion: Epic 2 feature API is implemented. Missing work is final HTTP-level proof, especially company-response role policy and edge cases.
+Conclusion: Epic 2 feature API is implemented and covered by final HTTP-level contract tests.
 
 ### Epic 3 - Back-Office Management And Moderation
 
@@ -66,10 +66,9 @@ Run these in order unless the user/assessor changes scope.
 
 1. TASK-24.2: rotate the previously exposed Azure SQL password and any leaked secrets.
 2. TASK-26: align admin create-tool first-image flow with the upload requirement.
-3. TASK-30: add final Epic 2 auth/reviews/community API contract coverage.
-4. TASK-23: expand CI/CD and coverage automation after the final contract tests exist.
-5. Security backlog: apply the highest-priority security fixes from `docs/security/BACKEND-SECURITY-SCAN-2026-05-07.md`, especially SEC-02 and SEC-03 before next week's scan.
-6. Final Azure smoke test and Next.js API contract check.
+3. TASK-23: expand CI/CD and coverage automation after the final contract tests exist.
+4. Security backlog: apply the highest-priority security fixes from `docs/security/BACKEND-SECURITY-SCAN-2026-05-07.md`, especially SEC-02 and SEC-03 before next week's scan.
+5. Final Azure smoke test and Next.js API contract check.
 
 Do not run TASK-17 unless full ASP.NET Identity is explicitly required. The current project decision is to keep the custom JWT API flow with ASP.NET Core password hashing.
 
@@ -125,25 +124,7 @@ dotnet ef migrations script <PreviousMigration> <MigrationName> --idempotent --o
 dotnet ef database update --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
 ```
 
-### Step 3 - Prove Epic 2 backend API contract
-
-Run:
-
-- TASK-30
-
-Why:
-
-- Epic 2 API implementation is present.
-- Company response role policy and review/auth edge cases need final HTTP-level proof before Jira Done.
-
-Verify:
-
-```powershell
-dotnet build ReviewPortal.slnx
-dotnet test ReviewPortal.slnx
-```
-
-### Step 4 - Update CI and coverage after all final tests exist
+### Step 3 - Update CI and coverage after all final tests exist
 
 Run:
 
@@ -165,7 +146,7 @@ Minimum CI checks:
 - integration tests
 - coverage report
 
-### Step 5 - Final Azure and Next.js readiness pass
+### Step 4 - Final Azure and Next.js readiness pass
 
 Run after all code/test tasks are green.
 
