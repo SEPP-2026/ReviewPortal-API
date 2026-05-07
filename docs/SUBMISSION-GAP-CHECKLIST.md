@@ -3,7 +3,7 @@
 > Last checked: 2026-05-07
 > Scope: MSc submission package, backend/API documentation, design artefacts, test evidence, and project management artefacts.
 >
-> Update: the missing `Digrams_V2.docx` artefact has been rebuilt as a submission-ready Word document. The user confirmed the other Word documents have already been submitted, so this checklist now acts as a backend documentation/evidence cross-check rather than a request to rework those submitted files.
+> Update: the old diagram drafts have now been superseded by `Digrams_V3.docx`, generated from the latest Mermaid source in `docs/FUNCTIONAL-DESIGN-DIAGRAMS.md`. The user confirmed the other Word documents have already been submitted, so this checklist acts as a backend documentation/evidence cross-check rather than a request to rework those submitted files.
 
 ## Files Reviewed
 
@@ -22,8 +22,8 @@ Readable Word documents:
 Important note:
 
 - The original `Digrams_V2.docx` in the submission root could not be read locally because the OneDrive file is a reparse-point/online-only file and returned permission denied during extraction.
-- A fixed document was generated with embedded diagram images at `C:\Users\user\OneDrive - apiit.lk\MSC SE Semester 1 Project\Submission\Digrams_V2_FIXED.docx`.
-- A final-folder copy was also generated at `C:\Users\user\OneDrive - apiit.lk\MSC SE Semester 1 Project\Submission\Final\submission2worddocverison\Digrams_V2.docx`.
+- A fixed V2 document was generated earlier, but the current latest diagram submission artefact is `C:\Users\user\OneDrive - apiit.lk\MSC SE Semester 1 Project\Submission\Digrams_V3.docx`.
+- A final-folder V3 copy was also generated at `C:\Users\user\OneDrive - apiit.lk\MSC SE Semester 1 Project\Submission\Final\submission2worddocverison\Digrams_V3.docx`.
 - `Digrams_V1.docx` was readable as a fallback, but it only clearly showed use case, class, activity, and high-level architecture material. The generated V2 document uses the wider design set in `docs/FUNCTIONAL-DESIGN-DIAGRAMS.md`.
 
 ## Submission Coverage Summary
@@ -42,7 +42,7 @@ Important note:
 | Functional requirements | Covered in repo docs | Export/include `docs/REQUIREMENTS-SPECIFICATION.md` in final submission pack |
 | Non-functional requirements | Covered in repo docs | Export/include `docs/NON-FUNCTIONAL-REQUIREMENTS.md` in final submission pack |
 | Legal, ethical, societal, environmental considerations | Covered partly in Risk Assessment | Also reference/include this under requirements so the rubric item is directly satisfied |
-| UML, DFD, ERD diagrams | Covered in repo docs | Export/include `docs/FUNCTIONAL-DESIGN-DIAGRAMS.md`; verify `Digrams_V2.docx` contains all diagram types |
+| UML, DFD, ERD diagrams | Covered in repo docs | Use `Digrams_V3.docx`, generated from the latest Mermaid source in `docs/FUNCTIONAL-DESIGN-DIAGRAMS.md` |
 | Interface design / wireframes | Not found in listed final Word docs | Add Figma link, screenshots, and short mapping to user journeys/user stories |
 | Proposed DB design | Covered in repo docs | Export/include `docs/DATABASE-DESIGN.md` |
 | Test plan | Covered in repo docs | Export/include `docs/TEST-PLAN.md` and add actual result evidence after dry run |
@@ -105,18 +105,18 @@ Use `docs/FUNCTIONAL-DESIGN-DIAGRAMS.md` as the source of truth because it now i
 
 - use case diagram
 - class diagram
-- activity diagram
+- activity diagrams
 - high-level architecture diagram
-- sequence diagram
-- DFD
+- sequence diagrams
+- context-level and level-1 DFDs
 - ERD
 - design traceability summary
 
 Before final submission:
 
-- make `Digrams_V2.docx` available offline
-- check it contains sequence diagram, DFD, and ERD
-- replace any older V1-only diagram content if needed
+- use `Digrams_V3.docx`, not the older V1/V2 diagram drafts
+- confirm the Word document contains 10 embedded rendered diagrams
+- keep the Mermaid source in `docs/FUNCTIONAL-DESIGN-DIAGRAMS.md` as the editable source of truth
 
 ### 4. Export proposed database design
 

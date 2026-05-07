@@ -1,21 +1,27 @@
 # Functional Design Diagrams - Shelton Tool-Hire Review Portal
 
-> Purpose: MSc submission design artefact covering UML, DFD, ERD, and high-level architecture for the Shelton Tool-Hire Review Portal.
+> Purpose: MSc submission design artefact covering UML, DFD, ERD, sequence, activity, and high-level architecture diagrams.
 >
-> Scope: Full web system design, including the Next.js client, ASP.NET Core Web API, SQL Server database, catalogue, rental calculator, reviews, moderation, and back-office administration.
+> Scope: full web system design, including the Next.js client, ASP.NET Core Web API, SQL Server/Azure SQL database, catalogue, rental calculator, reviews, moderation, image management, dashboard, and back-office administration.
+>
+> Diagram source format: Mermaid. Older PlantUML/plain-text diagram drafts have been converted into Mermaid syntax so this file is the source of truth for generated Word diagram documents.
 
 ---
 
 ## 1. Use Case Diagram
 
-This diagram shows the main functional use cases for customers, registered users, admins, and moderators.
+This diagram shows the actors and the major customer, registered-user, admin, and moderator use cases.
 
 ```mermaid
 flowchart LR
-    Customer["Customer / Visitor"]
+    Visitor["Customer / Visitor"]
     RegisteredUser["Registered User"]
     Admin["Admin"]
     Moderator["Moderator"]
+
+    RegisteredUser -. "registered role" .-> Visitor
+    Admin -. "staff role" .-> RegisteredUser
+    Moderator -. "staff role" .-> RegisteredUser
 
     subgraph PublicPortal["Public Portal"]
         UC1(("Browse categories"))
@@ -34,34 +40,30 @@ flowchart LR
     subgraph BackOffice["Back-Office Portal"]
         UC12(("Manage tools/services"))
         UC13(("Create tool/service"))
-        UC14(("Edit pricing and details"))
+        UC14(("Edit details and pricing"))
         UC15(("Activate/deactivate tool/service"))
-        UC16(("Manage images"))
+        UC16(("Upload/delete images"))
         UC17(("Manage categories"))
         UC18(("View moderation queue"))
         UC19(("Approve/reject reviews"))
         UC20(("Approve/reject comments"))
         UC21(("Post company response"))
-        UC22(("View dashboard stats"))
+        UC22(("View dashboard statistics"))
     end
 
-    Customer --> UC1
-    Customer --> UC2
-    Customer --> UC3
-    Customer --> UC4
-    Customer --> UC5
-    Customer --> UC6
-    Customer --> UC7
-    Customer --> UC8
-    Customer --> UC9
-    Customer --> UC10
+    Visitor --> UC1
+    Visitor --> UC2
+    Visitor --> UC3
+    Visitor --> UC4
+    Visitor --> UC5
+    Visitor --> UC6
+    Visitor --> UC7
+    Visitor --> UC8
 
-    RegisteredUser --> UC8
     RegisteredUser --> UC9
     RegisteredUser --> UC10
     RegisteredUser --> UC11
 
-    Admin --> UC8
     Admin --> UC12
     Admin --> UC13
     Admin --> UC14
@@ -74,7 +76,6 @@ flowchart LR
     Admin --> UC21
     Admin --> UC22
 
-    Moderator --> UC8
     Moderator --> UC18
     Moderator --> UC19
     Moderator --> UC20
@@ -84,7 +85,7 @@ flowchart LR
 
 ## 2. Class Diagram
 
-This UML class diagram summarises the core backend domain model and the main service/controller boundaries.
+This UML class diagram summarises the current backend domain model, service layer, validation layer, and controller boundaries.
 
 ```mermaid
 classDiagram
@@ -173,34 +174,18 @@ classDiagram
         DateTime UpdatedDate
     }
 
-    class CategoryService {
-        GetAllCategoriesAsync()
-        GetCategoryByIdAsync()
-        CreateCategoryAsync()
-        UpdateCategoryAsync()
-        DeleteCategoryAsync()
+    class UserRole {
+        <<enumeration>>
+        Customer
+        Admin
+        Moderator
     }
 
-    class ToolService {
-        GetToolsByCategoryAsync()
-        GetToolByIdAsync()
-        SearchToolsAsync()
-        FilterByPriceRangeAsync()
-        CalculateRentalCostAsync()
-        CreateToolAsync()
-        UpdateToolAsync()
-        SetToolStatusAsync()
-    }
-
-    class ReviewService {
-        CreateReviewAsync()
-        GetApprovedReviewsAsync()
-        AddCommentAsync()
-        GetApprovedCommentsAsync()
-        AddCompanyResponseAsync()
-        GetPendingReviewsAsync()
-        ModerateReviewAsync()
-        ModerateCommentAsync()
+    class ReviewStatus {
+        <<enumeration>>
+        Pending
+        Approved
+        Rejected
     }
 
     class AuthService {
@@ -212,7 +197,55 @@ classDiagram
         ResetPasswordAsync()
     }
 
-    class Controllers {
+    class CategoryService {
+        GetAllCategoriesAsync()
+        GetFeaturedCategoriesAsync()
+        GetCategoryByIdAsync()
+        GetToolsByCategoryAsync()
+        CreateCategoryAsync()
+        UpdateCategoryAsync()
+        DeleteCategoryAsync()
+    }
+
+    class ToolService {
+        GetToolByIdAsync()
+        SearchToolsAsync()
+        CalculateRentalCostAsync()
+        GetAdminToolsAsync()
+        GetAdminToolByIdAsync()
+        CreateToolAsync()
+        UpdateToolAsync()
+        SetToolStatusAsync()
+    }
+
+    class ImageService {
+        UploadToolImageAsync()
+        DeleteToolImageAsync()
+        ValidateImageFile()
+    }
+
+    class ReviewService {
+        CreateReviewAsync()
+        GetApprovedReviewsAsync()
+        AddCommentAsync()
+        GetApprovedCommentsAsync()
+        AddCompanyResponseAsync()
+        UpdateCompanyResponseAsync()
+        DeleteCompanyResponseAsync()
+        GetPendingModerationQueueAsync()
+        ModerateReviewAsync()
+        ModerateCommentAsync()
+    }
+
+    class DashboardService {
+        GetDashboardStatsAsync()
+    }
+
+    class RequestValidatorRunner {
+        ValidateAsync()
+    }
+
+    class PublicControllers {
         CategoriesController
         ToolsController
         ToolReviewsController
@@ -220,8 +253,13 @@ classDiagram
         ReviewResponsesController
         UserReviewsController
         AuthController
+    }
+
+    class AdminControllers {
         AdminToolsController
+        AdminCategoriesController
         AdminModerationController
+        AdminDashboardController
     }
 
     Category "1" --> "0..*" Tool : contains
@@ -232,57 +270,116 @@ classDiagram
     User "1" --> "0..*" ReviewComment : comments
     Review "1" --> "0..1" CompanyResponse : has
     User "1" --> "0..*" CompanyResponse : authors
+    User --> UserRole
+    Review --> ReviewStatus
+    ReviewComment --> ReviewStatus
 
-    Controllers --> CategoryService
-    Controllers --> ToolService
-    Controllers --> ReviewService
-    Controllers --> AuthService
+    PublicControllers --> AuthService
+    PublicControllers --> CategoryService
+    PublicControllers --> ToolService
+    PublicControllers --> ReviewService
+    AdminControllers --> CategoryService
+    AdminControllers --> ToolService
+    AdminControllers --> ImageService
+    AdminControllers --> ReviewService
+    AdminControllers --> DashboardService
+    AuthService --> RequestValidatorRunner
+    CategoryService --> RequestValidatorRunner
+    ToolService --> RequestValidatorRunner
+    ReviewService --> RequestValidatorRunner
 ```
 
 ---
 
-## 3. Activity Diagram
+## 3. Activity Diagrams
 
-This activity diagram shows the review lifecycle from customer submission through moderation and publication.
+### 3.1 Review Submission and Moderation Activity
+
+This activity diagram shows the customer review lifecycle from submission through moderation, rejection, approval, rating recalculation, and public display.
 
 ```mermaid
 flowchart TD
     Start([Start])
-    ViewTool["Customer views tool/service detail page"]
-    ChooseReview["Customer selects Write a Review"]
-    AuthDecision{"Logged in?"}
-    UseProfile["Use registered user profile"]
-    CaptureAnon["Capture reviewer name and email"]
-    CompleteForm["Enter review text and five ratings"]
-    ValidateForm{"Valid review text and all ratings 1-5?"}
-    ValidationError["Return validation error"]
+    ViewTool["Customer opens tool/service detail"]
+    SelectReview["Select Write a Review"]
+    AuthCheck{"Logged in?"}
+    UseAccount["Use account profile"]
+    CaptureGuest["Capture reviewer name and email"]
+    CompleteReview["Enter review text and five ratings"]
+    ValidateReview{"Text and ratings valid?"}
+    ReturnValidation["Return validation errors"]
     SavePending["Save review with Pending status"]
-    Confirmation["Show confirmation that review awaits approval"]
+    ShowPending["Show awaiting moderation message"]
     Queue["Review appears in moderation queue"]
-    ModeratorDecision{"Moderator decision"}
+    Decision{"Admin or moderator decision"}
     Reject["Set status to Rejected and store reason"]
-    NotifyRejected["Rejected reason visible in My Reviews"]
+    ShowReason["Reason visible in My Reviews"]
     Approve["Set status to Approved"]
-    Recalculate["Recalculate tool OverallRating and ReviewCount"]
-    Publish["Approved review visible on public tool/service page"]
+    Recalculate["Recalculate tool rating and review count"]
+    Publish["Review visible on public tool/service page"]
     End([End])
 
-    Start --> ViewTool --> ChooseReview --> AuthDecision
-    AuthDecision -->|Yes| UseProfile --> CompleteForm
-    AuthDecision -->|No| CaptureAnon --> CompleteForm
-    CompleteForm --> ValidateForm
-    ValidateForm -->|No| ValidationError --> CompleteForm
-    ValidateForm -->|Yes| SavePending --> Confirmation --> Queue
-    Queue --> ModeratorDecision
-    ModeratorDecision -->|Reject| Reject --> NotifyRejected --> End
-    ModeratorDecision -->|Approve| Approve --> Recalculate --> Publish --> End
+    Start --> ViewTool --> SelectReview --> AuthCheck
+    AuthCheck -->|Yes| UseAccount --> CompleteReview
+    AuthCheck -->|No| CaptureGuest --> CompleteReview
+    CompleteReview --> ValidateReview
+    ValidateReview -->|No| ReturnValidation --> CompleteReview
+    ValidateReview -->|Yes| SavePending --> ShowPending --> Queue
+    Queue --> Decision
+    Decision -->|Reject| Reject --> ShowReason --> End
+    Decision -->|Approve| Approve --> Recalculate --> Publish --> End
+```
+
+### 3.2 Admin Tool/Service and Image Management Activity
+
+This activity diagram shows the current admin catalogue management flow, including validation, create/update, image upload/delete, and public visibility.
+
+```mermaid
+flowchart TD
+    Start([Start])
+    Login["Admin logs in"]
+    Authz{"Admin role valid?"}
+    Denied["Return 401 or 403"]
+    OpenAdmin["Open admin tool/service management"]
+    ChooseAction{"Action"}
+    CreateOrEdit["Create or edit tool/service details and pricing"]
+    ValidateTool{"Required fields and rates valid?"}
+    SaveTool["Save tool/service record"]
+    UploadImage["Upload JPG, PNG, or WebP image"]
+    ValidateImage{"Image type and size valid?"}
+    StoreImage["Store image and link to tool/service"]
+    DeleteImage["Delete image request"]
+    LastImage{"Would this delete last image?"}
+    BlockDelete["Reject deletion to keep at least one image"]
+    UpdateStatus["Activate or deactivate tool/service"]
+    PublicQuery["Public catalogue/search/detail query"]
+    Visible{"IsActive?"}
+    ShowPublic["Show tool/service publicly"]
+    HidePublic["Hide from public browsing/search"]
+    End([End])
+
+    Start --> Login --> Authz
+    Authz -->|No| Denied --> End
+    Authz -->|Yes| OpenAdmin --> ChooseAction
+    ChooseAction -->|Create/Edit| CreateOrEdit --> ValidateTool
+    ValidateTool -->|No| CreateOrEdit
+    ValidateTool -->|Yes| SaveTool --> End
+    ChooseAction -->|Upload image| UploadImage --> ValidateImage
+    ValidateImage -->|No| UploadImage
+    ValidateImage -->|Yes| StoreImage --> End
+    ChooseAction -->|Delete image| DeleteImage --> LastImage
+    LastImage -->|Yes| BlockDelete --> End
+    LastImage -->|No| End
+    ChooseAction -->|Change status| UpdateStatus --> PublicQuery --> Visible
+    Visible -->|Yes| ShowPublic --> End
+    Visible -->|No| HidePublic --> End
 ```
 
 ---
 
 ## 4. High-Level System Architecture Diagram
 
-This diagram shows the deployment and Clean Architecture shape of the system.
+This diagram shows the Clean Architecture structure, deployment shape, external configuration, testing, and frontend integration points.
 
 ```mermaid
 flowchart TB
@@ -292,19 +389,26 @@ flowchart TB
     end
 
     subgraph ApiHost["Azure App Service / ASP.NET Core Web API"]
+        Middleware["Middleware: HTTPS, CORS, JWT Auth, Exception Handling"]
         Controllers["API Controllers"]
-        Middleware["Middleware: HTTPS, CORS, JWT Auth, ProblemDetails"]
 
         subgraph CleanArchitecture["Clean Architecture"]
-            Application["Application Layer: DTOs, Interfaces, Services, Result Pattern"]
+            Application["Application Layer: DTOs, Interfaces, Services, Validators, Result Pattern"]
             Domain["Domain Layer: Entities, Enums, Business Rules"]
-            Infrastructure["Infrastructure Layer: EF Core, Repositories, Auth Providers, Migrations"]
+            Infrastructure["Infrastructure Layer: EF Core, Repositories, JWT, Password Hashing, Migrations, Image Storage"]
         end
     end
 
     subgraph DataLayer["Data Layer"]
         SqlServer["Azure SQL / SQL Server"]
-        FileStorage["Configured Image Storage: Local Uploads or Azure Blob"]
+        ImageStorage["Configured Image Storage: Local Uploads or Azure Blob"]
+    end
+
+    subgraph DevOpsLayer["DevOps and Configuration"]
+        GitHubActions["GitHub Actions CI/CD"]
+        AppSettings["Azure App Service Settings / User Secrets"]
+        Tests["Unit and Integration Tests"]
+        SecurityScan["Secret and Package Vulnerability Scans"]
     end
 
     Browser --> NextJs
@@ -314,70 +418,123 @@ flowchart TB
     Application --> Domain
     Application --> Infrastructure
     Infrastructure --> SqlServer
-    Infrastructure --> FileStorage
-
+    Infrastructure --> ImageStorage
     SqlServer --> Infrastructure
+    ImageStorage --> Infrastructure
     Infrastructure --> Application
     Application --> Controllers
     Controllers --> NextJs
+
+    AppSettings --> ApiHost
+    GitHubActions --> Tests
+    GitHubActions --> SecurityScan
+    GitHubActions --> ApiHost
 ```
 
 ---
 
-## 5. Sequence Diagram
+## 5. Sequence Diagrams
 
-This sequence diagram covers a core end-to-end flow: customer review submission, moderation, rating recalculation, and public display.
+### 5.1 Review Lifecycle Sequence
+
+This sequence diagram covers customer review submission, moderation, rating recalculation, and public display.
 
 ```mermaid
 sequenceDiagram
     actor Customer
     participant Web as Next.js Web App
     participant API as ASP.NET Core API
-    participant ReviewController as ToolReviewsController
+    participant Reviews as ToolReviewsController
     participant ReviewService
     participant Db as SQL Server
     actor Moderator
-    participant AdminController as AdminModerationController
+    participant AdminModeration as AdminModerationController
 
     Customer->>Web: Fill review form
     Web->>API: POST /api/tools/{toolId}/reviews
-    API->>ReviewController: Route request
-    ReviewController->>ReviewService: CreateReviewAsync(toolId, request, userId)
-    ReviewService->>ReviewService: Validate text and five rating values
+    API->>Reviews: Route request
+    Reviews->>ReviewService: CreateReviewAsync(toolId, request, userId)
+    ReviewService->>ReviewService: Validate text and five ratings
     ReviewService->>Db: Insert Review with Status = Pending
     Db-->>ReviewService: Save successful
-    ReviewService-->>ReviewController: Created ReviewDto
-    ReviewController-->>Web: 201 Created
+    ReviewService-->>Reviews: Review DTO
+    Reviews-->>Web: 201 Created
     Web-->>Customer: Show awaiting moderation message
 
     Moderator->>Web: Open moderation queue
     Web->>API: GET /api/admin/moderation/pending
-    API->>AdminController: Authorize Admin or Moderator
-    AdminController->>ReviewService: GetPendingReviewsAsync(page, pageSize)
-    ReviewService->>Db: Query pending reviews/comments
-    Db-->>ReviewService: Pending items
-    ReviewService-->>AdminController: Paged moderation result
-    AdminController-->>Web: 200 OK
+    API->>AdminModeration: Authorize Admin or Moderator
+    AdminModeration->>ReviewService: GetPendingModerationQueueAsync()
+    ReviewService->>Db: Query pending reviews and comments
+    Db-->>ReviewService: Pending items and exact counts
+    ReviewService-->>AdminModeration: Moderation queue DTO
+    AdminModeration-->>Web: 200 OK
 
     Moderator->>Web: Approve review
     Web->>API: PUT /api/admin/moderation/reviews/{id}
-    API->>AdminController: Authorize Admin or Moderator
-    AdminController->>ReviewService: ModerateReviewAsync(id, approve)
+    API->>AdminModeration: Authorize Admin or Moderator
+    AdminModeration->>ReviewService: ModerateReviewAsync(id, approve)
     ReviewService->>Db: Update Review.Status = Approved
     ReviewService->>Db: Recalculate Tool.OverallRating and ReviewCount
     Db-->>ReviewService: Save successful
-    ReviewService-->>AdminController: Success
-    AdminController-->>Web: 200 OK
+    ReviewService-->>AdminModeration: Success result
+    AdminModeration-->>Web: 200 OK
 
     Customer->>Web: View tool/service page
     Web->>API: GET /api/tools/{toolId}/reviews
-    API->>ReviewController: Route request
-    ReviewController->>ReviewService: GetApprovedReviewsAsync(toolId)
+    API->>Reviews: Route request
+    Reviews->>ReviewService: GetApprovedReviewsAsync(toolId)
     ReviewService->>Db: Query Status = Approved reviews
     Db-->>ReviewService: Approved reviews
-    ReviewService-->>ReviewController: ToolReviewsDto
-    ReviewController-->>Web: 200 OK
+    ReviewService-->>Reviews: Tool reviews DTO
+    Reviews-->>Web: 200 OK
     Web-->>Customer: Display approved review and updated rating
+```
+
+### 5.2 Admin Tool/Service and Image Sequence
+
+This sequence diagram covers the back-office flow for creating or updating a tool/service and managing images.
+
+```mermaid
+sequenceDiagram
+    actor Admin
+    participant Web as Next.js Admin UI
+    participant API as ASP.NET Core API
+    participant AdminTools as AdminToolsController
+    participant ToolService
+    participant ImageService
+    participant Db as SQL Server
+    participant Storage as Image Storage
+
+    Admin->>Web: Enter tool/service details and pricing
+    Web->>API: POST /api/admin/tools
+    API->>AdminTools: Authorize Admin
+    AdminTools->>ToolService: CreateToolAsync(request)
+    ToolService->>ToolService: Validate category, rates, and required fields
+    ToolService->>Db: Insert Tool and initial image reference
+    Db-->>ToolService: Save successful
+    ToolService-->>AdminTools: AdminToolDetailDto
+    AdminTools-->>Web: 201 Created
+
+    Admin->>Web: Upload additional image
+    Web->>API: POST /api/admin/tools/{id}/images
+    API->>AdminTools: Authorize Admin
+    AdminTools->>ImageService: UploadToolImageAsync(toolId, file)
+    ImageService->>ImageService: Validate file type and size
+    ImageService->>Storage: Store image file
+    ImageService->>Db: Insert ToolImage record
+    Db-->>ImageService: Save successful
+    ImageService-->>AdminTools: ToolImageDto
+    AdminTools-->>Web: 201 Created
+
+    Admin->>Web: Deactivate unavailable item
+    Web->>API: PATCH /api/admin/tools/{id}/status
+    API->>AdminTools: Authorize Admin
+    AdminTools->>ToolService: SetToolStatusAsync(id, isActive=false)
+    ToolService->>Db: Update Tool.IsActive
+    Db-->>ToolService: Save successful
+    ToolService-->>AdminTools: Success result
+    AdminTools-->>Web: 200 OK
 ```
 
 ---
@@ -386,27 +543,28 @@ sequenceDiagram
 
 ### 6.1 Context-Level DFD
 
-This DFD shows the system boundary and the external actors that exchange data with the Review Portal.
+This context-level DFD shows the system boundary and external actors that exchange data with the Review Portal.
 
 ```mermaid
 flowchart LR
     Customer["Customer / Registered User"]
     Staff["Admin / Moderator"]
-    Portal(("Shelton Tool-Hire Review Portal"))
-    Db[("SQL Server Database")]
+    Frontend["Next.js Web App"]
+    Portal(("ReviewPortal API System"))
+    Db[("SQL Server / Azure SQL")]
     Storage[("Image Storage")]
 
-    Customer -->|"Browse/search requests, rental dates, reviews, comments, login details"| Portal
-    Portal -->|"Catalogue data, cost breakdowns, approved reviews, auth responses, my reviews"| Customer
+    Customer -->|"Browse/search requests, rental dates, reviews, comments, login details"| Frontend
+    Staff -->|"Admin login, catalogue updates, image uploads, moderation decisions"| Frontend
+    Frontend -->|"HTTPS JSON API requests and Bearer JWT"| Portal
+    Portal -->|"API responses, validation errors, JWTs, catalogue data, moderation data"| Frontend
+    Frontend -->|"Rendered pages, forms, results, dashboard views"| Customer
+    Frontend -->|"Admin screens and operation feedback"| Staff
 
-    Staff -->|"Admin login, tool/category updates, moderation decisions, responses, image uploads"| Portal
-    Portal -->|"Moderation queue, dashboard stats, admin operation results"| Staff
-
-    Portal -->|"Read/write catalogue, users, reviews, comments, responses"| Db
-    Db -->|"Persisted data"| Portal
-
-    Portal -->|"Store/retrieve tool images"| Storage
-    Storage -->|"Image paths/files"| Portal
+    Portal -->|"Read/write users, categories, tools, reviews, comments, responses"| Db
+    Db -->|"Persisted records and query results"| Portal
+    Portal -->|"Store/delete/retrieve image paths and files"| Storage
+    Storage -->|"Image URLs/files"| Portal
 ```
 
 ### 6.2 Level 1 DFD
@@ -424,8 +582,9 @@ flowchart TB
     P3(("3. Authentication"))
     P4(("4. Reviews and Comments"))
     P5(("5. Moderation"))
-    P6(("6. Admin Catalogue Management"))
-    P7(("7. Dashboard Reporting"))
+    P6(("6. Admin Tool and Category Management"))
+    P7(("7. Image Management"))
+    P8(("8. Dashboard Reporting"))
 
     D1[("D1 Users")]
     D2[("D2 Categories")]
@@ -437,66 +596,70 @@ flowchart TB
     D8[("D8 Image Storage")]
 
     Customer -->|"Category/search/filter/detail requests"| P1
-    P1 -->|"Read categories/tools/images/ratings"| D2
-    P1 --> D3
-    P1 --> D4
-    P1 -->|"Catalogue and detail responses"| Customer
+    P1 -->|"Read categories"| D2
+    P1 -->|"Read active tools and ratings"| D3
+    P1 -->|"Read image references"| D4
+    P1 -->|"Catalogue/detail results"| Customer
 
     Customer -->|"Start and end date/time"| P2
-    P2 -->|"Read rates"| D3
+    P2 -->|"Read hourly/daily/weekly rates"| D3
     P2 -->|"Cost breakdown and total"| Customer
 
-    Customer -->|"Register/login/password requests"| P3
+    Customer -->|"Register/login/password reset"| P3
     Admin -->|"Admin login"| P3
     Moderator -->|"Moderator login"| P3
     P3 -->|"Create/read/update users"| D1
-    P3 -->|"JWT token and user details"| Customer
+    P3 -->|"JWT token and role claims"| Customer
     P3 -->|"JWT token and role claims"| Admin
     P3 -->|"JWT token and role claims"| Moderator
 
-    Customer -->|"Review/comment submission"| P4
-    P4 -->|"Read tool and user context"| D1
+    Customer -->|"Review/comment/company-response requests"| P4
+    P4 -->|"Read user and tool context"| D1
     P4 --> D3
-    P4 -->|"Write Pending review/comment"| D5
-    P4 --> D6
+    P4 -->|"Write pending reviews"| D5
+    P4 -->|"Write pending comments"| D6
+    P4 -->|"Write official response for approved review"| D7
     P4 -->|"Confirmation or validation error"| Customer
 
     Moderator -->|"Approve/reject reviews/comments"| P5
     Admin -->|"Approve/reject reviews/comments"| P5
-    P5 -->|"Read pending items"| D5
+    P5 -->|"Read pending reviews/comments"| D5
     P5 --> D6
-    P5 -->|"Update status/rejection reason"| D5
+    P5 -->|"Update status and rejection reason"| D5
     P5 --> D6
     P5 -->|"Update cached rating/count"| D3
-    P5 -->|"Moderation result"| Moderator
+    P5 -->|"Moderation result and exact counts"| Moderator
 
-    Admin -->|"Create/update/status/category/image commands"| P6
-    P6 -->|"Read/write categories/tools/images"| D2
-    P6 --> D3
-    P6 --> D4
-    P6 -->|"Store/delete files"| D8
+    Admin -->|"Create/update/status/category commands"| P6
+    P6 -->|"Read/write categories"| D2
+    P6 -->|"Read/write tools"| D3
     P6 -->|"Admin operation result"| Admin
 
-    Admin -->|"Request dashboard stats"| P7
-    P7 -->|"Read aggregate data"| D3
-    P7 --> D5
-    P7 --> D6
-    P7 --> D7
-    P7 -->|"Dashboard statistics"| Admin
+    Admin -->|"Upload/delete image commands"| P7
+    P7 -->|"Read/write tool images"| D4
+    P7 -->|"Store/delete files"| D8
+    P7 -->|"Image operation result"| Admin
+
+    Admin -->|"Request dashboard stats"| P8
+    P8 -->|"Read aggregates"| D3
+    P8 --> D5
+    P8 --> D6
+    P8 --> D7
+    P8 -->|"Dashboard statistics"| Admin
 ```
 
 ---
 
 ## 7. Entity Relationship Diagram
 
-The ERD below summarises the database entities, keys, and relationships. The full field-level explanation is maintained in [ERD.md](ERD.md).
+The ERD summarises the database entities, keys, and relationships. The full field-level explanation is maintained in [ERD.md](ERD.md) and [DATABASE-DESIGN.md](DATABASE-DESIGN.md).
 
 ```mermaid
 erDiagram
     Users {
         int Id PK
         string Name
-        string Email
+        string Email UK
         string PasswordHash
         string PasswordResetTokenHash
         datetime PasswordResetTokenExpiryUtc
@@ -506,7 +669,7 @@ erDiagram
 
     Categories {
         int Id PK
-        string Name
+        string Name UK
         string Description
         string ImageUrl
     }
@@ -568,21 +731,21 @@ erDiagram
 
     CompanyResponses {
         int Id PK
-        int ReviewId FK
+        int ReviewId FK,UK
         int StaffUserId FK
         string ResponseText
         datetime CreatedDate
         datetime UpdatedDate
     }
 
-    Categories ||--o{ Tools : "contains"
-    Tools ||--o{ ToolImages : "has"
-    Tools ||--o{ Reviews : "receives"
-    Users ||--o{ Reviews : "writes"
-    Reviews ||--o{ ReviewComments : "has"
-    Users ||--o{ ReviewComments : "comments"
-    Reviews ||--|| CompanyResponses : "has"
-    Users ||--o{ CompanyResponses : "authors"
+    Categories ||--o{ Tools : contains
+    Tools ||--o{ ToolImages : has
+    Tools ||--o{ Reviews : receives
+    Users ||--o{ Reviews : writes
+    Reviews ||--o{ ReviewComments : has
+    Users ||--o{ ReviewComments : writes
+    Reviews ||--o| CompanyResponses : has
+    Users ||--o{ CompanyResponses : authors
 ```
 
 ---
@@ -592,10 +755,10 @@ erDiagram
 | Diagram | Supports |
 |---------|----------|
 | Use Case Diagram | Functional scope for Epic 1, Epic 2, and Epic 3 |
-| Class Diagram | Domain model, services, and controller boundaries |
-| Activity Diagram | Review submission, moderation, and publication workflow |
-| High-Level Architecture Diagram | Clean Architecture, API hosting, database, image storage, and frontend integration |
-| Sequence Diagram | End-to-end review lifecycle across frontend, API, service, and database |
-| DFD Context and Level 1 | External actors, system boundary, processes, data stores, and data movement |
-| ERD | Relational schema supporting catalogue, users, reviews, comments, company responses, and images |
+| Class Diagram | Domain model, services, validators, controllers, and role/status enums |
+| Activity Diagrams | Review moderation workflow and admin tool/image management workflow |
+| High-Level Architecture Diagram | Clean Architecture, Azure hosting, configuration, CI/CD, tests, database, image storage, and frontend integration |
+| Sequence Diagrams | End-to-end review lifecycle and admin tool/image management |
+| DFD Context and Level 1 | External actors, system boundary, API processes, data stores, and data movement |
+| ERD | Relational schema supporting users, categories, tools/services, images, reviews, comments, company responses, and rating aggregation |
 | Database Design | Detailed table schemas, relationships, keys, indexes, constraints, and migration process in [DATABASE-DESIGN.md](DATABASE-DESIGN.md) |
