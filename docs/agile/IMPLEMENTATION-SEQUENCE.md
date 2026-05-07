@@ -21,14 +21,14 @@ It answers:
 
 | Jira item | Backend/API status | Remaining backend task |
 |----------|--------------------|------------------------|
-| MP-3 Homepage with Featured Categories | API exists: `GET /api/categories` and `GET /api/categories/featured` | TASK-29 final contract coverage |
-| MP-10 Category Browsing Page | API exists: `GET /api/categories/{id}/tools` with paging/sort/filter | TASK-29 final contract coverage |
-| MP-13 Search for Tools/Service | API exists: `GET /api/tools/search?q=` | TASK-29 final contract coverage |
-| MP-15 Filter Tools/Service by Price Range | API exists through category tools query with `minPrice` and `maxPrice` | TASK-29 final contract coverage |
-| MP-11 Tool/Service Detail Page | API exists: `GET /api/tools/{id}` | TASK-29 final contract coverage |
-| MP-14 Rental Cost Calculator | API exists: `POST /api/tools/{id}/rental-calculation` | TASK-29 final contract coverage |
+| MP-3 Homepage with Featured Categories | API exists: `GET /api/categories` and `GET /api/categories/featured` | Done by TASK-29 |
+| MP-10 Category Browsing Page | API exists: `GET /api/categories/{id}/tools` with paging/sort/filter | Done by TASK-29 |
+| MP-13 Search for Tools/Service | API exists: `GET /api/tools/search?q=` | Done by TASK-29 |
+| MP-15 Filter Tools/Service by Price Range | API exists through category tools query with `minPrice` and `maxPrice` | Done by TASK-29 |
+| MP-11 Tool/Service Detail Page | API exists: `GET /api/tools/{id}` | Done by TASK-29 |
+| MP-14 Rental Cost Calculator | API exists: `POST /api/tools/{id}/rental-calculation` | Done by TASK-29 |
 
-Conclusion: Epic 1 feature API is implemented. Missing work is final API contract/integration proof for every Jira child item.
+Conclusion: Epic 1 feature API and final public catalogue API contract coverage are implemented.
 
 ### Epic 2 - User Accounts And Interaction
 
@@ -66,11 +66,10 @@ Run these in order unless the user/assessor changes scope.
 
 1. TASK-24.2: rotate the previously exposed Azure SQL password and any leaked secrets.
 2. TASK-26: align admin create-tool first-image flow with the upload requirement.
-3. TASK-29: add final Epic 1 public catalogue API contract coverage.
-4. TASK-30: add final Epic 2 auth/reviews/community API contract coverage.
-5. TASK-23: expand CI/CD and coverage automation after the final contract tests exist.
-6. Security backlog: apply the highest-priority security fixes from `docs/security/BACKEND-SECURITY-SCAN-2026-05-07.md`, especially SEC-02 and SEC-03 before next week's scan.
-7. Final Azure smoke test and Next.js API contract check.
+3. TASK-30: add final Epic 2 auth/reviews/community API contract coverage.
+4. TASK-23: expand CI/CD and coverage automation after the final contract tests exist.
+5. Security backlog: apply the highest-priority security fixes from `docs/security/BACKEND-SECURITY-SCAN-2026-05-07.md`, especially SEC-02 and SEC-03 before next week's scan.
+6. Final Azure smoke test and Next.js API contract check.
 
 Do not run TASK-17 unless full ASP.NET Identity is explicitly required. The current project decision is to keep the custom JWT API flow with ASP.NET Core password hashing.
 
@@ -126,25 +125,7 @@ dotnet ef migrations script <PreviousMigration> <MigrationName> --idempotent --o
 dotnet ef database update --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
 ```
 
-### Step 3 - Prove Epic 1 backend API contract
-
-Run:
-
-- TASK-29
-
-Why:
-
-- Epic 1 API implementation is present.
-- Before moving all Epic 1 Jira items to Done, add final integration coverage for each public API contract the frontend needs.
-
-Verify:
-
-```powershell
-dotnet build ReviewPortal.slnx
-dotnet test ReviewPortal.slnx
-```
-
-### Step 4 - Prove Epic 2 backend API contract
+### Step 3 - Prove Epic 2 backend API contract
 
 Run:
 
@@ -162,7 +143,7 @@ dotnet build ReviewPortal.slnx
 dotnet test ReviewPortal.slnx
 ```
 
-### Step 5 - Update CI and coverage after all final tests exist
+### Step 4 - Update CI and coverage after all final tests exist
 
 Run:
 
@@ -184,7 +165,7 @@ Minimum CI checks:
 - integration tests
 - coverage report
 
-### Step 6 - Final Azure and Next.js readiness pass
+### Step 5 - Final Azure and Next.js readiness pass
 
 Run after all code/test tasks are green.
 

@@ -404,14 +404,14 @@ Epic 1 backend implementation exists, but the Jira child items should have final
 
 **Sub-tasks:**
 
-- [ ] **29.1** Add integration coverage for `GET /api/categories/featured` used by the homepage featured category grid
-- [ ] **29.2** Add category browsing integration coverage for pagination metadata, name sort, price ascending/descending sort, and inactive-tool exclusion
-- [ ] **29.3** Add price-filter integration coverage for min/max daily rate, invalid negative ranges, and no-match results
-- [ ] **29.4** Add search integration coverage for case-insensitive matches by tool/service name, description, category, no-result responses, empty query validation, and special-character input
-- [ ] **29.5** Add tool/detail integration coverage for multiple images, hire rates, special notes, deposit fields, rating display state, and `404` for inactive/missing tools
-- [ ] **29.6** Add rental-calculator integration coverage for hours-only, days-only, weekly threshold, mixed/cheapest combination, invalid date range, and missing/inactive tool
-- [ ] **29.7** Confirm the frontend contract note remains accurate: there is no `GET /api/tools`; category pages must call `GET /api/categories/{id}/tools`
-- [ ] **29.8** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx`
+- [x] **29.1** Add integration coverage for `GET /api/categories/featured` used by the homepage featured category grid
+- [x] **29.2** Add category browsing integration coverage for pagination metadata, name sort, price ascending/descending sort, and inactive-tool exclusion
+- [x] **29.3** Add price-filter integration coverage for min/max daily rate, invalid negative ranges, and no-match results
+- [x] **29.4** Add search integration coverage for case-insensitive matches by tool/service name, description, category, no-result responses, empty query validation, and special-character input
+- [x] **29.5** Add tool/detail integration coverage for multiple images, hire rates, special notes, deposit fields, rating display state, and `404` for inactive/missing tools
+- [x] **29.6** Add rental-calculator integration coverage for hours-only, days-only, weekly threshold, mixed/cheapest combination, invalid date range, and missing/inactive tool
+- [x] **29.7** Confirm the frontend contract note remains accurate: there is no `GET /api/tools`; category pages must call `GET /api/categories/{id}/tools`
+- [x] **29.8** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx`
 
 ---
 
@@ -703,5 +703,5 @@ TASK-16 (Admin category routing)     â€” independent
 | TASK-26: First-image upload create flow | Not started | |
 | TASK-27: Item-level moderation queue and exact count | Done | 2026-05-06 |
 | TASK-28: Epic 3 admin API integration coverage | Done | 2026-05-06 |
-| TASK-29: Epic 1 public catalogue API contract coverage | Not started | |
+| TASK-29: Epic 1 public catalogue API contract coverage | Done | 2026-05-07 |
 | TASK-30: Epic 2 reviews/auth/community API contract coverage | Not started | |

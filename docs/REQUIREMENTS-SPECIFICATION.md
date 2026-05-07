@@ -271,8 +271,8 @@ This section records the final backend/API completion status for the functional 
 
 | Functional Area | Requirement IDs | Backend/API Status | Remaining Completion Evidence |
 |-----------------|-----------------|--------------------|-------------------------------|
-| Catalogue browsing, categories, search, sorting, filtering, and pagination | FR-01 to FR-11 | Implemented through public category/search/tool endpoints | TASK-29 final Epic 1 API contract coverage |
-| Rental cost calculator | FR-12 to FR-17 | Implemented through `POST /api/tools/{id}/rental-calculation` using hourly, daily, and weekly rates | TASK-29 final Epic 1 API contract coverage |
+| Catalogue browsing, categories, search, sorting, filtering, and pagination | FR-01 to FR-11 | Implemented through public category/search/tool endpoints | Covered by TASK-29 integration tests |
+| Rental cost calculator | FR-12 to FR-17 | Implemented through `POST /api/tools/{id}/rental-calculation` using hourly, daily, and weekly rates | Covered by TASK-29 integration tests |
 | Review submission, five rating categories, approved-review display, and rating aggregation | FR-18 to FR-26 | Implemented through review endpoints, moderation workflow, cached tool rating/count, and not-enough-reviews DTO fields | TASK-30 final Epic 2 API contract coverage |
 | Comments and official company responses | FR-27 to FR-32 | Implemented; customer comments are moderated and company responses are restricted to approved reviews | TASK-30 final Epic 2 API contract coverage |
 | Customer registration, login, JWT role claims, password reset, and My Reviews | FR-33 to FR-36 | Implemented using custom JWT authentication with ASP.NET Core password hashing | TASK-30 final auth/community API contract coverage |
@@ -285,7 +285,7 @@ This section records the final backend/API completion status for the functional 
 |------|--------|------------------------------------|
 | Feature implementation | Functionally complete at backend/API level except strict first-image create interpretation | Complete TASK-26 if the first image must be uploaded during `POST /api/admin/tools` |
 | Requirements traceability | Complete | Keep this specification, `GAP-ANALYSIS.md`, and the agile epic docs in the final evidence pack |
-| API contract proof | Mostly present, final expansion planned | Complete TASK-29 and TASK-30 before moving all Epic 1 and Epic 2 Jira items to Done |
+| API contract proof | Epic 1 complete; Epic 2 final expansion planned | Complete TASK-30 before moving all Epic 2 Jira items to Done |
 | Database design and integrity | Complete | Include migration files, SQL scripts, `DATABASE-DESIGN.md`, and `ERD.md` as evidence |
 | Authentication decision | Complete for the current project decision | Keep custom JWT plus ASP.NET Core password hashing unless full ASP.NET Identity is explicitly required |
 | Deployment readiness | Partially complete | Finish Azure credential rotation, App Service settings, CORS confirmation, and smoke tests |

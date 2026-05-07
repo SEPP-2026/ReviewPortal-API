@@ -28,8 +28,8 @@ The project should not be marked as 100 percent final-signed-off until the remai
 
 | Area | Requirement IDs | Completion Status |
 |------|-----------------|-------------------|
-| Catalogue and browsing | FR-01 to FR-11 | Implemented; final Epic 1 contract proof remains TASK-29 |
-| Rental calculator | FR-12 to FR-17 | Implemented; final Epic 1 contract proof remains TASK-29 |
+| Catalogue and browsing | FR-01 to FR-11 | Implemented and covered by TASK-29 |
+| Rental calculator | FR-12 to FR-17 | Implemented and covered by TASK-29 |
 | Reviews and ratings | FR-18 to FR-26 | Implemented; final Epic 2 contract proof remains TASK-30 |
 | Community interaction | FR-27 to FR-32 | Implemented; final Epic 2 contract proof remains TASK-30 |
 | Authentication and My Reviews | FR-33 to FR-36 | Implemented with custom JWT and ASP.NET Core password hashing; final auth contract proof remains TASK-30 |
@@ -87,7 +87,6 @@ The project should not be marked as 100 percent final-signed-off until the remai
 | Must | Rotate previously exposed Azure SQL password | Required for security scan/readiness | TASK-24.2 |
 | Must | Fix secret scanner false positives and package vulnerability review | Required before next security scan | Security backlog |
 | Must if strict interpretation applies | Align first-image create flow with upload requirement | Jira MP-27 says an image is uploaded before save | TASK-26 |
-| Must | Final Epic 1 API contract tests | Lets Epic 1 Jira items move to Done with evidence | TASK-29 |
 | Must | Final Epic 2 API contract tests | Lets Epic 2 Jira items move to Done with evidence | TASK-30 |
 | Must | CI and coverage automation | Required for final quality/maintainability evidence | TASK-23 |
 | Must | Azure smoke test and CORS check | Confirms deployed API works for the Next.js app | Deployment checklist |
@@ -97,15 +96,14 @@ The project should not be marked as 100 percent final-signed-off until the remai
 
 1. Close security blockers and rotate Azure SQL credentials.
 2. Complete TASK-26 if the first image must be uploaded in the same create request.
-3. Complete TASK-29.
-4. Complete TASK-30.
-5. Complete TASK-23.
-6. Run `dotnet build ReviewPortal.slnx`.
-7. Run `dotnet test ReviewPortal.slnx`.
-8. Run secret scan and package vulnerability scan.
-9. Verify local and Azure database migration state.
-10. Run Azure smoke tests and CORS checks.
-11. Attach final test/dry-run/usability screenshots and logs to the submission pack.
+3. Complete TASK-30.
+4. Complete TASK-23.
+5. Run `dotnet build ReviewPortal.slnx`.
+6. Run `dotnet test ReviewPortal.slnx`.
+7. Run secret scan and package vulnerability scan.
+8. Verify local and Azure database migration state.
+9. Run Azure smoke tests and CORS checks.
+10. Attach final test/dry-run/usability screenshots and logs to the submission pack.
 
 ## 9. Final Evidence Checklist
 
@@ -125,4 +123,4 @@ The project should not be marked as 100 percent final-signed-off until the remai
 
 The project is ready to be treated as feature-complete at backend/API level once TASK-26 is either completed or explicitly accepted as not required.
 
-The project is ready for 100 percent final sign-off only after TASK-29, TASK-30, TASK-23, security scan cleanup, Azure credential rotation, Azure smoke testing, and final test evidence are complete.
+The project is ready for 100 percent final sign-off only after TASK-30, TASK-23, security scan cleanup, Azure credential rotation, Azure smoke testing, and final test evidence are complete.

@@ -12,7 +12,7 @@ The backend API is now feature-complete for the main catalogue, rental calculato
 The remaining work is not broad feature discovery. It is final sign-off work:
 
 - close the strict first-image create-flow gap if required by the assessor
-- add final Epic 1 and Epic 2 API contract coverage
+- add final Epic 2 API contract coverage
 - finish CI/coverage automation
 - complete security scan blockers and Azure credential rotation
 - capture final Azure and Next.js integration evidence
@@ -22,7 +22,7 @@ The remaining work is not broad feature discovery. It is final sign-off work:
 | Gate ID | Area | Status | Required Action |
 |---------|------|--------|-----------------|
 | CG-01 | Functional backend/API coverage | Mostly complete | Complete TASK-26 only if first image must be uploaded during initial tool/service creation instead of provided through `ImageUrl` then managed through image endpoints |
-| CG-02 | Epic 1 API proof | Open | Complete TASK-29 for final public catalogue/rental-calculator contract tests |
+| CG-02 | Epic 1 API proof | Closed | TASK-29 added final public catalogue/rental-calculator contract tests |
 | CG-03 | Epic 2 API proof | Open | Complete TASK-30 for final auth/review/comment/company-response contract tests |
 | CG-04 | Epic 3 API proof | Mostly complete | TASK-28 is complete; keep TASK-26 separate because it changes the create contract |
 | CG-05 | Security readiness | Open | Rotate Azure SQL credential, fix secret-scan false positives, and clear/package-review NuGet vulnerabilities |
@@ -47,11 +47,11 @@ The remaining work is not broad feature discovery. It is final sign-off work:
 
 | Functional Area | Requirement IDs | Current State | Gap Status |
 |-----------------|-----------------|---------------|------------|
-| Catalogue categories and featured categories | FR-01 to FR-03 | Implemented through `CategoriesController` and category services | No feature gap; TASK-29 adds final proof |
-| Category browsing, sorting, filtering, pagination | FR-04, FR-10, FR-11 | Implemented through `GET /api/categories/{id}/tools` query parameters | No feature gap; TASK-29 adds final proof |
-| Tool/service detail | FR-05, FR-06 | Implemented through `GET /api/tools/{id}` with images, rates, notes, deposit, and ratings | No feature gap; TASK-29 adds final proof |
-| Search | FR-07 to FR-09 | Implemented through `GET /api/tools/search` | No feature gap; TASK-29 adds final proof |
-| Rental cost calculator | FR-12 to FR-17 | Implemented through `POST /api/tools/{id}/rental-calculation` | No feature gap; TASK-29 adds final proof |
+| Catalogue categories and featured categories | FR-01 to FR-03 | Implemented through `CategoriesController` and category services | No feature gap; covered by TASK-29 |
+| Category browsing, sorting, filtering, pagination | FR-04, FR-10, FR-11 | Implemented through `GET /api/categories/{id}/tools` query parameters | No feature gap; covered by TASK-29 |
+| Tool/service detail | FR-05, FR-06 | Implemented through `GET /api/tools/{id}` with images, rates, notes, deposit, and ratings | No feature gap; covered by TASK-29 |
+| Search | FR-07 to FR-09 | Implemented through `GET /api/tools/search` | No feature gap; covered by TASK-29 |
+| Rental cost calculator | FR-12 to FR-17 | Implemented through `POST /api/tools/{id}/rental-calculation` | No feature gap; covered by TASK-29 |
 | Reviews and rating aggregation | FR-18 to FR-26 | Implemented with five ratings, pending moderation, approved-only display, cached rating/count, and not-enough-reviews state | No feature gap; TASK-30 adds final proof |
 | Comments and company responses | FR-27 to FR-32 | Implemented with pending customer comments and approved-review-only official responses | No feature gap; TASK-30 adds final proof |
 | User registration, login, password reset, My Reviews | FR-33 to FR-36 | Implemented with custom JWT flow and ASP.NET Core password hashing | No feature gap; TASK-30 adds final proof |
@@ -82,12 +82,12 @@ The remaining work is not broad feature discovery. It is final sign-off work:
 
 | Jira Item | Backend/API Status | Remaining Work |
 |----------|--------------------|----------------|
-| MP-3 Homepage with Featured Categories | Implemented | TASK-29 proof |
-| MP-10 Category Browsing Page | Implemented | TASK-29 proof |
-| MP-13 Search for Tools/Service | Implemented | TASK-29 proof |
-| MP-15 Filter Tools/Service by Price Range | Implemented | TASK-29 proof |
-| MP-11 Tool/Service Detail Page | Implemented | TASK-29 proof |
-| MP-14 Rental Cost Calculator | Implemented | TASK-29 proof |
+| MP-3 Homepage with Featured Categories | Implemented | Done by TASK-29 |
+| MP-10 Category Browsing Page | Implemented | Done by TASK-29 |
+| MP-13 Search for Tools/Service | Implemented | Done by TASK-29 |
+| MP-15 Filter Tools/Service by Price Range | Implemented | Done by TASK-29 |
+| MP-11 Tool/Service Detail Page | Implemented | Done by TASK-29 |
+| MP-14 Rental Cost Calculator | Implemented | Done by TASK-29 |
 
 ### Epic 2 - Reviews, Ratings, and Community Interaction
 
@@ -135,6 +135,7 @@ The remaining work is not broad feature discovery. It is final sign-off work:
 | FluentValidation request validation | TASK-20 |
 | Review rating DB check constraints | TASK-21 |
 | Baseline API integration tests | TASK-22 |
+| Epic 1 public catalogue API contract coverage | TASK-29 |
 | Admin list/detail read endpoints | TASK-25 |
 | Item-level moderation queue and exact counts | TASK-27 |
 | Epic 3 admin API integration coverage | TASK-28 |
@@ -144,7 +145,6 @@ The remaining work is not broad feature discovery. It is final sign-off work:
 | Gap ID | Task | Priority | Description | Done When |
 |--------|------|----------|-------------|-----------|
 | GAP-FLOW-3 | TASK-26 | Must if strict upload requirement applies | Admin create-tool first image currently uses `ImageUrl` in JSON rather than upload-backed multipart creation | Create flow accepts/links first uploaded image and tests prove required behavior |
-| GAP-CONTRACT-1 | TASK-29 | Must before Epic 1 Done | Final public catalogue/rental-calculator integration contract coverage | Tests cover category, search, filter, detail, rating state, and rental calculation success/failure paths |
 | GAP-CONTRACT-2 | TASK-30 | Must before Epic 2 Done | Final auth/review/comment/company-response integration contract coverage | Tests cover auth, review moderation visibility, comments, company response role/status rules, and My Reviews |
 | GAP-CI-1 | TASK-23 | Must before final sign-off | CI currently needs final coverage/automation alignment | CI runs scan, restore, build, unit tests, integration tests, and coverage |
 | GAP-SEC-2 | Security backlog | Must before scan week | Secret scanner has false positives against its own pattern definitions | Scanner passes without weakening real secret detection |
@@ -156,13 +156,12 @@ The remaining work is not broad feature discovery. It is final sign-off work:
 
 1. Rotate Azure SQL password and complete the highest-priority security backlog items.
 2. Complete TASK-26 if strict upload-backed first image creation is required.
-3. Complete TASK-29 for Epic 1 final API contract coverage.
-4. Complete TASK-30 for Epic 2 final API contract coverage.
-5. Complete TASK-23 for CI, integration test execution, and coverage automation.
-6. Run local build/test, migration checks, security scan, and package vulnerability scan.
-7. Apply/verify Azure database migration state using rotated credentials.
-8. Run Azure API smoke tests and CORS checks from the Next.js origin.
-9. Attach final evidence to the submission pack and Jira tickets.
+3. Complete TASK-30 for Epic 2 final API contract coverage.
+4. Complete TASK-23 for CI, integration test execution, and coverage automation.
+5. Run local build/test, migration checks, security scan, and package vulnerability scan.
+6. Apply/verify Azure database migration state using rotated credentials.
+7. Run Azure API smoke tests and CORS checks from the Next.js origin.
+8. Attach final evidence to the submission pack and Jira tickets.
 
 ## 10. Evidence Files
 
