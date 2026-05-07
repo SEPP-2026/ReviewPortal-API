@@ -97,3 +97,31 @@ This document captures the quality attributes and non-functional requirements th
 | NFR-37 | Each review shall have exactly one overall rating calculated as the arithmetic mean of the five individual ratings | Correct calculation | Unit test |
 | NFR-38 | The CompanyResponses table shall enforce a unique constraint on ReviewId (one response per review) | Unique constraint | Migration review |
 | NFR-39 | Audit timestamps (CreatedDate, UpdatedDate) shall be set automatically by the DbContext, not by client code | Auto-timestamps | Code review, integration test |
+
+---
+
+## 9. Non-Functional Completion and Gap Status
+
+This section records the final non-functional readiness status for the backend/API project. Some non-functional requirements depend on deployment, CI, or frontend usability evidence and therefore need final evidence even when the backend implementation is already present.
+
+| Area | Requirement IDs | Current Status | Remaining Evidence or Action |
+|------|-----------------|----------------|------------------------------|
+| Performance | NFR-01 to NFR-05 | Backend endpoints use pagination and indexed queries; calculator logic is implemented server-side through a dedicated API response | Capture final API smoke-test timings and frontend page-load evidence |
+| Security | NFR-06 to NFR-13, NFR-40 | Password hashing, JWT expiry, role authorization, validation, CORS configuration support, and externalised config are implemented | fix secret-scan false positives, complete package vulnerability review, and verify Azure settings |
+| Usability | NFR-14 to NFR-18 | Backend returns DTOs and validation errors needed by the Next.js UI | Add final frontend screenshots/usability evidence in the submission pack |
+| Accessibility | NFR-19 to NFR-23 | Primarily frontend-owned; backend supports image URL/data and validation contracts | Add Lighthouse/accessibility evidence from the Next.js project |
+| Reliability and availability | NFR-24 to NFR-26 | Global exception handling, soft-delete behavior, and transactional review moderation/rating updates are implemented | Include integration-test and API dry-run evidence |
+| Scalability | NFR-27 to NFR-29 | Status/category/user/review indexes, cached rating fields, and paginated list endpoints are implemented | Include migration and SQL-script evidence |
+| Maintainability | NFR-30 to NFR-34 | Clean Architecture, DTOs, Fluent API, validators, and tests are present | Complete TASK-23 for CI coverage automation and final pipeline evidence |
+| Data integrity | NFR-35 to NFR-39 | Foreign keys, rating range constraints, company response uniqueness, and timestamp handling are implemented | Include migration scripts, database design, and test results |
+
+### 9.1 Non-Functional 100 Percent Sign-Off Gates
+
+| Gate | Required Before Final Sign-Off |
+|------|--------------------------------|
+| Build and automated tests | `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx` pass on a clean checkout |
+| Security scan | Secret scan and NuGet vulnerability scan are clean, or residual risks are documented and accepted |
+| Azure configuration | Production App Service has environment variables for database, JWT, and CORS; no production secrets are committed |
+| Azure smoke test | `/health`, public API routes, admin authorization, and CORS preflight are verified against deployed API |
+| CI and coverage | restore, build, unit tests, integration tests, and coverage publishing |
+| Frontend evidence | Next.js screenshots/usability/accessibility evidence is attached to the submission pack |

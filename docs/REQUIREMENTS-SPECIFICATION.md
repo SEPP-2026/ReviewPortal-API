@@ -252,3 +252,32 @@ graph TB
 - The review system does not require verified purchases — any registered user (or anonymous visitor providing name and email) can leave a review, but all customer reviews and comments require moderation before publication
 - Tool availability/stock checking is out of scope — the calculator computes cost only, not availability
 - Multi-language support is not required for the prototype
+
+---
+
+## 6. Functional Completion and Gap Status
+
+This section records the final backend/API completion status for the functional requirements. It is intended to support project sign-off, Jira closure, and MSc submission traceability.
+
+### 6.1 Functional Coverage Summary
+
+| Functional Area | Requirement IDs | Backend/API Status | Remaining Completion Evidence |
+|-----------------|-----------------|--------------------|-------------------------------|
+| Catalogue browsing, categories, search, sorting, filtering, and pagination | FR-01 to FR-11 | Implemented through public category/search/tool endpoints | TASK-29 final Epic 1 API contract coverage |
+| Rental cost calculator | FR-12 to FR-17 | Implemented through `POST /api/tools/{id}/rental-calculation` using hourly, daily, and weekly rates | TASK-29 final Epic 1 API contract coverage |
+| Review submission, five rating categories, approved-review display, and rating aggregation | FR-18 to FR-26 | Implemented through review endpoints, moderation workflow, cached tool rating/count, and not-enough-reviews DTO fields | TASK-30 final Epic 2 API contract coverage |
+| Comments and official company responses | FR-27 to FR-32 | Implemented; customer comments are moderated and company responses are restricted to approved reviews | TASK-30 final Epic 2 API contract coverage |
+| Customer registration, login, JWT role claims, password reset, and My Reviews | FR-33 to FR-36 | Implemented using custom JWT authentication with ASP.NET Core password hashing | TASK-30 final auth/community API contract coverage |
+| Back-office authentication, catalogue management, moderation, categories, images, and dashboard | FR-37 to FR-50 | Implemented through `/api/admin/...` controllers and services | TASK-26 remains if the assessor requires the first image to be uploaded as part of the initial create request rather than supplied as `ImageUrl` then managed through image endpoints |
+| API validation and database integrity | FR-51 to FR-53 | Implemented with FluentValidation validators, review/comment indexes, and rating check constraints | Keep migration and integration-test evidence with the final submission pack |
+
+### 6.2 Completion Gate Summary
+
+| Gate | Status | Action Before 100 Percent Sign-Off |
+|------|--------|------------------------------------|
+| Feature implementation | Functionally complete at backend/API level except strict first-image create interpretation | Complete TASK-26 if the first image must be uploaded during `POST /api/admin/tools` |
+| Requirements traceability | Complete | Keep this specification, `GAP-ANALYSIS.md`, and the agile epic docs in the final evidence pack |
+| API contract proof | Mostly present, final expansion planned | Complete TASK-29 and TASK-30 before moving all Epic 1 and Epic 2 Jira items to Done |
+| Database design and integrity | Complete | Include migration files, SQL scripts, `DATABASE-DESIGN.md`, and `ERD.md` as evidence |
+| Authentication decision | Complete for the current project decision | Keep custom JWT plus ASP.NET Core password hashing unless full ASP.NET Identity is explicitly required |
+| Deployment readiness | Partially complete | Finish Azure credential rotation, App Service settings, CORS confirmation, and smoke tests |
