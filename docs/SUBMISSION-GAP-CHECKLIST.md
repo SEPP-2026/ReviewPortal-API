@@ -151,7 +151,7 @@ Before moving Jira backend items to Done, include evidence for:
 
 - Epic 1 API contract coverage: `TASK-29`
 - Epic 2 API contract coverage: `TASK-30`
-- Epic 3 remaining first-image create gap: `TASK-26`
+- Epic 3 first-image create flow evidence: `TASK-26`
 - CI and coverage automation: `TASK-23`
 - Azure App Service smoke test after migrations/configuration
 - Next.js API route compatibility, especially no assumed `GET /api/tools` endpoint

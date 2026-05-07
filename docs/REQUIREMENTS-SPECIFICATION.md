@@ -133,7 +133,7 @@ Each requirement is traced to the user story that implements it and the brief re
 | ID | Requirement | Priority | User Story | Brief Ref |
 |----|-------------|----------|------------|-----------|
 | FR-46 | Admin tool management endpoints under `/api/admin/tools` shall require the Admin role and support create, update, deactivate, and reactivate operations | Must | US-3.2, US-3.3, US-3.5, US-3.9 | R8, R9 |
-| FR-47 | Admin image endpoints shall support uploading JPG, JPEG, PNG, and WebP images up to 5MB and shall prevent deleting the last remaining image for a tool/service | Must | US-3.4, US-3.9 | R10 |
+| FR-47 | Admin image handling shall support uploading JPG, JPEG, PNG, and WebP images up to 5MB, require a first image during tool/service creation, and prevent deleting the last remaining image | Must | US-3.2, US-3.4, US-3.9 | R10 |
 | FR-48 | Moderation API endpoints under `/api/admin/moderation` shall require the Admin or Moderator role and support pending queue retrieval plus review/comment approval and rejection | Must | US-3.6, US-3.9 | R11, R26 |
 | FR-49 | The admin dashboard API shall return active/inactive tool counts, pending moderation counts, current-month review counts, top-rated tools/services, and most-reviewed tools/services | Could | US-3.8, US-3.9 | R8 |
 | FR-50 | Category management endpoints shall allow admins to create and update categories and shall block deletion when a category still contains tools/services | Should | US-3.7, US-3.9 | R2 |
@@ -277,14 +277,14 @@ This section records the final backend/API completion status for the functional 
 | Review submission, five rating categories, approved-review display, and rating aggregation | FR-18 to FR-26 | Implemented through review endpoints, moderation workflow, cached tool rating/count, and not-enough-reviews DTO fields | Covered by TASK-30 integration tests |
 | Comments and official company responses | FR-27 to FR-32 | Implemented; customer comments are moderated and company responses are restricted to approved reviews and staff roles `Admin,Moderator` | Covered by TASK-30 integration tests |
 | Customer registration, login, JWT role claims, password reset, and My Reviews | FR-33 to FR-36 | Implemented using custom JWT authentication with ASP.NET Core password hashing | Covered by TASK-30 integration tests |
-| Back-office authentication, catalogue management, moderation, categories, images, and dashboard | FR-37 to FR-50 | Implemented through `/api/admin/...` controllers and services | TASK-26 remains if the assessor requires the first image to be uploaded as part of the initial create request rather than supplied as `ImageUrl` then managed through image endpoints |
+| Back-office authentication, catalogue management, moderation, categories, images, and dashboard | FR-37 to FR-50 | Implemented through `/api/admin/...` controllers and services, including multipart first-image upload during tool/service creation | Covered by TASK-26, TASK-27, and TASK-28 integration tests |
 | API validation and database integrity | FR-51 to FR-53 | Implemented with FluentValidation validators, review/comment indexes, and rating check constraints | Keep migration and integration-test evidence with the final submission pack |
 
 ### 6.2 Completion Gate Summary
 
 | Gate | Status | Action Before 100 Percent Sign-Off |
 |------|--------|------------------------------------|
-| Feature implementation | Functionally complete at backend/API level except strict first-image create interpretation | Complete TASK-26 if the first image must be uploaded during `POST /api/admin/tools` |
+| Feature implementation | Functionally complete at backend/API level | Keep build/test, security, deployment, and evidence checks current before final sign-off |
 | Requirements traceability | Complete | Keep this specification, `GAP-ANALYSIS.md`, and the agile epic docs in the final evidence pack |
 | API contract proof | Epic 1 and Epic 2 complete | Complete TASK-23 so CI runs the final contract suite automatically |
 | Database design and integrity | Complete | Include migration files, SQL scripts, `DATABASE-DESIGN.md`, and `ERD.md` as evidence |

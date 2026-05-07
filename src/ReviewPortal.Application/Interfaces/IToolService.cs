@@ -19,7 +19,7 @@ public interface IToolService
 
     Task<Result<RentalCalculationResponse>> CalculateRentalCostAsync(int toolId, RentalCalculationRequest request, CancellationToken cancellationToken = default);
 
-    Task<Result<ToolDto>> CreateToolAsync(CreateToolRequest request, CancellationToken cancellationToken = default);
+    Task<Result<ToolDto>> CreateToolAsync(CreateToolRequest request, string firstImageUrl, CancellationToken cancellationToken = default);
 
     Task<Result<ToolDto>> UpdateToolAsync(int id, UpdateToolRequest request, CancellationToken cancellationToken = default);
 

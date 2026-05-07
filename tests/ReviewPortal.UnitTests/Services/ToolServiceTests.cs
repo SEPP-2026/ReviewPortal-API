@@ -846,7 +846,7 @@ public class ToolServiceTests
             toolRepository: toolRepository,
             unitOfWork: unitOfWork);
 
-        var result = await service.CreateToolAsync(ValidCreateToolRequest());
+        var result = await service.CreateToolAsync(ValidCreateToolRequest(), ValidFirstImageUrl());
 
         Assert.True(result.IsSuccess);
         Assert.Equal(1, result.Value!.Id);
@@ -877,7 +877,7 @@ public class ToolServiceTests
             toolRepository: toolRepository,
             unitOfWork: unitOfWork);
 
-        var result = await service.CreateToolAsync(ValidCreateToolRequest() with { ImageUrl = "  " });
+        var result = await service.CreateToolAsync(ValidCreateToolRequest(), "  ");
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorType.Validation, result.FailureType);
@@ -891,7 +891,7 @@ public class ToolServiceTests
     {
         var service = CreateService();
 
-        var result = await service.CreateToolAsync(ValidCreateToolRequest() with { CategoryId = 404 });
+        var result = await service.CreateToolAsync(ValidCreateToolRequest() with { CategoryId = 404 }, ValidFirstImageUrl());
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorType.NotFound, result.FailureType);
@@ -906,7 +906,7 @@ public class ToolServiceTests
         var category = new Category { Id = 3, Name = "Breaking & Drilling" };
         var service = CreateService(categories: [category]);
 
-        var result = await service.CreateToolAsync(ValidCreateToolRequest() with { Name = name });
+        var result = await service.CreateToolAsync(ValidCreateToolRequest() with { Name = name }, ValidFirstImageUrl());
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorType.Validation, result.FailureType);
@@ -931,7 +931,8 @@ public class ToolServiceTests
             HourlyRate = hourlyRate,
             DailyRate = dailyRate,
             WeeklyRate = weeklyRate
-        });
+        },
+        ValidFirstImageUrl());
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorType.Validation, result.FailureType);
@@ -944,7 +945,7 @@ public class ToolServiceTests
         var category = new Category { Id = 3, Name = "Breaking & Drilling" };
         var service = CreateService(categories: [category]);
 
-        var result = await service.CreateToolAsync(ValidCreateToolRequest() with { DepositRequired = true, DepositAmount = null });
+        var result = await service.CreateToolAsync(ValidCreateToolRequest() with { DepositRequired = true, DepositAmount = null }, ValidFirstImageUrl());
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorType.Validation, result.FailureType);
@@ -957,7 +958,7 @@ public class ToolServiceTests
         var category = new Category { Id = 3, Name = "Breaking & Drilling" };
         var service = CreateService(categories: [category]);
 
-        var result = await service.CreateToolAsync(ValidCreateToolRequest() with { DepositRequired = false, DepositAmount = 10m });
+        var result = await service.CreateToolAsync(ValidCreateToolRequest() with { DepositRequired = false, DepositAmount = 10m }, ValidFirstImageUrl());
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorType.Validation, result.FailureType);
@@ -1240,9 +1241,10 @@ public class ToolServiceTests
             WeeklyRate: 180.00m,
             SpecialNotes: "Includes SDS bits.",
             DepositRequired: true,
-            DepositAmount: 50.00m,
-            ImageUrl: "/uploads/tools/rotary-hammer.jpg");
+            DepositAmount: 50.00m);
     }
+
+    private static string ValidFirstImageUrl() => "/uploads/tools/rotary-hammer.jpg";
 
     private static UpdateToolRequest ValidUpdateToolRequest(int categoryId)
     {

@@ -109,37 +109,117 @@ public class AdminToolsControllerTests
     }
 
     [Fact]
-    public async Task Create_WhenToolIsCreated_ReturnsCreatedAndPassesRequest()
+    public async Task Create_WhenToolIsCreated_ReturnsCreatedAndPassesUploadedImage()
     {
         var tool = CreateToolDto(id: 12);
         var toolService = new FakeToolService
         {
             CreateToolResult = Result<ToolDto>.Success(tool)
         };
-        var controller = CreateController(toolService);
+        var imageService = new FakeImageService
+        {
+            StoreImageFileResult = Result<string>.Success("/uploads/tools/first-image.jpg")
+        };
+        var controller = CreateController(toolService, imageService);
         var request = CreateToolRequest();
 
-        var result = await controller.Create(request, CancellationToken.None);
+        var result = await controller.Create(request, CreateFormFile("hammer.jpg", length: 16), CancellationToken.None);
 
         var createdResult = Assert.IsType<CreatedResult>(result);
         Assert.Equal("/api/tools/12", createdResult.Location);
         Assert.Same(tool, createdResult.Value);
         Assert.Equal(request, toolService.LastCreateToolRequest);
+        Assert.Equal("/uploads/tools/first-image.jpg", toolService.LastCreateFirstImageUrl);
+        Assert.Equal("hammer.jpg", imageService.LastStoreFileName);
+        Assert.Equal(16, imageService.LastStoreByteCount);
+        Assert.Null(imageService.LastDeletedStoredImageUrl);
     }
 
     [Fact]
-    public async Task Create_WhenValidationFails_ReturnsBadRequestProblem()
+    public async Task Create_WhenImageIsMissing_ReturnsBadRequestProblem()
+    {
+        var imageService = new FakeImageService();
+        var controller = CreateController(imageService: imageService);
+
+        var result = await controller.Create(CreateToolRequest(), null, CancellationToken.None);
+
+        var problemResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status400BadRequest, problemResult.StatusCode);
+        Assert.Null(imageService.LastStoreFileName);
+    }
+
+    [Fact]
+    public async Task Create_WhenImageValidationFails_ReturnsBadRequestProblem()
+    {
+        var imageService = new FakeImageService
+        {
+            StoreImageFileResult = Result<string>.Failure("Only .jpg, .jpeg, .png, and .webp image files are allowed.")
+        };
+        var controller = CreateController(imageService: imageService);
+
+        var result = await controller.Create(CreateToolRequest(), CreateFormFile("hammer.gif"), CancellationToken.None);
+
+        var problemResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status400BadRequest, problemResult.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_WhenValidationFails_ReturnsBadRequestProblemAndDeletesStoredImage()
     {
         var toolService = new FakeToolService
         {
             CreateToolResult = Result<ToolDto>.Failure("Name is required.")
         };
-        var controller = CreateController(toolService);
+        var imageService = new FakeImageService
+        {
+            StoreImageFileResult = Result<string>.Success("/uploads/tools/first-image.jpg")
+        };
+        var controller = CreateController(toolService, imageService);
 
-        var result = await controller.Create(CreateToolRequest(name: ""), CancellationToken.None);
+        var result = await controller.Create(CreateToolRequest(name: ""), CreateFormFile("hammer.jpg"), CancellationToken.None);
 
         var problemResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(StatusCodes.Status400BadRequest, problemResult.StatusCode);
+        Assert.Equal("/uploads/tools/first-image.jpg", imageService.LastDeletedStoredImageUrl);
+    }
+
+    [Fact]
+    public async Task Create_WhenCategoryDoesNotExist_ReturnsNotFoundProblemAndDeletesStoredImage()
+    {
+        var toolService = new FakeToolService
+        {
+            CreateToolResult = Result<ToolDto>.NotFound("Category with ID 404 not found.")
+        };
+        var imageService = new FakeImageService
+        {
+            StoreImageFileResult = Result<string>.Success("/uploads/tools/first-image.jpg")
+        };
+        var controller = CreateController(toolService, imageService);
+
+        var result = await controller.Create(CreateToolRequest(), CreateFormFile("hammer.jpg"), CancellationToken.None);
+
+        var problemResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status404NotFound, problemResult.StatusCode);
+        Assert.Equal("/uploads/tools/first-image.jpg", imageService.LastDeletedStoredImageUrl);
+    }
+
+    [Fact]
+    public async Task Create_WhenToolServiceThrows_DeletesStoredImageAndRethrows()
+    {
+        var toolService = new FakeToolService
+        {
+            CreateToolException = new InvalidOperationException("Simulated create failure.")
+        };
+        var imageService = new FakeImageService
+        {
+            StoreImageFileResult = Result<string>.Success("/uploads/tools/first-image.jpg")
+        };
+        var controller = CreateController(toolService, imageService);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            controller.Create(CreateToolRequest(), CreateFormFile("hammer.jpg"), CancellationToken.None));
+
+        Assert.Equal("/uploads/tools/first-image.jpg", imageService.LastDeletedStoredImageUrl);
     }
 
     [Fact]
@@ -339,8 +419,7 @@ public class AdminToolsControllerTests
             WeeklyRate: 180.00m,
             SpecialNotes: "Includes SDS bits.",
             DepositRequired: true,
-            DepositAmount: 50.00m,
-            ImageUrl: "/uploads/tools/rotary-hammer.jpg");
+            DepositAmount: 50.00m);
     }
 
     private static UpdateToolRequest UpdateToolRequest()
@@ -402,6 +481,12 @@ public class AdminToolsControllerTests
 
     private sealed class FakeImageService : IImageService
     {
+        public string? LastStoreFileName { get; private set; }
+
+        public long? LastStoreByteCount { get; private set; }
+
+        public string? LastDeletedStoredImageUrl { get; private set; }
+
         public int? LastUploadToolId { get; private set; }
 
         public string? LastUploadFileName { get; private set; }
@@ -415,7 +500,32 @@ public class AdminToolsControllerTests
         public Result<ToolImageDto> UploadImageResult { get; set; } =
             Result<ToolImageDto>.Success(new ToolImageDto(1, "/uploads/tools/image.jpg", 1));
 
+        public Result<string> StoreImageFileResult { get; set; } =
+            Result<string>.Success("/uploads/tools/first-image.jpg");
+
         public Result<bool> DeleteImageResult { get; set; } = Result<bool>.Success(true);
+
+        public async Task<Result<string>> StoreImageFileAsync(
+            Stream fileStream,
+            string fileName,
+            CancellationToken cancellationToken = default)
+        {
+            LastStoreFileName = fileName;
+
+            using var memoryStream = new MemoryStream();
+            await fileStream.CopyToAsync(memoryStream, cancellationToken);
+            LastStoreByteCount = memoryStream.Length;
+
+            return StoreImageFileResult;
+        }
+
+        public Task DeleteStoredImageAsync(
+            string imageUrl,
+            CancellationToken cancellationToken = default)
+        {
+            LastDeletedStoredImageUrl = imageUrl;
+            return Task.CompletedTask;
+        }
 
         public async Task<Result<ToolImageDto>> UploadImageAsync(
             int toolId,
@@ -449,6 +559,8 @@ public class AdminToolsControllerTests
     {
         public CreateToolRequest? LastCreateToolRequest { get; private set; }
 
+        public string? LastCreateFirstImageUrl { get; private set; }
+
         public AdminToolQueryRequest? LastAdminToolQueryRequest { get; private set; }
 
         public int? LastGetAdminToolById { get; private set; }
@@ -463,6 +575,8 @@ public class AdminToolsControllerTests
 
         public Result<ToolDto> CreateToolResult { get; set; } =
             Result<ToolDto>.Success(CreateToolDto(id: 1));
+
+        public Exception? CreateToolException { get; set; }
 
         public Result<ToolDto> UpdateToolResult { get; set; } =
             Result<ToolDto>.Success(CreateToolDto(id: 1));
@@ -535,9 +649,16 @@ public class AdminToolsControllerTests
 
         public Task<Result<ToolDto>> CreateToolAsync(
             CreateToolRequest request,
+            string firstImageUrl,
             CancellationToken cancellationToken = default)
         {
+            if (CreateToolException is not null)
+            {
+                throw CreateToolException;
+            }
+
             LastCreateToolRequest = request;
+            LastCreateFirstImageUrl = firstImageUrl;
             return Task.FromResult(CreateToolResult);
         }
 

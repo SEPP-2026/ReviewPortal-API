@@ -22,7 +22,7 @@ The project should not be marked as 100 percent final-signed-off until the remai
 |------|-------|----------------|----------|
 | Epic 1 | Tool/service catalogue and rental calculator | Implemented | `CategoriesController`, `ToolsController`, `CategoryService`, `ToolService`, catalogue integration tests |
 | Epic 2 | Reviews, ratings, community interaction, auth | Implemented | `AuthController`, `ToolReviewsController`, `ReviewCommentsController`, `ReviewResponsesController`, `UserReviewsController`, `ReviewService`, auth/review integration tests |
-| Epic 3 | Back-office management and moderation | Implemented, with one optional strict-flow gap | `AdminToolsController`, `AdminModerationController`, `AdminCategoriesController`, `AdminDashboardController`, `ImageService`, dashboard/admin integration tests |
+| Epic 3 | Back-office management and moderation | Implemented | `AdminToolsController`, `AdminModerationController`, `AdminCategoriesController`, `AdminDashboardController`, `ImageService`, dashboard/admin integration tests |
 
 ## 3. Functional Requirements Completion
 
@@ -33,7 +33,7 @@ The project should not be marked as 100 percent final-signed-off until the remai
 | Reviews and ratings | FR-18 to FR-26 | Implemented and covered by TASK-30 |
 | Community interaction | FR-27 to FR-32 | Implemented and covered by TASK-30; company response staff policy is `Admin,Moderator` |
 | Authentication and My Reviews | FR-33 to FR-36 | Implemented with custom JWT and ASP.NET Core password hashing; covered by TASK-30 |
-| Back-office administration | FR-37 to FR-50 | Implemented; TASK-26 remains if first image must be uploaded during initial create |
+| Back-office administration | FR-37 to FR-50 | Implemented, including multipart first-image upload during initial create |
 | Validation and data integrity | FR-51 to FR-53 | Implemented through FluentValidation, indexes, and check constraints |
 
 ## 4. Non-Functional Requirements Completion
@@ -86,7 +86,6 @@ The project should not be marked as 100 percent final-signed-off until the remai
 |----------|------|----------------|--------------|
 | Must | Rotate previously exposed Azure SQL password | Required for security scan/readiness | TASK-24.2 |
 | Must | Fix secret scanner false positives and package vulnerability review | Required before next security scan | Security backlog |
-| Must if strict interpretation applies | Align first-image create flow with upload requirement | Jira MP-27 says an image is uploaded before save | TASK-26 |
 | Must | CI and coverage automation | Required for final quality/maintainability evidence | TASK-23 |
 | Must | Azure smoke test and CORS check | Confirms deployed API works for the Next.js app | Deployment checklist |
 | Must | Final test evidence pack | Required for MSc submission proof | Test plan evidence |
@@ -94,14 +93,13 @@ The project should not be marked as 100 percent final-signed-off until the remai
 ## 8. Recommended Final Run Order
 
 1. Close security blockers and rotate Azure SQL credentials.
-2. Complete TASK-26 if the first image must be uploaded in the same create request.
-3. Complete TASK-23.
-4. Run `dotnet build ReviewPortal.slnx`.
-5. Run `dotnet test ReviewPortal.slnx`.
-6. Run secret scan and package vulnerability scan.
-7. Verify local and Azure database migration state.
-8. Run Azure smoke tests and CORS checks.
-9. Attach final test/dry-run/usability screenshots and logs to the submission pack.
+2. Complete TASK-23.
+3. Run `dotnet build ReviewPortal.slnx`.
+4. Run `dotnet test ReviewPortal.slnx`.
+5. Run secret scan and package vulnerability scan.
+6. Verify local and Azure database migration state.
+7. Run Azure smoke tests and CORS checks.
+8. Attach final test/dry-run/usability screenshots and logs to the submission pack.
 
 ## 9. Final Evidence Checklist
 
@@ -119,6 +117,6 @@ The project should not be marked as 100 percent final-signed-off until the remai
 
 ## 10. Project Completion Decision
 
-The project is ready to be treated as feature-complete at backend/API level once TASK-26 is either completed or explicitly accepted as not required.
+The project is ready to be treated as feature-complete at backend/API level.
 
 The project is ready for 100 percent final sign-off only after TASK-23, security scan cleanup, Azure credential rotation, Azure smoke testing, and final test evidence are complete.

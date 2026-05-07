@@ -505,7 +505,10 @@ public class CatalogueControllerTests
             return Task.FromResult(RentalCalculationResult);
         }
 
-        public Task<Result<ToolDto>> CreateToolAsync(CreateToolRequest request, CancellationToken cancellationToken = default)
+        public Task<Result<ToolDto>> CreateToolAsync(
+            CreateToolRequest request,
+            string firstImageUrl,
+            CancellationToken cancellationToken = default)
         {
             return Task.FromResult(Result<ToolDto>.Failure("Not used by these tests."));
         }

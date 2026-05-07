@@ -11,6 +11,7 @@ public class ImageService : IImageService
 {
     private const int BufferSize = 81920;
     private const string DefaultRequestPath = "/uploads/tools";
+    private const string FirstImagePrefix = "first";
 
     private readonly IToolRepository _toolRepository;
     private readonly IRepository<ToolImage> _toolImageRepository;
@@ -41,46 +42,13 @@ public class ImageService : IImageService
             return Result<ToolImageDto>.NotFound($"Tool with ID {toolId} not found.");
         }
 
-        if (string.IsNullOrWhiteSpace(fileName) || fileStream is null || !fileStream.CanRead)
+        var storeResult = await StoreImageFileInternalAsync(toolId.ToString(), fileStream, fileName, cancellationToken);
+        if (!storeResult.IsSuccess)
         {
-            return Result<ToolImageDto>.Failure("Image file is required.");
+            return Result<ToolImageDto>.Failure(storeResult.Error!);
         }
 
-        var extension = Path.GetExtension(fileName).ToLowerInvariant();
-        if (!IsAllowedExtension(extension))
-        {
-            return Result<ToolImageDto>.Failure("Only .jpg, .jpeg, .png, and .webp image files are allowed.");
-        }
-
-        if (fileStream.CanSeek)
-        {
-            if (fileStream.Length == 0)
-            {
-                return Result<ToolImageDto>.Failure("Image file is required.");
-            }
-
-            if (fileStream.Length > _options.MaxFileSizeBytes)
-            {
-                return Result<ToolImageDto>.Failure(GetFileSizeError());
-            }
-
-            fileStream.Position = 0;
-        }
-
-        var rootPath = GetStorageRootPath();
-        Directory.CreateDirectory(rootPath);
-
-        var storedFileName = $"{toolId}-{Guid.NewGuid():N}{extension}";
-        var storedFilePath = Path.Combine(rootPath, storedFileName);
-        var writeResult = await WriteFileAsync(fileStream, storedFilePath, cancellationToken);
-
-        if (!writeResult.IsSuccess)
-        {
-            DeleteFileIfExists(storedFilePath);
-            return Result<ToolImageDto>.Failure(writeResult.Error!);
-        }
-
-        var imageUrl = $"{NormalizeRequestPath(_options.RequestPath)}/{storedFileName}";
+        var imageUrl = storeResult.Value!;
         var displayOrder = tool.Images.Count == 0
             ? 1
             : tool.Images.Max(image => image.DisplayOrder) + 1;
@@ -93,13 +61,37 @@ public class ImageService : IImageService
             UploadedDate = DateTime.UtcNow
         };
 
-        await _toolImageRepository.AddAsync(toolImage, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _toolImageRepository.AddAsync(toolImage, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            DeleteLocalImageFile(imageUrl);
+            throw;
+        }
 
         return Result<ToolImageDto>.Success(new ToolImageDto(
             toolImage.Id,
             toolImage.ImageUrl,
             toolImage.DisplayOrder));
+    }
+
+    public Task<Result<string>> StoreImageFileAsync(
+        Stream fileStream,
+        string fileName,
+        CancellationToken cancellationToken = default)
+    {
+        return StoreImageFileInternalAsync(FirstImagePrefix, fileStream, fileName, cancellationToken);
+    }
+
+    public Task DeleteStoredImageAsync(
+        string imageUrl,
+        CancellationToken cancellationToken = default)
+    {
+        DeleteLocalImageFile(imageUrl);
+        return Task.CompletedTask;
     }
 
     public async Task<Result<bool>> DeleteImageAsync(
@@ -137,6 +129,54 @@ public class ImageService : IImageService
         return _options.AllowedExtensions
             .Select(NormalizeExtension)
             .Contains(extension, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private async Task<Result<string>> StoreImageFileInternalAsync(
+        string fileNamePrefix,
+        Stream fileStream,
+        string fileName,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(fileName) || fileStream is null || !fileStream.CanRead)
+        {
+            return Result<string>.Failure("Image file is required.");
+        }
+
+        var extension = Path.GetExtension(fileName).ToLowerInvariant();
+        if (!IsAllowedExtension(extension))
+        {
+            return Result<string>.Failure("Only .jpg, .jpeg, .png, and .webp image files are allowed.");
+        }
+
+        if (fileStream.CanSeek)
+        {
+            if (fileStream.Length == 0)
+            {
+                return Result<string>.Failure("Image file is required.");
+            }
+
+            if (fileStream.Length > _options.MaxFileSizeBytes)
+            {
+                return Result<string>.Failure(GetFileSizeError());
+            }
+
+            fileStream.Position = 0;
+        }
+
+        var rootPath = GetStorageRootPath();
+        Directory.CreateDirectory(rootPath);
+
+        var storedFileName = $"{fileNamePrefix}-{Guid.NewGuid():N}{extension}";
+        var storedFilePath = Path.Combine(rootPath, storedFileName);
+        var writeResult = await WriteFileAsync(fileStream, storedFilePath, cancellationToken);
+
+        if (!writeResult.IsSuccess)
+        {
+            DeleteFileIfExists(storedFilePath);
+            return Result<string>.Failure(writeResult.Error!);
+        }
+
+        return Result<string>.Success($"{NormalizeRequestPath(_options.RequestPath)}/{storedFileName}");
     }
 
     private async Task<FileWriteResult> WriteFileAsync(

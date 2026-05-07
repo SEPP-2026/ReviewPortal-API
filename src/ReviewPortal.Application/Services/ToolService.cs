@@ -203,9 +203,13 @@ public class ToolService : IToolService
             cheapestCombination.TotalCost));
     }
 
-    public async Task<Result<ToolDto>> CreateToolAsync(CreateToolRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result<ToolDto>> CreateToolAsync(
+        CreateToolRequest request,
+        string firstImageUrl,
+        CancellationToken cancellationToken = default)
     {
-        var validationError = RequestValidatorRunner.Validate(_createToolRequestValidator, request, "Tool request is required.");
+        var validationError = RequestValidatorRunner.Validate(_createToolRequestValidator, request, "Tool request is required.")
+            ?? ValidateFirstImageUrl(firstImageUrl);
         if (validationError is not null)
         {
             return Result<ToolDto>.Failure(validationError);
@@ -240,7 +244,7 @@ public class ToolService : IToolService
         tool.Images.Add(new ToolImage
         {
             Tool = tool,
-            ImageUrl = request.ImageUrl.Trim(),
+            ImageUrl = firstImageUrl.Trim(),
             DisplayOrder = 1,
             UploadedDate = utcNow
         });
@@ -325,6 +329,21 @@ public class ToolService : IToolService
         if (pageSize > MaxPageSize)
         {
             return $"Page size must not exceed {MaxPageSize}.";
+        }
+
+        return null;
+    }
+
+    private static string? ValidateFirstImageUrl(string? firstImageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(firstImageUrl))
+        {
+            return "At least one image is required before a tool/service can be saved.";
+        }
+
+        if (!ValidationHelpers.HasTrimmedLengthAtMost(firstImageUrl, 500))
+        {
+            return "Image URL must be 500 characters or fewer.";
         }
 
         return null;
