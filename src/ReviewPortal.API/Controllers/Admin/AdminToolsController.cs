@@ -39,11 +39,43 @@ public class AdminToolsController : ControllerBase
     }
 
     [HttpPost]
+    [Consumes("multipart/form-data")]
     public async Task<IActionResult> Create(
-        [FromBody] CreateToolRequest request,
+        [FromForm] CreateToolRequest request,
+        [FromForm] IFormFile? file,
         CancellationToken cancellationToken)
     {
-        var result = await _toolService.CreateToolAsync(request, cancellationToken);
+        if (file is null || file.Length == 0)
+        {
+            var missingFileResult = Result<ToolDto>.Failure("Image file is required.");
+            return this.ToActionResult(missingFileResult, tool => Created($"/api/tools/{tool.Id}", tool));
+        }
+
+        await using var fileStream = file.OpenReadStream();
+        var storeResult = await _imageService.StoreImageFileAsync(fileStream, file.FileName, cancellationToken);
+        if (!storeResult.IsSuccess)
+        {
+            var imageFailureResult = Result<ToolDto>.Failure(storeResult.Error!);
+            return this.ToActionResult(imageFailureResult, tool => Created($"/api/tools/{tool.Id}", tool));
+        }
+
+        var firstImageUrl = storeResult.Value!;
+        Result<ToolDto> result;
+        try
+        {
+            result = await _toolService.CreateToolAsync(request, firstImageUrl, cancellationToken);
+        }
+        catch
+        {
+            await _imageService.DeleteStoredImageAsync(firstImageUrl, cancellationToken);
+            throw;
+        }
+
+        if (!result.IsSuccess)
+        {
+            await _imageService.DeleteStoredImageAsync(firstImageUrl, cancellationToken);
+        }
+
         return this.ToActionResult(result, tool => Created($"/api/tools/{tool.Id}", tool));
     }
 
@@ -70,7 +102,7 @@ public class AdminToolsController : ControllerBase
     [HttpPost("{id:int}/images")]
     public async Task<IActionResult> UploadImage(
         int id,
-        IFormFile? file,
+        [FromForm] IFormFile? file,
         CancellationToken cancellationToken)
     {
         if (file is null || file.Length == 0)

@@ -18,13 +18,6 @@ public class CreateToolRequestValidator : AbstractValidator<CreateToolRequest>
     public CreateToolRequestValidator()
     {
         this.ApplyCommonToolRules();
-
-        RuleFor(request => request.ImageUrl)
-            .Cascade(CascadeMode.Stop)
-            .Must(ValidationHelpers.HasText)
-            .WithMessage("At least one image is required before a tool/service can be saved.")
-            .Must(value => ValidationHelpers.HasTrimmedLengthAtMost(value, 500))
-            .WithMessage("Image URL must be 500 characters or fewer.");
     }
 }
 

@@ -274,7 +274,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 **Acceptance Criteria:**
 - Admin management endpoints require authentication and the "Admin" role; moderation endpoints require authentication and either the "Admin" or "Moderator" role
 - Equipment management:
-  - `POST /api/admin/tools` – create a new tool
+  - `POST /api/admin/tools` – create a new tool/service using multipart form data with metadata plus the required first image file
   - `PUT /api/admin/tools/{id}` – update a tool
   - `PATCH /api/admin/tools/{id}/status` – activate/deactivate
   - `POST /api/admin/tools/{id}/images` – upload image

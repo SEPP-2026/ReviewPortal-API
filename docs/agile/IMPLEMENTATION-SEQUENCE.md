@@ -51,24 +51,23 @@ Conclusion: Epic 2 feature API is implemented and covered by final HTTP-level co
 | MP-26 Admin Login and Role-Based Access | Same `/api/auth/login` returns JWT role claims; admin APIs enforce roles | No backend feature gap. TASK-17 remains conditional only if full ASP.NET Identity is required. |
 | MP-31 Review Moderation Queue | API exists: `GET /api/admin/moderation/pending`; item-level queue done | Done by TASK-27 and TASK-28 |
 | MP-72 Approve or Reject Reviews | API exists: `PUT /api/admin/moderation/reviews/{id}` and comments endpoint | Done |
-| MP-27 Add New Equipment/Service to the Catalogue | API exists, but first image is still `ImageUrl` JSON shortcut | TASK-26 |
+| MP-27 Add New Equipment/Service to the Catalogue | API exists: multipart `POST /api/admin/tools` with metadata plus required first image file | Done by TASK-26 |
 | MP-28 Edit Equipment/Service Details and Pricing | API exists: `PUT /api/admin/tools/{id}` | Done |
-| MP-29 Manage Tool/Service Images | Upload/delete endpoints exist; first image during create still needs upload-backed flow | TASK-26 |
+| MP-29 Manage Tool/Service Images | Upload/delete endpoints exist, and first image during create is upload-backed | Done by TASK-4 and TASK-26 |
 | MP-30 Deactivate or Remove Equipment/Service | API exists: `PATCH /api/admin/tools/{id}/status`; soft delete/reactivate supported | Done |
 | MP-32 Manage Categories | API exists: `/api/admin/categories` create/update/delete plus public read endpoints | Done |
 | MP-33 Admin Dashboard with Overview Statistics | API exists: `GET /api/admin/dashboard/stats` | Done by TASK-5 and TASK-28 |
 
-Conclusion: Epic 3 has one remaining backend feature gap: TASK-26, the first-image upload-backed create flow.
+Conclusion: Epic 3 backend feature APIs are implemented. Remaining work is CI/security/deployment evidence, not an Epic 3 feature gap.
 
 ## Still Open Backend Tasks
 
 Run these in order unless the user/assessor changes scope.
 
 1. TASK-24.2: rotate the previously exposed Azure SQL password and any leaked secrets.
-2. TASK-26: align admin create-tool first-image flow with the upload requirement.
-3. TASK-23: expand CI/CD and coverage automation after the final contract tests exist.
-4. Security backlog: apply the highest-priority security fixes from `docs/security/BACKEND-SECURITY-SCAN-2026-05-07.md`, especially SEC-02 and SEC-03 before next week's scan.
-5. Final Azure smoke test and Next.js API contract check.
+2. TASK-23: expand CI/CD and coverage automation after the final contract tests exist.
+3. Security backlog: apply the highest-priority security fixes from `docs/security/BACKEND-SECURITY-SCAN-2026-05-07.md`, especially SEC-02 and SEC-03 before next week's scan.
+4. Final Azure smoke test and Next.js API contract check.
 
 Do not run TASK-17 unless full ASP.NET Identity is explicitly required. The current project decision is to keep the custom JWT API flow with ASP.NET Core password hashing.
 
@@ -97,34 +96,7 @@ dotnet build ReviewPortal.slnx
 dotnet test ReviewPortal.slnx
 ```
 
-### Step 2 - Finish the only remaining Epic 3 feature gap
-
-Run:
-
-- TASK-26
-
-Why:
-
-- Jira MP-27 says at least one image must be uploaded before save.
-- Current backend accepts `imageUrl` in JSON for the first image.
-- Upload/delete endpoints exist for additional images, but create should be upload-backed too.
-
-Verify:
-
-```powershell
-dotnet build ReviewPortal.slnx
-dotnet test ReviewPortal.slnx
-```
-
-If TASK-26 changes schema or seed data, also run the migration workflow:
-
-```powershell
-dotnet ef migrations add <MigrationName> --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
-dotnet ef migrations script <PreviousMigration> <MigrationName> --idempotent --output scripts/sql/<MigrationName>.sql --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
-dotnet ef database update --project src/ReviewPortal.Infrastructure --startup-project src/ReviewPortal.API
-```
-
-### Step 3 - Update CI and coverage after all final tests exist
+### Step 2 - Update CI and coverage after all final tests exist
 
 Run:
 
@@ -146,7 +118,7 @@ Minimum CI checks:
 - integration tests
 - coverage report
 
-### Step 4 - Final Azure and Next.js readiness pass
+### Step 3 - Final Azure and Next.js readiness pass
 
 Run after all code/test tasks are green.
 
@@ -206,7 +178,7 @@ Admin:
 
 - `GET /api/admin/tools`
 - `GET /api/admin/tools/{id}`
-- `POST /api/admin/tools`
+- `POST /api/admin/tools` multipart form data with metadata fields plus required `file`
 - `PUT /api/admin/tools/{id}`
 - `PATCH /api/admin/tools/{id}/status`
 - `POST /api/admin/tools/{id}/images`

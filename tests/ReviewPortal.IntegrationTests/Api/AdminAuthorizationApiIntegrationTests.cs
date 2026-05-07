@@ -65,7 +65,11 @@ public class AdminAuthorizationApiIntegrationTests : IAsyncLifetime
         [
             new AdminRouteRequest(
                 "admin tool create",
-                (client, factory) => client.PostAsJsonAsync("/api/admin/tools", CreateToolRequest(factory.BreakingCategoryId)))
+                async (client, factory) =>
+                {
+                    using var content = CreateToolContent(factory.BreakingCategoryId);
+                    return await client.PostAsync("/api/admin/tools", content);
+                })
         ];
         yield return
         [
@@ -139,19 +143,22 @@ public class AdminAuthorizationApiIntegrationTests : IAsyncLifetime
         ];
     }
 
-    private static CreateToolRequest CreateToolRequest(int categoryId)
+    private static MultipartFormDataContent CreateToolContent(int categoryId)
     {
-        return new CreateToolRequest(
-            categoryId,
-            "Admin Coverage Drill",
-            "A valid request body used to exercise admin authorization filters.",
-            9m,
-            45m,
-            180m,
-            null,
-            false,
-            null,
-            "/uploads/tools/admin-coverage-drill.jpg");
+        var content = new MultipartFormDataContent();
+        AddString(content, "CategoryId", categoryId.ToString());
+        AddString(content, "Name", "Admin Coverage Drill");
+        AddString(content, "Description", "A valid request body used to exercise admin authorization filters.");
+        AddString(content, "HourlyRate", "9");
+        AddString(content, "DailyRate", "45");
+        AddString(content, "WeeklyRate", "180");
+        AddString(content, "DepositRequired", "false");
+
+        var fileContent = new ByteArrayContent([0xFF, 0xD8, 0xFF, 0xD9]);
+        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg");
+        content.Add(fileContent, "file", "admin-coverage-drill.jpg");
+
+        return content;
     }
 
     private static UpdateToolRequest CreateUpdateToolRequest(int categoryId)
@@ -175,6 +182,11 @@ public class AdminAuthorizationApiIntegrationTests : IAsyncLifetime
         fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg");
         content.Add(fileContent, "file", "auth-coverage.jpg");
         return content;
+    }
+
+    private static void AddString(MultipartFormDataContent content, string name, string value)
+    {
+        content.Add(new StringContent(value), name);
     }
 
     public sealed record AdminRouteRequest(

@@ -5,6 +5,15 @@ namespace ReviewPortal.Application.Interfaces;
 
 public interface IImageService
 {
+    Task<Result<string>> StoreImageFileAsync(
+        Stream fileStream,
+        string fileName,
+        CancellationToken cancellationToken = default);
+
+    Task DeleteStoredImageAsync(
+        string imageUrl,
+        CancellationToken cancellationToken = default);
+
     Task<Result<ToolImageDto>> UploadImageAsync(
         int toolId,
         Stream fileStream,

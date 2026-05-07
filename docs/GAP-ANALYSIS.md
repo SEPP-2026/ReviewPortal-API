@@ -11,7 +11,6 @@ The backend API is now feature-complete for the main catalogue, rental calculato
 
 The remaining work is not broad feature discovery. It is final sign-off work:
 
-- close the strict first-image create-flow gap if required by the assessor
 - finish CI/coverage automation
 - complete security scan blockers and Azure credential rotation
 - capture final Azure and Next.js integration evidence
@@ -20,10 +19,10 @@ The remaining work is not broad feature discovery. It is final sign-off work:
 
 | Gate ID | Area | Status | Required Action |
 |---------|------|--------|-----------------|
-| CG-01 | Functional backend/API coverage | Mostly complete | Complete TASK-26 only if first image must be uploaded during initial tool/service creation instead of provided through `ImageUrl` then managed through image endpoints |
+| CG-01 | Functional backend/API coverage | Closed | Epic 1, Epic 2, and Epic 3 backend/API feature flows are implemented, including upload-backed first-image create flow |
 | CG-02 | Epic 1 API proof | Closed | TASK-29 added final public catalogue/rental-calculator contract tests |
 | CG-03 | Epic 2 API proof | Closed | TASK-30 added final auth/review/comment/company-response contract tests |
-| CG-04 | Epic 3 API proof | Mostly complete | TASK-28 is complete; keep TASK-26 separate because it changes the create contract |
+| CG-04 | Epic 3 API proof | Closed | TASK-28 covers admin APIs and TASK-26 adds multipart first-image create contract coverage |
 | CG-05 | Security readiness | Open | Rotate Azure SQL credential, fix secret-scan false positives, and clear/package-review NuGet vulnerabilities |
 | CG-06 | CI and coverage | Open | Complete TASK-23 so CI runs secret scan, vulnerability scan, build, unit tests, integration tests, and coverage |
 | CG-07 | Azure deployment evidence | Open | Verify App Service settings, migrations, `/health`, public APIs, protected APIs, role checks, and CORS |
@@ -55,8 +54,8 @@ The remaining work is not broad feature discovery. It is final sign-off work:
 | Comments and company responses | FR-27 to FR-32 | Implemented with pending customer comments and approved-review-only official responses; official response staff policy is `Admin,Moderator` | No feature gap; covered by TASK-30 |
 | User registration, login, password reset, My Reviews | FR-33 to FR-36 | Implemented with custom JWT flow and ASP.NET Core password hashing | No feature gap; covered by TASK-30 |
 | Admin authentication and role-based access | FR-37 | Implemented through JWT role claims and admin/moderator authorization policies | No feature gap; full ASP.NET Identity is conditional only |
-| Admin tool/service management | FR-38 to FR-41, FR-46 | Create/update/status endpoints and services exist | TASK-26 remains if first image must be a multipart upload during create |
-| Image management | FR-40, FR-47 | Upload/delete endpoints and image service exist | No feature gap for post-create image management |
+| Admin tool/service management | FR-38 to FR-41, FR-46 | Create/update/status endpoints and services exist; create uses multipart metadata plus required first image upload | No feature gap |
+| Image management | FR-40, FR-47 | Upload/delete endpoints, first-image upload during create, and image service validation exist | No feature gap |
 | Moderation queue and approve/reject | FR-42, FR-43, FR-48 | Item-level pending queue, exact counts, review/comment moderation, and tests exist | No feature gap |
 | Category admin management | FR-44, FR-50 | `/api/admin/categories` endpoints exist | No feature gap |
 | Admin dashboard | FR-45, FR-49 | Dashboard service/controller and integration tests exist | No feature gap |
@@ -107,9 +106,9 @@ The remaining work is not broad feature discovery. It is final sign-off work:
 | MP-26 Admin Login and Role-Based Access | Implemented | Conditional TASK-17 only if full ASP.NET Identity is required |
 | MP-31 Review Moderation Queue | Implemented | Done |
 | MP-72 Approve or Reject Reviews | Implemented | Done |
-| MP-27 Add New Equipment/Service | Implemented with `ImageUrl` create shortcut | TASK-26 if upload-backed first image is mandatory |
+| MP-27 Add New Equipment/Service | Implemented with multipart first-image upload during create | Done by TASK-26 |
 | MP-28 Edit Equipment/Service Details and Pricing | Implemented | Done |
-| MP-29 Manage Tool/Service Images | Implemented for upload/delete after tool creation | TASK-26 only for first-image create alignment |
+| MP-29 Manage Tool/Service Images | Implemented for first-image create upload plus post-create upload/delete | Done by TASK-4 and TASK-26 |
 | MP-30 Deactivate or Remove Equipment/Service | Implemented with soft status changes | Done |
 | MP-32 Manage Categories | Implemented | Done |
 | MP-33 Admin Dashboard with Overview Statistics | Implemented | Done |
@@ -136,6 +135,7 @@ The remaining work is not broad feature discovery. It is final sign-off work:
 | Baseline API integration tests | TASK-22 |
 | Epic 1 public catalogue API contract coverage | TASK-29 |
 | Admin list/detail read endpoints | TASK-25 |
+| First-image upload-backed create flow | TASK-26 |
 | Item-level moderation queue and exact counts | TASK-27 |
 | Epic 3 admin API integration coverage | TASK-28 |
 | Epic 2 auth/reviews/community API contract coverage | TASK-30 |
@@ -144,7 +144,6 @@ The remaining work is not broad feature discovery. It is final sign-off work:
 
 | Gap ID | Task | Priority | Description | Done When |
 |--------|------|----------|-------------|-----------|
-| GAP-FLOW-3 | TASK-26 | Must if strict upload requirement applies | Admin create-tool first image currently uses `ImageUrl` in JSON rather than upload-backed multipart creation | Create flow accepts/links first uploaded image and tests prove required behavior |
 | GAP-CI-1 | TASK-23 | Must before final sign-off | CI currently needs final coverage/automation alignment | CI runs scan, restore, build, unit tests, integration tests, and coverage |
 | GAP-SEC-2 | Security backlog | Must before scan week | Secret scanner has false positives against its own pattern definitions | Scanner passes without weakening real secret detection |
 | GAP-SEC-3 | Security backlog | Must before scan week | NuGet vulnerability review/update still required | Vulnerability scan is clean or accepted with documented mitigation |
@@ -154,12 +153,11 @@ The remaining work is not broad feature discovery. It is final sign-off work:
 ## 9. Recommended Completion Sequence
 
 1. Rotate Azure SQL password and complete the highest-priority security backlog items.
-2. Complete TASK-26 if strict upload-backed first image creation is required.
-3. Complete TASK-23 for CI, integration test execution, and coverage automation.
-4. Run local build/test, migration checks, security scan, and package vulnerability scan.
-5. Apply/verify Azure database migration state using rotated credentials.
-6. Run Azure API smoke tests and CORS checks from the Next.js origin.
-7. Attach final evidence to the submission pack and Jira tickets.
+2. Complete TASK-23 for CI, integration test execution, and coverage automation.
+3. Run local build/test, migration checks, security scan, and package vulnerability scan.
+4. Apply/verify Azure database migration state using rotated credentials.
+5. Run Azure API smoke tests and CORS checks from the Next.js origin.
+6. Attach final evidence to the submission pack and Jira tickets.
 
 ## 10. Evidence Files
 
