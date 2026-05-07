@@ -420,18 +420,18 @@ Epic 1 backend implementation exists, but the Jira child items should have final
 **Links to:** [US-2.1 - Submit a review for a tool/service](EPIC-2-REVIEWS-AND-RATINGS.md#us-21--submit-a-review-for-a-toolservice) | [US-2.2 - Display approved reviews on the tool/service page](EPIC-2-REVIEWS-AND-RATINGS.md#us-22--display-approved-reviews-on-the-toolservice-page) | [US-2.3 - Overall tool/service ranking based on ratings](EPIC-2-REVIEWS-AND-RATINGS.md#us-23--overall-toolservice-ranking-based-on-ratings) | [US-2.4 - Comment on a review](EPIC-2-REVIEWS-AND-RATINGS.md#us-24--comment-on-someone-elses-review) | [US-2.5 - Company response to a review](EPIC-2-REVIEWS-AND-RATINGS.md#us-25--company-response-to-a-review) | [US-2.6 - Review API endpoints](EPIC-2-REVIEWS-AND-RATINGS.md#us-26--review-api-endpoints) | [US-2.7 - User registration and login](EPIC-2-REVIEWS-AND-RATINGS.md#us-27--user-registration-and-login) | [US-2.8 - My reviews page](EPIC-2-REVIEWS-AND-RATINGS.md#us-28--my-reviews-page)
 **Priority:** Must | **Gap IDs:** GAP-QA-5, GAP-CONTRACT-2, GAP-AUTH-6
 
-Epic 2 backend implementation exists, but the Jira child items still need final HTTP-level proof, especially company response behaviour and exact auth/review contracts. This task does not require a full ASP.NET Identity migration; it verifies the current custom JWT flow unless TASK-17 is explicitly chosen.
+Epic 2 backend implementation now has final HTTP-level proof for auth, review submission, approved-review retrieval, comments, company responses, and My Reviews. This task does not require a full ASP.NET Identity migration; it verifies the current custom JWT flow unless TASK-17 is explicitly chosen. Company responses keep the current staff role policy: `Admin` and `Moderator` users can manage official responses, while `Customer` users are forbidden.
 
 **Sub-tasks:**
 
-- [ ] **30.1** Add auth integration coverage for duplicate registration, invalid registration/password rules, invalid login, `GET /api/auth/me` without token, change-password validation, forgot/reset invalid token, and generic login failure behaviour
-- [ ] **30.2** Add review submission integration coverage for anonymous submit with name/email, logged-in submit using account details, invalid ratings, too-short review text, missing/inactive tool, and `Pending` visibility rules
-- [ ] **30.3** Add approved-review retrieval integration coverage for newest-first ordering, pagination, no-approved-review message, rating average, and rejection exclusion
-- [ ] **30.4** Add comment integration coverage for pending-on-create, approved-only public visibility, invalid/too-short comment text, missing review, and rejected comment exclusion
-- [ ] **30.5** Add company response integration coverage for create/update/delete, one-response conflict, approved-review-only guard, public response inclusion under approved reviews, and missing response not-found paths
-- [ ] **30.6** Decide and document the backend role policy for company responses: keep current `Admin,Moderator` staff access or restrict to `Admin` only to match the strict wording "admin users"
-- [ ] **30.7** Add my-reviews integration coverage for pending/approved/rejected statuses, rejection reason visibility, company-response flag, pagination, and `401` without token
-- [ ] **30.8** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx`
+- [x] **30.1** Add auth integration coverage for duplicate registration, invalid registration/password rules, invalid login, `GET /api/auth/me` without token, change-password validation, forgot/reset invalid token, and generic login failure behaviour
+- [x] **30.2** Add review submission integration coverage for anonymous submit with name/email, logged-in submit using account details, invalid ratings, too-short review text, missing/inactive tool, and `Pending` visibility rules
+- [x] **30.3** Add approved-review retrieval integration coverage for newest-first ordering, pagination, no-approved-review message, rating average, and rejection exclusion
+- [x] **30.4** Add comment integration coverage for pending-on-create, approved-only public visibility, invalid/too-short comment text, missing review, and rejected comment exclusion
+- [x] **30.5** Add company response integration coverage for create/update/delete, one-response conflict, approved-review-only guard, approved-review-only public response inclusion, and missing response not-found paths
+- [x] **30.6** Decide and document the backend role policy for company responses: keep current `Admin,Moderator` staff access or restrict to `Admin` only to match the strict wording "admin users"
+- [x] **30.7** Add my-reviews integration coverage for pending/approved/rejected statuses, rejection reason visibility, company-response flag, pagination, and `401` without token
+- [x] **30.8** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx`
 
 ---
 
@@ -659,7 +659,7 @@ TASK-26 (First-image upload)   -> replaces the interim `ImageUrl` create shortcu
 TASK-27 (Moderation queue DTO) -> needed before final moderation queue UI and exact badge count
 TASK-28 (Epic 3 API tests)     -> complete; keep TASK-26 separate because it changes the create contract
 TASK-29 (Epic 1 API contract)  -> after TASK-22; before TASK-23
-TASK-30 (Epic 2 API contract)  -> after TASK-22 and TASK-27; before TASK-23
+TASK-30 (Epic 2 API contract)  -> complete; after TASK-22 and TASK-27; before TASK-23
 
 TASK-7  (Docs: tool/service wording) â€” independent
 TASK-8  (Docs: moderation wording)   â€” independent
@@ -704,4 +704,4 @@ TASK-16 (Admin category routing)     â€” independent
 | TASK-27: Item-level moderation queue and exact count | Done | 2026-05-06 |
 | TASK-28: Epic 3 admin API integration coverage | Done | 2026-05-06 |
 | TASK-29: Epic 1 public catalogue API contract coverage | Done | 2026-05-07 |
-| TASK-30: Epic 2 reviews/auth/community API contract coverage | Not started | |
+| TASK-30: Epic 2 reviews/auth/community API contract coverage | Done | 2026-05-07 |
