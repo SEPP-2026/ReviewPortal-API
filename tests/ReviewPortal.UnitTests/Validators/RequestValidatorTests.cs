@@ -194,8 +194,6 @@ public class ToolRequestValidatorTests
         yield return [valid with { SpecialNotes = Text(1001) }, "SpecialNotes", "Special notes must be 1000 characters or fewer."];
         yield return [valid with { DepositRequired = true, DepositAmount = null }, "DepositAmount", "Deposit amount must be greater than 0 when a deposit is required."];
         yield return [valid with { DepositRequired = false, DepositAmount = 25m }, "DepositAmount", "Deposit amount must be empty when a deposit is not required."];
-        yield return [valid with { ImageUrl = "" }, "ImageUrl", "At least one image is required before a tool/service can be saved."];
-        yield return [valid with { ImageUrl = Text(501) }, "ImageUrl", "Image URL must be 500 characters or fewer."];
     }
 
     public static IEnumerable<object[]> InvalidUpdateToolRequests()
@@ -217,7 +215,7 @@ public class ToolRequestValidatorTests
 
     private static CreateToolRequest ValidCreateToolRequest()
     {
-        return new CreateToolRequest(1, "Tower Scaffold", "Safe access tower.", 10m, 50m, 200m, null, false, null, "/uploads/tools/scaffold.jpg");
+        return new CreateToolRequest(1, "Tower Scaffold", "Safe access tower.", 10m, 50m, 200m, null, false, null);
     }
 
     private static UpdateToolRequest ValidUpdateToolRequest()

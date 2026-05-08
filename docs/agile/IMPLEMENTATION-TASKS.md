@@ -339,18 +339,18 @@ The admin API can create, update, and activate/deactivate tools, but there is no
 **Links to:** [US-3.2 - Add new equipment or service to the catalogue](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-32--add-new-equipment-or-service-to-the-catalogue) | [US-3.4 - Manage tool/service images](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-34--manage-toolservice-images) | [US-3.9 - Admin API endpoints](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-39--admin-api-endpoints)
 **Priority:** Must | **Gap IDs:** GAP-FLOW-3, GAP-API-12
 
-`CreateToolRequest` currently requires an `ImageUrl` and creates the first `ToolImage` row, but the Epic 3 acceptance criteria says at least one image must be uploaded before the item can be saved. Additional images use the upload endpoint, but the first-save backend flow is still a URL shortcut rather than a real upload-backed flow.
+Implemented on 2026-05-07. `POST /api/admin/tools` now accepts multipart form data with tool/service metadata plus a required `file` part. The first image uses the same `IImageService` validation and storage rules as additional images, and the stored file is cleaned up if tool/service creation fails.
 
 **Sub-tasks:**
 
-- [ ] **26.1** Decide the API shape for first-image creation: multipart `POST /api/admin/tools` with metadata plus file, or a draft/create transaction that uploads the first image before publishing
-- [ ] **26.2** Reuse `IImageService` validation rules for the first image: JPG/JPEG/PNG/WebP only and max 5MB
-- [ ] **26.3** Ensure tool creation and first `ToolImage` creation succeed or fail together so a tool/service cannot be saved without an image
-- [ ] **26.4** Preserve a migration-free path unless the chosen design requires schema changes; if schema changes are needed, add migration and SQL script
-- [ ] **26.5** Update request DTOs, validators, controller action signatures, and Swagger/OpenAPI shape if present
-- [ ] **26.6** Add unit tests for successful create with image, missing image, invalid file type, too-large file, category not found, and transaction failure cleanup
-- [ ] **26.7** Add integration tests using multipart form data for the create flow
-- [ ] **26.8** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx`
+- [x] **26.1** Decide the API shape for first-image creation: multipart `POST /api/admin/tools` with metadata plus file, or a draft/create transaction that uploads the first image before publishing
+- [x] **26.2** Reuse `IImageService` validation rules for the first image: JPG/JPEG/PNG/WebP only and max 5MB
+- [x] **26.3** Ensure tool creation and first `ToolImage` creation succeed or fail together so a tool/service cannot be saved without an image
+- [x] **26.4** Preserve a migration-free path unless the chosen design requires schema changes; no schema change or migration was required
+- [x] **26.5** Update request DTOs, validators, controller action signatures, and Swagger/OpenAPI shape if present
+- [x] **26.6** Add unit tests for successful create with image, missing image, invalid file type, too-large file, category not found, and transaction failure cleanup
+- [x] **26.7** Add integration tests using multipart form data for the create flow
+- [x] **26.8** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx`
 
 ---
 
@@ -395,6 +395,46 @@ TASK-22 added the real HTTP test foundation and baseline admin authorization che
 
 ---
 
+### TASK-29: Final Epic 1 public catalogue API contract coverage
+
+**Links to:** [US-1.1 - Homepage with featured categories](EPIC-1-CATALOGUE-AND-CALCULATOR.md#us-11--homepage-with-featured-categories) | [US-1.2 - Category browsing page](EPIC-1-CATALOGUE-AND-CALCULATOR.md#us-12--category-browsing-page) | [US-1.3 - Tool/service detail page](EPIC-1-CATALOGUE-AND-CALCULATOR.md#us-13--toolservice-detail-page) | [US-1.4 - Search for tools/services](EPIC-1-CATALOGUE-AND-CALCULATOR.md#us-14--search-for-toolsservices) | [US-1.5 - Rental cost calculator](EPIC-1-CATALOGUE-AND-CALCULATOR.md#us-15--rental-cost-calculator) | [US-1.6 - Filter tools/services by price range](EPIC-1-CATALOGUE-AND-CALCULATOR.md#us-16--filter-toolsservices-by-price-range) | [US-1.8 - API endpoints for tools and categories](EPIC-1-CATALOGUE-AND-CALCULATOR.md#us-18--api-endpoints-for-tools-and-categories)
+**Priority:** Must | **Gap IDs:** GAP-QA-4, GAP-CONTRACT-1
+
+Epic 1 backend implementation exists, but the Jira child items should have final API-level proof before they are moved to Done. TASK-22 has a baseline catalogue integration test; this task expands that into a full contract check for the public endpoints the Next.js app will call.
+
+**Sub-tasks:**
+
+- [x] **29.1** Add integration coverage for `GET /api/categories/featured` used by the homepage featured category grid
+- [x] **29.2** Add category browsing integration coverage for pagination metadata, name sort, price ascending/descending sort, and inactive-tool exclusion
+- [x] **29.3** Add price-filter integration coverage for min/max daily rate, invalid negative ranges, and no-match results
+- [x] **29.4** Add search integration coverage for case-insensitive matches by tool/service name, description, category, no-result responses, empty query validation, and special-character input
+- [x] **29.5** Add tool/detail integration coverage for multiple images, hire rates, special notes, deposit fields, rating display state, and `404` for inactive/missing tools
+- [x] **29.6** Add rental-calculator integration coverage for hours-only, days-only, weekly threshold, mixed/cheapest combination, invalid date range, and missing/inactive tool
+- [x] **29.7** Confirm the frontend contract note remains accurate: there is no `GET /api/tools`; category pages must call `GET /api/categories/{id}/tools`
+- [x] **29.8** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx`
+
+---
+
+### TASK-30: Final Epic 2 reviews/auth/community API contract coverage
+
+**Links to:** [US-2.1 - Submit a review for a tool/service](EPIC-2-REVIEWS-AND-RATINGS.md#us-21--submit-a-review-for-a-toolservice) | [US-2.2 - Display approved reviews on the tool/service page](EPIC-2-REVIEWS-AND-RATINGS.md#us-22--display-approved-reviews-on-the-toolservice-page) | [US-2.3 - Overall tool/service ranking based on ratings](EPIC-2-REVIEWS-AND-RATINGS.md#us-23--overall-toolservice-ranking-based-on-ratings) | [US-2.4 - Comment on a review](EPIC-2-REVIEWS-AND-RATINGS.md#us-24--comment-on-someone-elses-review) | [US-2.5 - Company response to a review](EPIC-2-REVIEWS-AND-RATINGS.md#us-25--company-response-to-a-review) | [US-2.6 - Review API endpoints](EPIC-2-REVIEWS-AND-RATINGS.md#us-26--review-api-endpoints) | [US-2.7 - User registration and login](EPIC-2-REVIEWS-AND-RATINGS.md#us-27--user-registration-and-login) | [US-2.8 - My reviews page](EPIC-2-REVIEWS-AND-RATINGS.md#us-28--my-reviews-page)
+**Priority:** Must | **Gap IDs:** GAP-QA-5, GAP-CONTRACT-2, GAP-AUTH-6
+
+Epic 2 backend implementation now has final HTTP-level proof for auth, review submission, approved-review retrieval, comments, company responses, and My Reviews. This task does not require a full ASP.NET Identity migration; it verifies the current custom JWT flow unless TASK-17 is explicitly chosen. Company responses keep the current staff role policy: `Admin` and `Moderator` users can manage official responses, while `Customer` users are forbidden.
+
+**Sub-tasks:**
+
+- [x] **30.1** Add auth integration coverage for duplicate registration, invalid registration/password rules, invalid login, `GET /api/auth/me` without token, change-password validation, forgot/reset invalid token, and generic login failure behaviour
+- [x] **30.2** Add review submission integration coverage for anonymous submit with name/email, logged-in submit using account details, invalid ratings, too-short review text, missing/inactive tool, and `Pending` visibility rules
+- [x] **30.3** Add approved-review retrieval integration coverage for newest-first ordering, pagination, no-approved-review message, rating average, and rejection exclusion
+- [x] **30.4** Add comment integration coverage for pending-on-create, approved-only public visibility, invalid/too-short comment text, missing review, and rejected comment exclusion
+- [x] **30.5** Add company response integration coverage for create/update/delete, one-response conflict, approved-review-only guard, approved-review-only public response inclusion, and missing response not-found paths
+- [x] **30.6** Decide and document the backend role policy for company responses: keep current `Admin,Moderator` staff access or restrict to `Admin` only to match the strict wording "admin users"
+- [x] **30.7** Add my-reviews integration coverage for pending/approved/rejected statuses, rejection reason visibility, company-response flag, pagination, and `401` without token
+- [x] **30.8** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx`
+
+---
+
 ## Cross-Cutting Technical Quality & Automation
 
 ### TASK-19: Implement admin tool management service methods and creation flow
@@ -402,7 +442,7 @@ TASK-22 added the real HTTP test foundation and baseline admin authorization che
 **Links to:** [US-3.2 - Add new equipment or service to the catalogue](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-32--add-new-equipment-or-service-to-the-catalogue) | [US-3.3 - Edit existing equipment/service details and pricing](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-33--edit-existing-equipmentservice-details-and-pricing) | [US-3.5 - Deactivate or remove equipment/service](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-35--deactivate-or-remove-equipmentservice) | [US-3.9 - Admin API endpoints](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-39--admin-api-endpoints)
 **Priority:** Must | **Gap IDs:** GAP-SVC-8, GAP-FLOW-1
 
-`IToolService` exposes admin mutation methods. The first-save image flow is handled by requiring `CreateToolRequest.ImageUrl`, which creates the first `ToolImage` record in the same create operation. Additional images are managed through the admin image upload endpoints from TASK-4.
+`IToolService` exposes admin mutation methods. TASK-19 implemented the core create/update/status service logic, and TASK-26 now handles the first-save image flow through multipart upload-backed creation. Additional images are managed through the admin image upload endpoints from TASK-4.
 
 **Sub-tasks:**
 
@@ -608,16 +648,18 @@ TASK-13 (Fix company response) â€” independent, do anytime
 TASK-14 (Review threshold)     â€” independent, do anytime
 TASK-17 (Auth alignment)       - conditional decision gate only if full ASP.NET Identity is mandatory
 TASK-18 (Comment status index) - independent, do anytime
-TASK-19 (Tool service logic)   - complete; interim create flow requires initial `ImageUrl`; TASK-26 will align this with real upload
+TASK-19 (Tool service logic)   - complete; create flow now uses TASK-26 upload-backed first image handling
 TASK-20 (FluentValidation)     -> supports TASK-17 and TASK-19
 TASK-21 (Rating DB checks)     -> pair with TASK-18
 TASK-22 (API integration)      -> after core API slices are stable
-TASK-23 (CI + coverage)        -> after TASK-22
+TASK-23 (CI + coverage)        -> after TASK-22, TASK-28, TASK-29, and TASK-30
 TASK-24 (Secret cleanup)       - immediate, independent
 TASK-25 (Admin read endpoints) -> needed so admin clients can list inactive tools and fetch edit data
-TASK-26 (First-image upload)   -> replaces the interim `ImageUrl` create shortcut with upload-backed creation
+TASK-26 (First-image upload)   - complete; replaced the interim `ImageUrl` create shortcut with upload-backed creation
 TASK-27 (Moderation queue DTO) -> needed before final moderation queue UI and exact badge count
-TASK-28 (Epic 3 API tests)     -> after TASK-25, TASK-26, and TASK-27
+TASK-28 (Epic 3 API tests)     -> complete; TASK-26 adds the final multipart create contract coverage
+TASK-29 (Epic 1 API contract)  -> after TASK-22; before TASK-23
+TASK-30 (Epic 2 API contract)  -> complete; after TASK-22 and TASK-27; before TASK-23
 
 TASK-7  (Docs: tool/service wording) â€” independent
 TASK-8  (Docs: moderation wording)   â€” independent
@@ -658,7 +700,8 @@ TASK-16 (Admin category routing)     â€” independent
 | TASK-24: Secret cleanup and config externalisation | Repo cleanup done; Azure password rotation required | 2026-05-06 |
 | TASK-16: Admin category routing | Done | 2026-05-05 |
 | TASK-25: Admin tool list/detail read endpoints | Done | 2026-05-06 |
-| TASK-26: First-image upload create flow | Not started | |
+| TASK-26: First-image upload create flow | Done | 2026-05-07 |
 | TASK-27: Item-level moderation queue and exact count | Done | 2026-05-06 |
 | TASK-28: Epic 3 admin API integration coverage | Done | 2026-05-06 |
-
+| TASK-29: Epic 1 public catalogue API contract coverage | Done | 2026-05-07 |
+| TASK-30: Epic 2 reviews/auth/community API contract coverage | Done | 2026-05-07 |

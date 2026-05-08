@@ -293,21 +293,21 @@ erDiagram
 
     CompanyResponses {
         int Id PK
-        int ReviewId FK
+        int ReviewId FK,UK
         int StaffUserId FK
         string ResponseText
         datetime CreatedDate
         datetime UpdatedDate
     }
 
-    Categories ||--o{ Tools : "contains"
-    Tools ||--o{ ToolImages : "has"
-    Tools ||--o{ Reviews : "receives"
-    Users ||--o{ Reviews : "writes"
-    Reviews ||--o{ ReviewComments : "has"
-    Users ||--o{ ReviewComments : "comments"
-    Reviews ||--|| CompanyResponses : "has"
-    Users ||--o{ CompanyResponses : "authors"
+    Categories ||--o{ Tools : contains
+    Tools ||--o{ ToolImages : has
+    Tools ||--o{ Reviews : receives
+    Users ||--o{ Reviews : writes
+    Reviews ||--o{ ReviewComments : has
+    Users ||--o{ ReviewComments : writes
+    Reviews ||--o| CompanyResponses : has
+    Users ||--o{ CompanyResponses : authors
 ```
 
 ---

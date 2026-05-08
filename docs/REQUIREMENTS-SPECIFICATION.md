@@ -133,7 +133,7 @@ Each requirement is traced to the user story that implements it and the brief re
 | ID | Requirement | Priority | User Story | Brief Ref |
 |----|-------------|----------|------------|-----------|
 | FR-46 | Admin tool management endpoints under `/api/admin/tools` shall require the Admin role and support create, update, deactivate, and reactivate operations | Must | US-3.2, US-3.3, US-3.5, US-3.9 | R8, R9 |
-| FR-47 | Admin image endpoints shall support uploading JPG, JPEG, PNG, and WebP images up to 5MB and shall prevent deleting the last remaining image for a tool/service | Must | US-3.4, US-3.9 | R10 |
+| FR-47 | Admin image handling shall support uploading JPG, JPEG, PNG, and WebP images up to 5MB, require a first image during tool/service creation, and prevent deleting the last remaining image | Must | US-3.2, US-3.4, US-3.9 | R10 |
 | FR-48 | Moderation API endpoints under `/api/admin/moderation` shall require the Admin or Moderator role and support pending queue retrieval plus review/comment approval and rejection | Must | US-3.6, US-3.9 | R11, R26 |
 | FR-49 | The admin dashboard API shall return active/inactive tool counts, pending moderation counts, current-month review counts, top-rated tools/services, and most-reviewed tools/services | Could | US-3.8, US-3.9 | R8 |
 | FR-50 | Category management endpoints shall allow admins to create and update categories and shall block deletion when a category still contains tools/services | Should | US-3.7, US-3.9 | R2 |
@@ -174,6 +174,7 @@ This section provides the document-level traceability summary from the project b
 | Review categories (Equipment Performance, Booking & Customer Service, Technical Support & Guidance, After-Sales & Breakdown Support, Value for Money) | US-2.1, US-2.9 | FR-19 | The five review dimensions are captured in both submission and schema stories |
 | Rating aggregation method for overall score and review-count threshold | US-2.3 | FR-23 to FR-26 | Covers average rating, display, sorting, and the minimum-review threshold |
 | Moderation workflow for reviews and comments | US-2.1, US-2.4, US-3.6 | FR-21, FR-29, FR-42, FR-43 | Covers `Pending` status, moderator actions, and public visibility rules |
+| Company response staff policy | US-2.5, US-3.1 | FR-30 to FR-32, FR-37 | Official company responses are staff-only and may be managed by `Admin` or `Moderator` users |
 | Pricing logic for hourly, daily, and weekly hire calculation | US-1.5 | FR-12 to FR-17 | Covers inputs, cheapest-combination logic, validation, and cost breakdown |
 | Authentication approach | US-2.7, US-3.1 | FR-33, FR-34, FR-37 | Current implementation uses a custom JWT auth service with ASP.NET Core `PasswordHasher<TUser>`-compatible password hashing; full ASP.NET Identity remains a separate decision only if explicitly required |
 
@@ -184,57 +185,65 @@ This section provides the document-level traceability summary from the project b
 The extended submission-ready functional design diagrams are maintained in [FUNCTIONAL-DESIGN-DIAGRAMS.md](FUNCTIONAL-DESIGN-DIAGRAMS.md), including use case, class, activity, architecture, sequence, DFD, and ERD diagrams.
 
 ```mermaid
-graph TB
-    subgraph "Public Portal"
-        UC1["Browse Categories"]
-        UC2["View Tool Detail"]
-        UC3["Search for Tools"]
-        UC4["Calculate Rental Cost"]
-        UC5["Submit Review"]
-        UC6["Read Reviews"]
-        UC7["Comment on Review"]
-        UC8["Register / Login"]
-        UC9["View My Reviews"]
+flowchart LR
+    Visitor["Customer / Visitor"]
+    RegisteredUser["Registered User"]
+    Admin["Admin"]
+    Moderator["Moderator"]
+
+    subgraph PublicPortal["Public Portal"]
+        UC1(("Browse categories"))
+        UC2(("View tool/service details"))
+        UC3(("Search tools/services"))
+        UC4(("Filter and sort catalogue"))
+        UC5(("Calculate rental cost"))
+        UC6(("Read approved reviews"))
+        UC7(("Register account"))
+        UC8(("Log in"))
+        UC9(("Submit review"))
+        UC10(("Comment on approved review"))
+        UC11(("View my reviews"))
     end
 
-    subgraph "Back-Office"
-        UC10["Login as Admin"]
-        UC11["Add Equipment"]
-        UC12["Edit Equipment & Pricing"]
-        UC13["Manage Images"]
-        UC14["Deactivate Equipment"]
-        UC15["Moderate Reviews & Comments"]
-        UC16["Respond to Review"]
-        UC17["Manage Categories"]
-        UC18["View Dashboard"]
+    subgraph BackOffice["Back-Office Portal"]
+        UC12(("Manage tools/services"))
+        UC13(("Create tool/service"))
+        UC14(("Edit details and pricing"))
+        UC15(("Activate/deactivate tool/service"))
+        UC16(("Upload/delete images"))
+        UC17(("Manage categories"))
+        UC18(("View moderation queue"))
+        UC19(("Approve/reject reviews"))
+        UC20(("Approve/reject comments"))
+        UC21(("Post company response"))
+        UC22(("View dashboard statistics"))
     end
 
-    Customer(("👤 Customer"))
-    Staff(("👔 Staff / Admin"))
-    Moderator(("🛡️ Moderator"))
-
-    Customer --> UC1
-    Customer --> UC2
-    Customer --> UC3
-    Customer --> UC4
-    Customer --> UC5
-    Customer --> UC6
-    Customer --> UC7
-    Customer --> UC8
-    Customer --> UC9
-
-    Staff --> UC10
-    Staff --> UC11
-    Staff --> UC12
-    Staff --> UC13
-    Staff --> UC14
-    Staff --> UC16
-    Staff --> UC17
-    Staff --> UC18
-
-    Moderator --> UC10
-    Moderator --> UC15
-    Moderator --> UC16
+    Visitor --> UC1
+    Visitor --> UC2
+    Visitor --> UC3
+    Visitor --> UC4
+    Visitor --> UC5
+    Visitor --> UC6
+    Visitor --> UC7
+    Visitor --> UC8
+    RegisteredUser --> UC9
+    RegisteredUser --> UC10
+    RegisteredUser --> UC11
+    Admin --> UC12
+    Admin --> UC13
+    Admin --> UC14
+    Admin --> UC15
+    Admin --> UC16
+    Admin --> UC17
+    Admin --> UC18
+    Admin --> UC19
+    Admin --> UC20
+    Admin --> UC21
+    Admin --> UC22
+    Moderator --> UC18
+    Moderator --> UC19
+    Moderator --> UC20
 ```
 
 ---
@@ -252,3 +261,32 @@ graph TB
 - The review system does not require verified purchases — any registered user (or anonymous visitor providing name and email) can leave a review, but all customer reviews and comments require moderation before publication
 - Tool availability/stock checking is out of scope — the calculator computes cost only, not availability
 - Multi-language support is not required for the prototype
+
+---
+
+## 6. Functional Completion and Gap Status
+
+This section records the final backend/API completion status for the functional requirements. It is intended to support project sign-off, Jira closure, and MSc submission traceability.
+
+### 6.1 Functional Coverage Summary
+
+| Functional Area | Requirement IDs | Backend/API Status | Remaining Completion Evidence |
+|-----------------|-----------------|--------------------|-------------------------------|
+| Catalogue browsing, categories, search, sorting, filtering, and pagination | FR-01 to FR-11 | Implemented through public category/search/tool endpoints | Covered by TASK-29 integration tests |
+| Rental cost calculator | FR-12 to FR-17 | Implemented through `POST /api/tools/{id}/rental-calculation` using hourly, daily, and weekly rates | Covered by TASK-29 integration tests |
+| Review submission, five rating categories, approved-review display, and rating aggregation | FR-18 to FR-26 | Implemented through review endpoints, moderation workflow, cached tool rating/count, and not-enough-reviews DTO fields | Covered by TASK-30 integration tests |
+| Comments and official company responses | FR-27 to FR-32 | Implemented; customer comments are moderated and company responses are restricted to approved reviews and staff roles `Admin,Moderator` | Covered by TASK-30 integration tests |
+| Customer registration, login, JWT role claims, password reset, and My Reviews | FR-33 to FR-36 | Implemented using custom JWT authentication with ASP.NET Core password hashing | Covered by TASK-30 integration tests |
+| Back-office authentication, catalogue management, moderation, categories, images, and dashboard | FR-37 to FR-50 | Implemented through `/api/admin/...` controllers and services, including multipart first-image upload during tool/service creation | Covered by TASK-26, TASK-27, and TASK-28 integration tests |
+| API validation and database integrity | FR-51 to FR-53 | Implemented with FluentValidation validators, review/comment indexes, and rating check constraints | Keep migration and integration-test evidence with the final submission pack |
+
+### 6.2 Completion Gate Summary
+
+| Gate | Status | Action Before 100 Percent Sign-Off |
+|------|--------|------------------------------------|
+| Feature implementation | Functionally complete at backend/API level | Keep build/test, security, deployment, and evidence checks current before final sign-off |
+| Requirements traceability | Complete | Keep this specification, `GAP-ANALYSIS.md`, and the agile epic docs in the final evidence pack |
+| API contract proof | Epic 1 and Epic 2 complete | Complete TASK-23 so CI runs the final contract suite automatically |
+| Database design and integrity | Complete | Include migration files, SQL scripts, `DATABASE-DESIGN.md`, and `ERD.md` as evidence |
+| Authentication decision | Complete for the current project decision | Keep custom JWT plus ASP.NET Core password hashing unless full ASP.NET Identity is explicitly required |
+| Deployment readiness | Partially complete | Finish Azure credential rotation, App Service settings, CORS confirmation, and smoke tests |

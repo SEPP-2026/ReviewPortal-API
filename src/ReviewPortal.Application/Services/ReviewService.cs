@@ -321,7 +321,15 @@ public class ReviewService : IReviewService
             return Result<bool>.NotFound($"Company response for review with ID {reviewId} not found.");
         }
 
-        await _companyResponseRepository.DeleteAsync(review.CompanyResponse, cancellationToken);
+        var companyResponse = await _companyResponseRepository.GetByIdAsync(
+            review.CompanyResponse.Id,
+            cancellationToken);
+        if (companyResponse is null)
+        {
+            return Result<bool>.NotFound($"Company response for review with ID {reviewId} not found.");
+        }
+
+        await _companyResponseRepository.DeleteAsync(companyResponse, cancellationToken);
         review.CompanyResponse = null;
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

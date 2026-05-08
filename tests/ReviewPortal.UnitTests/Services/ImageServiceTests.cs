@@ -47,6 +47,120 @@ public class ImageServiceTests
     }
 
     [Fact]
+    public async Task StoreImageFileAsync_ValidImage_SavesFileAndReturnsFirstImageUrl()
+    {
+        var rootPath = CreateTempRootPath();
+
+        try
+        {
+            var service = CreateService(
+                rootPath,
+                [],
+                [],
+                out var imageRepository,
+                out var unitOfWork);
+            using var stream = new MemoryStream([0xFF, 0xD8, 0xFF, 0xD9]);
+
+            var result = await service.StoreImageFileAsync(stream, "first-image.JPG", CancellationToken.None);
+
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Value);
+            Assert.StartsWith("/uploads/tools/first-", result.Value!);
+            Assert.EndsWith(".jpg", result.Value);
+            Assert.Single(Directory.GetFiles(rootPath));
+            Assert.True(File.Exists(Path.Combine(rootPath, result.Value.Split('/').Last())));
+            Assert.Empty(imageRepository.Items);
+            Assert.Equal(0, unitOfWork.SaveChangesCallCount);
+        }
+        finally
+        {
+            DeleteTempRootPath(rootPath);
+        }
+    }
+
+    [Fact]
+    public async Task StoreImageFileAsync_InvalidExtension_ReturnsValidationFailureWithoutWritingFile()
+    {
+        var rootPath = CreateTempRootPath();
+
+        try
+        {
+            var service = CreateService(
+                rootPath,
+                [],
+                [],
+                out _,
+                out _);
+            using var stream = new MemoryStream([1, 2, 3]);
+
+            var result = await service.StoreImageFileAsync(stream, "first-image.gif", CancellationToken.None);
+
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ErrorType.Validation, result.FailureType);
+            AssertNoFiles(rootPath);
+        }
+        finally
+        {
+            DeleteTempRootPath(rootPath);
+        }
+    }
+
+    [Fact]
+    public async Task StoreImageFileAsync_FileTooLarge_ReturnsValidationFailureAndDeletesPartialFile()
+    {
+        var rootPath = CreateTempRootPath();
+
+        try
+        {
+            var service = CreateService(
+                rootPath,
+                [],
+                [],
+                out _,
+                out _,
+                maxFileSizeBytes: 2);
+            using var stream = new MemoryStream([1, 2, 3]);
+
+            var result = await service.StoreImageFileAsync(stream, "first-image.jpg", CancellationToken.None);
+
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ErrorType.Validation, result.FailureType);
+            AssertNoFiles(rootPath);
+        }
+        finally
+        {
+            DeleteTempRootPath(rootPath);
+        }
+    }
+
+    [Fact]
+    public async Task DeleteStoredImageAsync_StoredImage_DeletesLocalFile()
+    {
+        var rootPath = CreateTempRootPath();
+
+        try
+        {
+            Directory.CreateDirectory(rootPath);
+            var storedFilePath = Path.Combine(rootPath, "first-delete-me.jpg");
+            await File.WriteAllBytesAsync(storedFilePath, [1, 2, 3], CancellationToken.None);
+            var service = CreateService(
+                rootPath,
+                [],
+                [],
+                out _,
+                out _);
+
+            await service.DeleteStoredImageAsync("/uploads/tools/first-delete-me.jpg", CancellationToken.None);
+
+            Assert.False(File.Exists(storedFilePath));
+        }
+        finally
+        {
+            DeleteTempRootPath(rootPath);
+        }
+    }
+
+    [Fact]
     public async Task UploadImageAsync_InvalidExtension_ReturnsValidationFailure()
     {
         var rootPath = CreateTempRootPath();
@@ -293,5 +407,10 @@ public class ImageServiceTests
         {
             Directory.Delete(rootPath, recursive: true);
         }
+    }
+
+    private static void AssertNoFiles(string rootPath)
+    {
+        Assert.True(!Directory.Exists(rootPath) || Directory.GetFiles(rootPath).Length == 0);
     }
 }
