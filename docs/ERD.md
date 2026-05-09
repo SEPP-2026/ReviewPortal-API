@@ -169,7 +169,7 @@ Stores image references for each tool. At least one image is required per tool.
 |-------|------|-------------|-------------|
 | **Id** | `int` | PK, Identity | Unique image identifier |
 | **ToolId** | `int` | FK → Tools.Id, Required | Parent tool |
-| **ImageUrl** | `nvarchar(500)` | Required | URL/path to the image file |
+| **ImageUrl** | `nvarchar(500)` | Required | Stable Azure Blob URL for the uploaded image |
 | **DisplayOrder** | `int` | Required, Default: `0` | Controls the image carousel order |
 | **UploadedDate** | `datetime2` | Required, Default: `GETUTCDATE()` | When the image was uploaded |
 

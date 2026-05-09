@@ -2,14 +2,11 @@ using System.Security.Claims;
 using System.Text;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ReviewPortal.API.Extensions;
 using ReviewPortal.API.Middleware;
 using ReviewPortal.Application.Common;
-using ReviewPortal.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 AddLocalConfiguration(builder);
@@ -97,14 +94,6 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
-var imageStorageOptions = builder.Configuration
-    .GetSection(ImageStorageOptions.SectionName)
-    .Get<ImageStorageOptions>() ?? new ImageStorageOptions();
-var imageStorageRoot = Path.GetFullPath(Path.IsPathRooted(imageStorageOptions.RootPath)
-    ? imageStorageOptions.RootPath
-    : Path.Combine(app.Environment.ContentRootPath, imageStorageOptions.RootPath));
-var imageRequestPath = NormalizeRequestPath(imageStorageOptions.RequestPath);
-Directory.CreateDirectory(imageStorageRoot);
 
 // Configure the HTTP request pipeline.
 //if (app.Environment.IsDevelopment())
@@ -119,12 +108,6 @@ app.UseHttpsRedirection();
 
 // Use CORS before Authentication!
 app.UseCors("NextJsPolicy");
-
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(imageStorageRoot),
-    RequestPath = new PathString(imageRequestPath)
-});
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -206,19 +189,6 @@ static void AddLocalConfiguration(WebApplicationBuilder builder)
 static bool ContainsPlaceholder(string? value)
 {
     return value?.Contains('<') == true || value?.Contains('>') == true;
-}
-
-static string NormalizeRequestPath(string requestPath)
-{
-    if (string.IsNullOrWhiteSpace(requestPath))
-    {
-        return "/uploads/tools";
-    }
-
-    var normalized = requestPath.Replace('\\', '/').TrimEnd('/');
-    return normalized.StartsWith('/')
-        ? normalized
-        : $"/{normalized}";
 }
 
 public partial class Program

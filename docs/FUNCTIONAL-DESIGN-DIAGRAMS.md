@@ -401,7 +401,7 @@ flowchart TB
 
     subgraph DataLayer["Data Layer"]
         SqlServer["Azure SQL / SQL Server"]
-        ImageStorage["Configured Image Storage: Local Uploads or Azure Blob"]
+        ImageStorage["Azure Blob Storage: Tool/Service Images"]
     end
 
     subgraph DevOpsLayer["DevOps and Configuration"]

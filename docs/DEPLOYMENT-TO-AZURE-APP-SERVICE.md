@@ -92,6 +92,10 @@ Add these application settings:
 - `Jwt__Issuer = ReviewPortalAPI`
 - `Jwt__Audience = ReviewPortalClient`
 - `Jwt__ExpiryMinutes = 60`
+- `ImageStorage__ServiceUri = https://<storage-account-name>.blob.core.windows.net`
+- `ImageStorage__ContainerName = tool-images`
+- `ImageStorage__PublicBaseUrl = https://<storage-account-name>.blob.core.windows.net/tool-images`
+- `ImageStorage__BlobNamePrefix = tools`
 
 For the database, recommended:
 
@@ -107,6 +111,8 @@ Optional if you have a frontend calling this API:
 - `Cors__AllowedOrigins__1 = http://localhost:3000`
 
 After saving configuration, restart the App Service.
+
+Uploaded tool/service images are stored in Azure Blob Storage. Prefer App Service managed identity with the `Storage Blob Data Contributor` role on the storage account; use a storage connection string only as a local development fallback. See [`azure-blob-storage/README.md`](azure-blob-storage/README.md) for the Azure Portal steps.
 
 ## Local Azure SQL migrations without committing secrets
 

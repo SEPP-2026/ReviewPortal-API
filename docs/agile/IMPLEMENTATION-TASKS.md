@@ -260,6 +260,26 @@ No image upload or delete functionality exists.
 
 ---
 
+### TASK-31: Replace local image storage with Azure Blob Storage
+
+**Links to:** [US-3.4 â€“ Manage tool/service images](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-34--manage-toolservice-images) | [US-3.9 â€“ Admin API endpoints](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-39--admin-api-endpoints) | [Azure Blob Storage setup README](../azure-blob-storage/README.md)
+**Priority:** Must | **Gap IDs:** GAP-SEC-IMG-1, GAP-CLOUD-IMG-1
+
+The existing image service stores uploaded tool/service images on the local API filesystem. Replace that with Azure Blob Storage so uploaded image URLs are durable across App Service restarts, deployments, and scaled-out instances.
+
+**Sub-tasks:**
+
+- [x] **31.1** Create Azure Blob Storage implementation task and Azure Portal setup README
+- [x] **31.2** Add Azure Blob SDK packages to the Infrastructure project
+- [x] **31.3** Replace local disk writes/deletes with blob upload/delete operations
+- [x] **31.4** Store the generated Azure Blob image URL in `ToolImages.ImageUrl` and first-image create flow
+- [x] **31.5** Harden image validation by enforcing max size, allowed extension, and matching image file signature
+- [x] **31.6** Remove local static-file image hosting from API startup
+- [x] **31.7** Update unit and integration tests to use an in-memory blob-storage test double
+- [x] **31.8** Run `dotnet build ReviewPortal.slnx` and `dotnet test ReviewPortal.slnx`
+
+---
+
 ### TASK-5: Implement DashboardService and controller
 
 **Links to:** [US-3.8 â€“ Admin dashboard with overview stats](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-38--admin-dashboard-with-overview-stats) | [US-3.9 â€“ Admin API endpoints](EPIC-3-BACKOFFICE-AND-MODERATION.md#us-39--admin-api-endpoints)
@@ -660,6 +680,7 @@ TASK-27 (Moderation queue DTO) -> needed before final moderation queue UI and ex
 TASK-28 (Epic 3 API tests)     -> complete; TASK-26 adds the final multipart create contract coverage
 TASK-29 (Epic 1 API contract)  -> after TASK-22; before TASK-23
 TASK-30 (Epic 2 API contract)  -> complete; after TASK-22 and TASK-27; before TASK-23
+TASK-31 (Azure Blob images)    -> replaces TASK-4 local file storage; no database migration needed
 
 TASK-7  (Docs: tool/service wording) â€” independent
 TASK-8  (Docs: moderation wording)   â€” independent
@@ -705,3 +726,4 @@ TASK-16 (Admin category routing)     â€” independent
 | TASK-28: Epic 3 admin API integration coverage | Done | 2026-05-06 |
 | TASK-29: Epic 1 public catalogue API contract coverage | Done | 2026-05-07 |
 | TASK-30: Epic 2 reviews/auth/community API contract coverage | Done | 2026-05-07 |
+| TASK-31: Azure Blob image storage | Done | 2026-05-09 |

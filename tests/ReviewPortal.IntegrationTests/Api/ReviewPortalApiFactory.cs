@@ -3,10 +3,12 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using ReviewPortal.Domain.Entities;
 using ReviewPortal.Domain.Enums;
 using ReviewPortal.Infrastructure.Authentication;
 using ReviewPortal.Infrastructure.Data;
+using ReviewPortal.Infrastructure.Services;
 
 namespace ReviewPortal.IntegrationTests.Api;
 
@@ -26,7 +28,6 @@ public sealed class ReviewPortalApiFactory : WebApplicationFactory<Program>
     public const string ModeratorPassword = "Moderator123";
 
     private readonly string _databaseName = $"ReviewPortalApiTests_{Guid.NewGuid():N}";
-    private readonly string _uploadRootPath = Path.Combine(Path.GetTempPath(), $"ReviewPortalApiTests_Uploads_{Guid.NewGuid():N}");
     private bool _databaseDeleted;
 
     public int AccessCategoryId { get; private set; }
@@ -37,7 +38,7 @@ public sealed class ReviewPortalApiFactory : WebApplicationFactory<Program>
 
     public string ConnectionString => $"Server=(localdb)\\MSSQLLocalDB;Database={_databaseName};Trusted_Connection=True;TrustServerCertificate=True;";
 
-    public string UploadRootPath => _uploadRootPath;
+    public TestBlobImageStorage BlobStorage => Services.GetRequiredService<TestBlobImageStorage>();
 
     public ReviewPortalApiFactory()
     {
@@ -62,7 +63,7 @@ public sealed class ReviewPortalApiFactory : WebApplicationFactory<Program>
         await context.Database.MigrateAsync();
         await ClearSeededDataAsync(context);
         await SeedTestDataAsync(context);
-        ClearUploadDirectory();
+        BlobStorage.Clear();
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -71,6 +72,12 @@ public sealed class ReviewPortalApiFactory : WebApplicationFactory<Program>
         builder.ConfigureAppConfiguration((_, configurationBuilder) =>
         {
             configurationBuilder.AddInMemoryCollection(CreateConfiguration());
+        });
+        builder.ConfigureServices(services =>
+        {
+            services.RemoveAll<IBlobImageStorage>();
+            services.AddSingleton<TestBlobImageStorage>();
+            services.AddSingleton<IBlobImageStorage>(provider => provider.GetRequiredService<TestBlobImageStorage>());
         });
     }
 
@@ -84,7 +91,6 @@ public sealed class ReviewPortalApiFactory : WebApplicationFactory<Program>
 
             using var context = new AppDbContext(options);
             context.Database.EnsureDeleted();
-            ClearUploadDirectory();
             _databaseDeleted = true;
         }
 
@@ -98,8 +104,9 @@ public sealed class ReviewPortalApiFactory : WebApplicationFactory<Program>
         Environment.SetEnvironmentVariable("Jwt__Issuer", "ReviewPortal.IntegrationTests");
         Environment.SetEnvironmentVariable("Jwt__Audience", "ReviewPortal.IntegrationTests");
         Environment.SetEnvironmentVariable("Jwt__ExpiryMinutes", "60");
-        Environment.SetEnvironmentVariable("ImageStorage__RootPath", _uploadRootPath);
-        Environment.SetEnvironmentVariable("ImageStorage__RequestPath", "/uploads/tools");
+        Environment.SetEnvironmentVariable("ImageStorage__ContainerName", "tool-images");
+        Environment.SetEnvironmentVariable("ImageStorage__PublicBaseUrl", TestBlobImageStorage.PublicBaseUrl);
+        Environment.SetEnvironmentVariable("ImageStorage__BlobNamePrefix", "tools");
     }
 
     private Dictionary<string, string?> CreateConfiguration()
@@ -111,17 +118,10 @@ public sealed class ReviewPortalApiFactory : WebApplicationFactory<Program>
             ["Jwt:Issuer"] = "ReviewPortal.IntegrationTests",
             ["Jwt:Audience"] = "ReviewPortal.IntegrationTests",
             ["Jwt:ExpiryMinutes"] = "60",
-            ["ImageStorage:RootPath"] = _uploadRootPath,
-            ["ImageStorage:RequestPath"] = "/uploads/tools"
+            ["ImageStorage:ContainerName"] = "tool-images",
+            ["ImageStorage:PublicBaseUrl"] = TestBlobImageStorage.PublicBaseUrl,
+            ["ImageStorage:BlobNamePrefix"] = "tools"
         };
-    }
-
-    private void ClearUploadDirectory()
-    {
-        if (Directory.Exists(_uploadRootPath))
-        {
-            Directory.Delete(_uploadRootPath, recursive: true);
-        }
     }
 
     private static async Task ClearSeededDataAsync(AppDbContext context)
@@ -277,4 +277,59 @@ public sealed class ReviewPortalApiFactory : WebApplicationFactory<Program>
         review.CalculateOverallRating();
         return review;
     }
+}
+
+public sealed class TestBlobImageStorage : IBlobImageStorage
+{
+    public const string PublicBaseUrl = "https://reviewportaltest.blob.core.windows.net/tool-images";
+
+    private readonly Dictionary<string, StoredBlob> _blobs = new(StringComparer.OrdinalIgnoreCase);
+
+    public int BlobCount => _blobs.Count;
+
+    public async Task<string> UploadAsync(
+        string blobName,
+        Stream content,
+        string contentType,
+        CancellationToken cancellationToken = default)
+    {
+        using var memoryStream = new MemoryStream();
+        content.Position = 0;
+        await content.CopyToAsync(memoryStream, cancellationToken);
+        _blobs[blobName] = new StoredBlob(memoryStream.ToArray(), contentType);
+
+        return $"{PublicBaseUrl}/{blobName}";
+    }
+
+    public Task DeleteAsync(
+        string imageUrl,
+        CancellationToken cancellationToken = default)
+    {
+        _blobs.Remove(GetBlobName(imageUrl));
+        return Task.CompletedTask;
+    }
+
+    public void Clear()
+    {
+        _blobs.Clear();
+    }
+
+    public bool ContainsUrl(string imageUrl)
+    {
+        return _blobs.ContainsKey(GetBlobName(imageUrl));
+    }
+
+    public string GetContentType(string imageUrl)
+    {
+        return _blobs[GetBlobName(imageUrl)].ContentType;
+    }
+
+    private static string GetBlobName(string imageUrl)
+    {
+        return imageUrl.StartsWith($"{PublicBaseUrl}/", StringComparison.OrdinalIgnoreCase)
+            ? imageUrl[(PublicBaseUrl.Length + 1)..]
+            : imageUrl;
+    }
+
+    private sealed record StoredBlob(byte[] Bytes, string ContentType);
 }
