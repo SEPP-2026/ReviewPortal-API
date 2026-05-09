@@ -67,6 +67,7 @@ Run all commands from the repository root.
 
 - .NET SDK 8
 - SQL Server or Azure SQL Database
+- Azure Blob Storage container for uploaded tool/service images
 - A valid SQL connection string
 
 ### 1. Configure local secrets
@@ -78,7 +79,12 @@ dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<your-sql-connect
 dotnet user-secrets set "Jwt:Secret" "<your-32-plus-character-secret>" --project src/ReviewPortal.API
 dotnet user-secrets set "Jwt:Issuer" "ReviewPortalAPI" --project src/ReviewPortal.API
 dotnet user-secrets set "Jwt:Audience" "ReviewPortalClient" --project src/ReviewPortal.API
+dotnet user-secrets set "ImageStorage:ServiceUri" "https://<storage-account-name>.blob.core.windows.net" --project src/ReviewPortal.API
+dotnet user-secrets set "ImageStorage:ContainerName" "tool-images" --project src/ReviewPortal.API
+dotnet user-secrets set "ImageStorage:PublicBaseUrl" "https://<storage-account-name>.blob.core.windows.net/tool-images" --project src/ReviewPortal.API
 ```
+
+See [`docs/azure-blob-storage/README.md`](docs/azure-blob-storage/README.md) for Azure Portal setup, managed identity/RBAC, and local connection string fallback steps.
 
 For Azure SQL migration smoke tests or running the API locally against Azure SQL, you can also use the ignored local settings file:
 

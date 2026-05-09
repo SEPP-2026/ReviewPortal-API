@@ -1,5 +1,8 @@
+using Azure.Identity;
+using Azure.Storage.Blobs;
 using Microsoft.EntityFrameworkCore;
 using FluentValidation;
+using Microsoft.Extensions.Options;
 using ReviewPortal.Application.Interfaces;
 using ReviewPortal.Application.Services;
 using ReviewPortal.Application.Validators.Users;
@@ -46,6 +49,8 @@ public static class ServiceCollectionExtensions
 
         // File storage
         services.Configure<ImageStorageOptions>(configuration.GetSection(ImageStorageOptions.SectionName));
+        services.AddSingleton(CreateBlobContainerClient);
+        services.AddScoped<IBlobImageStorage, AzureBlobImageStorage>();
 
         return services;
     }
@@ -67,5 +72,26 @@ public static class ServiceCollectionExtensions
     private static bool ContainsPlaceholder(string value)
     {
         return value.Contains('<') || value.Contains('>');
+    }
+
+    private static BlobContainerClient CreateBlobContainerClient(IServiceProvider serviceProvider)
+    {
+        var options = serviceProvider.GetRequiredService<IOptions<ImageStorageOptions>>().Value;
+        var containerName = string.IsNullOrWhiteSpace(options.ContainerName)
+            ? "tool-images"
+            : options.ContainerName.Trim();
+
+        if (!string.IsNullOrWhiteSpace(options.ConnectionString))
+        {
+            return new BlobContainerClient(options.ConnectionString, containerName);
+        }
+
+        if (!Uri.TryCreate(options.ServiceUri, UriKind.Absolute, out var serviceUri))
+        {
+            throw new InvalidOperationException("Azure Blob Storage is not configured. Set ImageStorage:ConnectionString for local development, or ImageStorage:ServiceUri for managed identity access.");
+        }
+
+        var serviceClient = new BlobServiceClient(serviceUri, new DefaultAzureCredential());
+        return serviceClient.GetBlobContainerClient(containerName);
     }
 }

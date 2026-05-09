@@ -22,13 +22,11 @@ public class AdminToolImagesApiIntegrationTests : IAsyncLifetime
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
-    public async Task AdminToolImageUploadAndDelete_WhenValidFilePosted_StoresAndRemovesTempFile()
+    public async Task AdminToolImageUploadAndDelete_WhenValidFilePosted_StoresAndRemovesBlob()
     {
         using var adminClient = await _factory.CreateAuthenticatedClientAsync(
             ReviewPortalApiFactory.AdminEmail,
             ReviewPortalApiFactory.AdminPassword);
-
-        Assert.StartsWith(Path.GetTempPath(), _factory.UploadRootPath, StringComparison.OrdinalIgnoreCase);
 
         using var uploadContent = CreateImageContent([0xFF, 0xD8, 0xFF, 0xD9], "tower-extra.jpg");
         var uploadResponse = await adminClient.PostAsync(
@@ -39,10 +37,9 @@ public class AdminToolImagesApiIntegrationTests : IAsyncLifetime
         var uploadedImage = await uploadResponse.Content.ReadFromJsonAsync<ToolImageDto>();
         Assert.NotNull(uploadedImage);
         Assert.Equal(2, uploadedImage!.DisplayOrder);
-
-        var storedFileName = uploadedImage.ImageUrl.Split('/').Last();
-        var storedFilePath = Path.Combine(_factory.UploadRootPath, storedFileName);
-        Assert.True(File.Exists(storedFilePath), $"Expected uploaded file at {storedFilePath}.");
+        Assert.StartsWith($"{TestBlobImageStorage.PublicBaseUrl}/tools/{_factory.TowerScaffoldToolId}/", uploadedImage.ImageUrl);
+        Assert.Equal("image/jpeg", _factory.BlobStorage.GetContentType(uploadedImage.ImageUrl));
+        Assert.True(_factory.BlobStorage.ContainsUrl(uploadedImage.ImageUrl));
 
         var deleteResponse = await adminClient.DeleteAsync(
             $"/api/admin/tools/{_factory.TowerScaffoldToolId}/images/{uploadedImage.Id}");
@@ -50,7 +47,7 @@ public class AdminToolImagesApiIntegrationTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, deleteResponse.StatusCode);
         var deleted = await deleteResponse.Content.ReadFromJsonAsync<bool>();
         Assert.True(deleted);
-        Assert.False(File.Exists(storedFilePath));
+        Assert.False(_factory.BlobStorage.ContainsUrl(uploadedImage.ImageUrl));
     }
 
     [Fact]
@@ -71,6 +68,12 @@ public class AdminToolImagesApiIntegrationTests : IAsyncLifetime
             $"/api/admin/tools/{_factory.TowerScaffoldToolId}/images",
             invalidExtensionContent);
         Assert.Equal(HttpStatusCode.BadRequest, invalidExtensionResponse.StatusCode);
+
+        using var mismatchedContent = CreateImageContent([1, 2, 3], "not-an-image.jpg");
+        var mismatchedResponse = await adminClient.PostAsync(
+            $"/api/admin/tools/{_factory.TowerScaffoldToolId}/images",
+            mismatchedContent);
+        Assert.Equal(HttpStatusCode.BadRequest, mismatchedResponse.StatusCode);
 
         var oversizedBytes = new byte[(5 * 1024 * 1024) + 1];
         oversizedBytes[0] = 0xFF;

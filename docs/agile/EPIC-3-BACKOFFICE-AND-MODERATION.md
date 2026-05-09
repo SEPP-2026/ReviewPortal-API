@@ -115,7 +115,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 - On the equipment edit page, existing images are displayed with options to delete each one
 - New images can be uploaded (supported formats: JPG, PNG, WebP; max file size: 5MB per image)
 - At least one image must remain — the system should not allow deleting the last image
-- Uploaded images are stored in the configured storage location (Azure Blob Storage or the prototype's local uploads folder)
+- Uploaded images are stored in Azure Blob Storage and the returned blob URL is saved with the tool/service image record
 - A thumbnail preview is shown after upload before saving
 
 **Story Points:** 5
@@ -128,7 +128,7 @@ This epic covers all the behind-the-scenes work that keeps the portal running pr
 |---|------|-------|
 | 1 | Create image upload service with file format validation (JPG, PNG, WebP) and size limit (5MB) | Backend |
 | 2 | Create image deletion service that enforces the minimum one-image constraint | Backend |
-| 3 | Configure image storage location (Azure Blob Storage or local uploads folder for the prototype) | Backend |
+| 3 | Configure Azure Blob Storage for tool/service image uploads and deletes | Backend |
 | 4 | Display existing images on the equipment edit page with individual delete buttons | Frontend |
 | 5 | Build image upload component with thumbnail preview shown before saving | Frontend |
 | 6 | Prevent deletion of the last remaining image (show a warning message) | Frontend |

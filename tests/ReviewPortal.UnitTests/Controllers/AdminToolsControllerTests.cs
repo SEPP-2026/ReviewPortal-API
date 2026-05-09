@@ -11,6 +11,8 @@ namespace ReviewPortal.UnitTests.Controllers;
 
 public class AdminToolsControllerTests
 {
+    private const string BlobFirstImageUrl = "https://reviewportaltest.blob.core.windows.net/tool-images/tools/first/image.jpg";
+
     [Fact]
     public void Controller_HasAuthorizeAttributeForAdminRole()
     {
@@ -118,7 +120,7 @@ public class AdminToolsControllerTests
         };
         var imageService = new FakeImageService
         {
-            StoreImageFileResult = Result<string>.Success("/uploads/tools/first-image.jpg")
+            StoreImageFileResult = Result<string>.Success(BlobFirstImageUrl)
         };
         var controller = CreateController(toolService, imageService);
         var request = CreateToolRequest();
@@ -129,7 +131,7 @@ public class AdminToolsControllerTests
         Assert.Equal("/api/tools/12", createdResult.Location);
         Assert.Same(tool, createdResult.Value);
         Assert.Equal(request, toolService.LastCreateToolRequest);
-        Assert.Equal("/uploads/tools/first-image.jpg", toolService.LastCreateFirstImageUrl);
+        Assert.Equal(BlobFirstImageUrl, toolService.LastCreateFirstImageUrl);
         Assert.Equal("hammer.jpg", imageService.LastStoreFileName);
         Assert.Equal(16, imageService.LastStoreByteCount);
         Assert.Null(imageService.LastDeletedStoredImageUrl);
@@ -172,7 +174,7 @@ public class AdminToolsControllerTests
         };
         var imageService = new FakeImageService
         {
-            StoreImageFileResult = Result<string>.Success("/uploads/tools/first-image.jpg")
+            StoreImageFileResult = Result<string>.Success(BlobFirstImageUrl)
         };
         var controller = CreateController(toolService, imageService);
 
@@ -180,7 +182,7 @@ public class AdminToolsControllerTests
 
         var problemResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(StatusCodes.Status400BadRequest, problemResult.StatusCode);
-        Assert.Equal("/uploads/tools/first-image.jpg", imageService.LastDeletedStoredImageUrl);
+        Assert.Equal(BlobFirstImageUrl, imageService.LastDeletedStoredImageUrl);
     }
 
     [Fact]
@@ -192,7 +194,7 @@ public class AdminToolsControllerTests
         };
         var imageService = new FakeImageService
         {
-            StoreImageFileResult = Result<string>.Success("/uploads/tools/first-image.jpg")
+            StoreImageFileResult = Result<string>.Success(BlobFirstImageUrl)
         };
         var controller = CreateController(toolService, imageService);
 
@@ -200,7 +202,7 @@ public class AdminToolsControllerTests
 
         var problemResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(StatusCodes.Status404NotFound, problemResult.StatusCode);
-        Assert.Equal("/uploads/tools/first-image.jpg", imageService.LastDeletedStoredImageUrl);
+        Assert.Equal(BlobFirstImageUrl, imageService.LastDeletedStoredImageUrl);
     }
 
     [Fact]
@@ -212,14 +214,14 @@ public class AdminToolsControllerTests
         };
         var imageService = new FakeImageService
         {
-            StoreImageFileResult = Result<string>.Success("/uploads/tools/first-image.jpg")
+            StoreImageFileResult = Result<string>.Success(BlobFirstImageUrl)
         };
         var controller = CreateController(toolService, imageService);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             controller.Create(CreateToolRequest(), CreateFormFile("hammer.jpg"), CancellationToken.None));
 
-        Assert.Equal("/uploads/tools/first-image.jpg", imageService.LastDeletedStoredImageUrl);
+        Assert.Equal(BlobFirstImageUrl, imageService.LastDeletedStoredImageUrl);
     }
 
     [Fact]
@@ -501,7 +503,7 @@ public class AdminToolsControllerTests
             Result<ToolImageDto>.Success(new ToolImageDto(1, "/uploads/tools/image.jpg", 1));
 
         public Result<string> StoreImageFileResult { get; set; } =
-            Result<string>.Success("/uploads/tools/first-image.jpg");
+            Result<string>.Success(BlobFirstImageUrl);
 
         public Result<bool> DeleteImageResult { get; set; } = Result<bool>.Success(true);
 
