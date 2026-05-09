@@ -42,12 +42,10 @@ public class AdminToolsApiIntegrationTests : IAsyncLifetime
         Assert.True(created.IsActive);
         Assert.Equal(_factory.BreakingCategoryId, created.CategoryId);
         Assert.Single(created.Images);
-        Assert.StartsWith("/uploads/tools/first-", created.Images[0].ImageUrl);
+        Assert.StartsWith($"{TestBlobImageStorage.PublicBaseUrl}/tools/first/", created.Images[0].ImageUrl);
         Assert.EndsWith(".jpg", created.Images[0].ImageUrl);
-
-        var storedFileName = created.Images[0].ImageUrl.Split('/').Last();
-        var storedFilePath = Path.Combine(_factory.UploadRootPath, storedFileName);
-        Assert.True(File.Exists(storedFilePath), $"Expected first image file at {storedFilePath}.");
+        Assert.True(_factory.BlobStorage.ContainsUrl(created.Images[0].ImageUrl));
+        Assert.Equal("image/jpeg", _factory.BlobStorage.GetContentType(created.Images[0].ImageUrl));
 
         var updateResponse = await adminClient.PutAsJsonAsync(
             $"/api/admin/tools/{created.Id}",
@@ -171,9 +169,7 @@ public class AdminToolsApiIntegrationTests : IAsyncLifetime
             "Missing Category Tool");
         var missingCategoryCreate = await adminClient.PostAsync("/api/admin/tools", missingCategoryContent);
         Assert.Equal(HttpStatusCode.NotFound, missingCategoryCreate.StatusCode);
-        Assert.True(
-            !Directory.Exists(_factory.UploadRootPath) || Directory.GetFiles(_factory.UploadRootPath).Length == 0,
-            "Expected failed create attempts to clean up any stored first-image files.");
+        Assert.Equal(0, _factory.BlobStorage.BlobCount);
 
         var missingDetail = await adminClient.GetAsync("/api/admin/tools/999999");
         Assert.Equal(HttpStatusCode.NotFound, missingDetail.StatusCode);

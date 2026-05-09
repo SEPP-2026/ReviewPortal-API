@@ -257,6 +257,8 @@ Area: File upload
 
 The image service checks extension and size, and stores generated filenames. It should also validate file content.
 
+Status update (2026-05-09): TASK-31 added JPEG/PNG/WebP file-signature validation before blob upload and tests extension/content mismatch handling.
+
 Tasks:
 - Verify JPEG/PNG/WEBP file signatures, not only extension.
 - Check `IFormFile.ContentType` as a weak signal, but do not trust it alone.
@@ -330,6 +332,8 @@ Priority: Low/Medium
 Area: File storage, operations
 
 Local/App Service filesystem uploads can work for demos, but production is safer with Blob Storage.
+
+Status update (2026-05-09): TASK-31 replaced local filesystem upload/delete behavior with Azure Blob Storage and documented Azure Portal setup in `docs/azure-blob-storage/README.md`.
 
 Tasks:
 - Add an `IFileStorageService` abstraction.

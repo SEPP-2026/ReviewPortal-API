@@ -4,9 +4,15 @@ public sealed class ImageStorageOptions
 {
     public const string SectionName = "ImageStorage";
 
-    public string RootPath { get; set; } = Path.Combine("uploads", "tools");
+    public string ConnectionString { get; set; } = string.Empty;
 
-    public string RequestPath { get; set; } = "/uploads/tools";
+    public string ServiceUri { get; set; } = string.Empty;
+
+    public string ContainerName { get; set; } = "tool-images";
+
+    public string PublicBaseUrl { get; set; } = string.Empty;
+
+    public string BlobNamePrefix { get; set; } = "tools";
 
     public long MaxFileSizeBytes { get; set; } = 5 * 1024 * 1024;
 
