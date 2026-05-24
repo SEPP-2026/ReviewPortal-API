@@ -186,10 +186,14 @@ The extended submission-ready functional design diagrams are maintained in [FUNC
 
 ```mermaid
 flowchart LR
-    Visitor["Customer / Visitor"]
-    RegisteredUser["Registered User"]
+    PublicCustomer["Public Customer<br/>(guest or signed-in)"]
+    Guest["Guest Visitor"]
+    RegisteredUser["Registered Customer"]
     Admin["Admin"]
     Moderator["Moderator"]
+
+    Guest -. "specialises" .-> PublicCustomer
+    RegisteredUser -. "specialises" .-> PublicCustomer
 
     subgraph PublicPortal["Public Portal"]
         UC1(("Browse categories"))
@@ -199,39 +203,42 @@ flowchart LR
         UC5(("Calculate rental cost"))
         UC6(("Read approved reviews"))
         UC7(("Register account"))
-        UC8(("Log in"))
+        UC8(("Log in / log out"))
         UC9(("Submit review"))
         UC10(("Comment on approved review"))
-        UC11(("View my reviews"))
+        UC11(("View own review status"))
+        UC12(("Submit booking request"))
+        UC13(("Manage account"))
     end
 
     subgraph BackOffice["Back-Office Portal"]
-        UC12(("Manage tools/services"))
-        UC13(("Create tool/service"))
-        UC14(("Edit details and pricing"))
-        UC15(("Activate/deactivate tool/service"))
-        UC16(("Upload/delete images"))
-        UC17(("Manage categories"))
-        UC18(("View moderation queue"))
-        UC19(("Approve/reject reviews"))
-        UC20(("Approve/reject comments"))
-        UC21(("Post company response"))
-        UC22(("View dashboard statistics"))
+        UC14(("Staff log in"))
+        UC15(("Manage booking requests"))
+        UC16(("View moderation queue"))
+        UC17(("Approve review"))
+        UC18(("Reject review"))
+        UC19(("Approve/reject comments"))
+        UC20(("Post company response"))
+        UC21(("Manage tools/services"))
+        UC22(("Upload/delete images"))
+        UC23(("Manage categories"))
+        UC24(("View admin dashboard"))
     end
 
-    Visitor --> UC1
-    Visitor --> UC2
-    Visitor --> UC3
-    Visitor --> UC4
-    Visitor --> UC5
-    Visitor --> UC6
-    Visitor --> UC7
-    Visitor --> UC8
-    RegisteredUser --> UC9
-    RegisteredUser --> UC10
-    RegisteredUser --> UC11
-    Admin --> UC12
-    Admin --> UC13
+    PublicCustomer --> UC1
+    PublicCustomer --> UC2
+    PublicCustomer --> UC3
+    PublicCustomer --> UC4
+    PublicCustomer --> UC5
+    PublicCustomer --> UC6
+    PublicCustomer --> UC9
+    PublicCustomer --> UC10
+    PublicCustomer --> UC11
+    PublicCustomer --> UC12
+    Guest --> UC7
+    Guest --> UC8
+    RegisteredUser --> UC8
+    RegisteredUser --> UC13
     Admin --> UC14
     Admin --> UC15
     Admin --> UC16
@@ -241,6 +248,12 @@ flowchart LR
     Admin --> UC20
     Admin --> UC21
     Admin --> UC22
+    Admin --> UC23
+    Admin --> UC24
+    Moderator --> UC14
+    Moderator --> UC15
+    Moderator --> UC16
+    Moderator --> UC17
     Moderator --> UC18
     Moderator --> UC19
     Moderator --> UC20
