@@ -182,9 +182,9 @@ classDiagram
         decimal WeeklyRate
         string SpecialNotes
         bool DepositRequired
-        decimal DepositAmount
+        decimal? DepositAmount
         bool IsActive
-        decimal OverallRating
+        decimal? OverallRating
         int ReviewCount
         DateTime CreatedDate
         DateTime UpdatedDate
@@ -201,7 +201,7 @@ classDiagram
     class Review {
         int Id
         int ToolId
-        int UserId
+        int? UserId
         string ReviewerName
         string ReviewerEmail
         string ReviewText
@@ -212,7 +212,7 @@ classDiagram
         int ValueForMoneyRating
         decimal OverallRating
         ReviewStatus Status
-        string RejectionReason
+        string? RejectionReason
         DateTime CreatedDate
         CalculateOverallRating()
     }
@@ -220,11 +220,11 @@ classDiagram
     class ReviewComment {
         int Id
         int ReviewId
-        int UserId
+        int? UserId
         string CommenterName
         string CommentText
         ReviewStatus Status
-        string RejectionReason
+        string? RejectionReason
         DateTime CreatedDate
     }
 
@@ -295,7 +295,7 @@ classDiagram
         AddCompanyResponseAsync()
         UpdateCompanyResponseAsync()
         DeleteCompanyResponseAsync()
-        GetPendingModerationQueueAsync()
+        GetPendingReviewsAsync()
         ModerateReviewAsync()
         ModerateCommentAsync()
     }
@@ -326,11 +326,11 @@ classDiagram
     }
 
     Category "1" --> "0..*" Tool : contains
-    Tool "1" --> "1..*" ToolImage : has
+    Tool "1" --> "0..*" ToolImage : has
     Tool "1" --> "0..*" Review : receives
-    User "1" --> "0..*" Review : writes
+    User "0..1" --> "0..*" Review : optional registered author
     Review "1" --> "0..*" ReviewComment : has
-    User "1" --> "0..*" ReviewComment : comments
+    User "0..1" --> "0..*" ReviewComment : optional registered commenter
     Review "1" --> "0..1" CompanyResponse : has
     User "1" --> "0..*" CompanyResponse : authors
     User --> UserRole
@@ -355,11 +355,12 @@ classDiagram
 ### 3.2 Domain Model Definitions & Relations
 
 *   **Category & Tool (1:N):** A catalog Category acts as a container for multiple Tools and Services. Deleting a Category is restricted if it contains associated Tools to maintain schema integrity.
-*   **Tool & ToolImage (1:N):** A Tool can possess multiple associated images (stored on Azure Blob Storage) for carousel rendering. If a tool is deleted, its image database paths are cascade deleted.
+*   **Tool & ToolImage (1:N):** A Tool can possess zero or more associated images (stored on Azure Blob Storage) for carousel rendering. The first image is enforced by the application service during tool creation rather than by a `Tool` class method.
 *   **Tool & Review (1:N):** A Tool receives multiple customer Reviews. To preserve aggregate history, a Tool cannot be deleted if active reviews are attached to it.
-*   **User & Review (1:N):** A User writes reviews. If the user profile is deleted under GDPR rules, the User-to-Review link is set to `NULL` (SetNull action) to anonymise the review while preserving historical catalog rating aggregates.
+*   **User & Review (0..1:N):** A Review may be linked to a registered User, but guest submissions are also valid and store reviewer name/email directly. If the user profile is deleted under GDPR rules, the User-to-Review link is set to `NULL` (SetNull action) to anonymise the review while preserving historical catalog rating aggregates.
+*   **User & ReviewComment (0..1:N):** A ReviewComment may be linked to a registered User, but guest comments are also valid and store commenter details directly.
 *   **Review & ReviewComment (1:N):** A Review can receive multiple community comments. If a review is deleted, all comments belonging to it are automatically cascade deleted.
-*   **Review & CompanyResponse (1:1):** An approved Review can receive at most one official staff response, which is written by an authenticated User with an Admin role.
+*   **Review & CompanyResponse (1:1):** An approved Review can receive at most one official staff response, which is written by an authenticated staff User with either the Admin or Moderator role.
 
 ---
 
@@ -369,7 +370,7 @@ Activity diagrams map the dynamic workflow logic of system processes, highlighti
 
 ### 4.1 Review Submission and Moderation Workflow
 
-This diagram models the end-to-end lifecycle of customer review submission, formatting, and administrative moderation.
+This diagram models the end-to-end lifecycle of customer review submission, validation, and staff moderation. It explicitly supports both guest and signed-in customer submissions.
 
 ```mermaid
 flowchart TD
@@ -377,17 +378,18 @@ flowchart TD
     ViewTool["Customer opens tool/service detail"]
     SelectReview["Select Write a Review"]
     AuthCheck{"Logged in?"}
-    UseAccount["Use account profile"]
-    CaptureGuest["Capture reviewer name and email"]
+    UseAccount["Use registered customer profile"]
+    CaptureGuest["Capture guest reviewer name and email"]
     CompleteReview["Enter review text and five ratings"]
     ValidateReview{"Text and ratings valid?"}
     ReturnValidation["Return validation errors"]
     SavePending["Save review with Pending status"]
     ShowPending["Show awaiting moderation message"]
     Queue["Review appears in moderation queue"]
-    Decision{"Admin or moderator decision"}
+    OpenQueue["Admin/Moderator opens moderation queue"]
+    Decision{"Approve review?"}
     Reject["Set status to Rejected and store reason"]
-    ShowReason["Reason visible in My Reviews"]
+    ShowReason["Reason available in own review status"]
     Approve["Set status to Approved"]
     Recalculate["Recalculate tool rating and review count"]
     Publish["Review visible on public tool/service page"]
@@ -398,8 +400,8 @@ flowchart TD
     AuthCheck -->|No| CaptureGuest --> CompleteReview
     CompleteReview --> ValidateReview
     ValidateReview -->|No| ReturnValidation --> CompleteReview
-    ValidateReview -->|Yes| SavePending --> ShowPending --> Queue
-    Queue --> Decision
+    ValidateReview -->|Yes| SavePending --> ShowPending --> Queue --> OpenQueue
+    OpenQueue --> Decision
     Decision -->|Reject| Reject --> ShowReason --> End
     Decision -->|Approve| Approve --> Recalculate --> Publish --> End
 ```
@@ -459,54 +461,54 @@ Sequence diagrams illustrate system object interactions sorted chronologically, 
 
 ```mermaid
 sequenceDiagram
-    actor Customer
-    participant Web as Next.js Web App
-    participant API as ASP.NET Core API
-    participant Reviews as ToolReviewsController
+    actor Customer as Public Customer
+    participant Web as WebApp
+    participant API as API Controller
     participant ReviewService
-    participant Db as SQL Server
-    actor Moderator
-    participant AdminModeration as AdminModerationController
+    participant Db as Database
+    actor Staff as Admin / Moderator
 
-    Customer->>Web: Fill review form
-    Web->>API: POST /api/tools/{toolId}/reviews
-    API->>Reviews: Route request
-    Reviews->>ReviewService: CreateReviewAsync(toolId, request, userId)
-    ReviewService->>ReviewService: Validate text and five ratings
-    ReviewService->>Db: Insert Review with Status = Pending
-    Db-->>ReviewService: Save successful
-    ReviewService-->>Reviews: Review DTO
-    Reviews-->>Web: 201 Created
-    Web-->>Customer: Show awaiting moderation message
+    Note over Customer,Staff: Submit Review
+    Customer->>Web: Submit review form
+    Note right of Customer: Guest or signed-in user
+    Web->>API: POST review
+    API->>ReviewService: SubmitReview(request)
+    ReviewService->>ReviewService: Validate review
+    ReviewService->>Db: Save review<br/>Status = Pending
+    Db-->>ReviewService: Saved
+    ReviewService-->>API: Review submitted
+    API-->>Web: Awaiting approval
+    Web-->>Customer: Show confirmation message
 
-    Moderator->>Web: Open moderation queue
-    Web->>API: GET /api/admin/moderation/pending
-    API->>AdminModeration: Authorize Admin or Moderator
-    AdminModeration->>ReviewService: GetPendingModerationQueueAsync()
-    ReviewService->>Db: Query pending reviews and comments
-    Db-->>ReviewService: Pending items and exact counts
-    ReviewService-->>AdminModeration: Moderation queue DTO
-    AdminModeration-->>Web: 200 OK
+    Note over Customer,Staff: Moderate Review
+    Staff->>Web: Open moderation queue
+    Web->>API: Get pending reviews
+    API->>ReviewService: GetPendingReviews()
+    ReviewService->>Db: Query pending reviews
+    Db-->>ReviewService: Pending reviews
+    ReviewService-->>API: Pending review list
+    API-->>Web: Pending review list
+    Web-->>Staff: Display moderation queue
 
-    Moderator->>Web: Approve review
-    Web->>API: PUT /api/admin/moderation/reviews/{id}
-    API->>AdminModeration: Authorize Admin or Moderator
-    AdminModeration->>ReviewService: ModerateReviewAsync(id, approve)
-    ReviewService->>Db: Update Review.Status = Approved
-    ReviewService->>Db: Recalculate Tool.OverallRating and ReviewCount
-    Db-->>ReviewService: Save successful
-    ReviewService-->>AdminModeration: Success result
-    AdminModeration-->>Web: 200 OK
-
-    Customer->>Web: View tool/service page
-    Web->>API: GET /api/tools/{toolId}/reviews
-    API->>Reviews: Route request
-    Reviews->>ReviewService: GetApprovedReviewsAsync(toolId)
-    ReviewService->>Db: Query Status = Approved reviews
-    Db-->>ReviewService: Approved reviews
-    ReviewService-->>Reviews: Tool reviews DTO
-    Reviews-->>Web: 200 OK
-    Web-->>Customer: Display approved review and updated rating
+    alt Approve review
+        Staff->>Web: Approve review
+        Web->>API: Approve review
+        API->>ReviewService: ApproveReview(reviewId)
+        ReviewService->>Db: Set status = Approved<br/>Update rating summary
+        Db-->>ReviewService: Updated
+        ReviewService-->>API: Approved
+        API-->>Web: Success
+        Web-->>Staff: Show approved status
+    else Reject review
+        Staff->>Web: Reject review with reason
+        Web->>API: Reject review
+        API->>ReviewService: RejectReview(reviewId, reason)
+        ReviewService->>Db: Set status = Rejected<br/>Store rejection reason
+        Db-->>ReviewService: Updated
+        ReviewService-->>API: Rejected
+        API-->>Web: Success
+        Web-->>Staff: Show rejected status
+    end
 ```
 
 ### 5.2 Admin Tool/Service and Image Sequence
