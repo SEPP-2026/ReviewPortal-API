@@ -1,0 +1,78 @@
+name: Trigger QA Automation
+
+on:
+  push:
+    branches:
+      - development
+      - develop
+  pull_request:
+    branches:
+      - development
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trigger-qa-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  trigger-qa:
+    name: Trigger Playwright QA repo
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Dispatch QA automation
+        env:
+          QA_AUTOMATION_TRIGGER_TOKEN: ${{ secrets.QA_AUTOMATION_TRIGGER_TOKEN }}
+          QA_REPOSITORY: SEPP-2026/ReviewPortal-QA-Automation
+          EVENT_TYPE: reviewportal-api-development
+          TEST_SUITE: all
+          SOURCE_REPOSITORY: ${{ github.repository }}
+          SOURCE_REF: ${{ github.head_ref || github.ref_name }}
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          SOURCE_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$QA_AUTOMATION_TRIGGER_TOKEN" ]; then
+            echo "::error::QA_AUTOMATION_TRIGGER_TOKEN secret is not configured in this repository."
+            exit 1
+          fi
+
+          payload="$(jq -nc \
+            --arg event_type "$EVENT_TYPE" \
+            --arg source_repository "$SOURCE_REPOSITORY" \
+            --arg source_ref "$SOURCE_REF" \
+            --arg source_sha "$SOURCE_SHA" \
+            --arg source_run_url "$SOURCE_RUN_URL" \
+            --arg test_suite "$TEST_SUITE" \
+            '{
+              event_type: $event_type,
+              client_payload: {
+                source_repository: $source_repository,
+                source_ref: $source_ref,
+                source_sha: $source_sha,
+                source_run_url: $source_run_url,
+                test_suite: $test_suite
+              }
+            }')"
+
+          response_code="$(curl -sS \
+            -o /tmp/qa-dispatch-response.json \
+            -w "%{http_code}" \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $QA_AUTOMATION_TRIGGER_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$QA_REPOSITORY/dispatches" \
+            -d "$payload")"
+
+          if [ "$response_code" != "204" ]; then
+            echo "::error::Failed to trigger QA automation. GitHub API returned HTTP $response_code."
+            cat /tmp/qa-dispatch-response.json
+            exit 1
+          fi
+
+          echo "Triggered QA automation in $QA_REPOSITORY for $SOURCE_REPOSITORY@$SOURCE_SHA."
