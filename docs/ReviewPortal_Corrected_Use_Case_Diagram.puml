@@ -1,0 +1,117 @@
+@startuml ReviewPortal_Corrected_Use_Case_Diagram
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #FFFFFF
+  BorderColor #1F2937
+  ArrowColor #374151
+}
+skinparam actor {
+  BackgroundColor #FFFFFF
+  BorderColor #1F2937
+}
+
+title Shelton Tool-Hire Review Portal - Corrected Use Case Diagram
+
+actor "Public Customer\n(guest or signed-in)" as PublicCustomer
+actor "Guest Visitor" as Guest
+actor "Registered Customer" as RegisteredCustomer
+actor "Admin" as Admin
+actor "Moderator" as Moderator
+
+Guest --|> PublicCustomer
+RegisteredCustomer --|> PublicCustomer
+
+rectangle "Review Portal System" {
+  package "Public Portal" {
+    usecase "Browse Tools /\nServices" as UC_Browse
+    usecase "Search and Filter\nCatalogue" as UC_Search
+    usecase "View Tool /\nService Details" as UC_Details
+    usecase "Calculate\nRental Cost" as UC_Calculate
+    usecase "View Approved\nReviews" as UC_ViewReviews
+    usecase "Submit Review" as UC_SubmitReview
+    usecase "Comment on\nReview" as UC_Comment
+    usecase "View Own Review\nStatus" as UC_ViewOwnReview
+    usecase "Submit Booking\nRequest" as UC_SubmitBooking
+    usecase "Register Account" as UC_Register
+    usecase "Log In / Log Out" as UC_Login
+    usecase "Manage Account" as UC_ManageAccount
+  }
+
+  package "Staff Back Office" {
+    usecase "Staff Log In" as UC_StaffLogin
+    usecase "Manage Booking\nRequests" as UC_ManageBookings
+    usecase "View Moderation\nQueue" as UC_Queue
+    usecase "Approve Review" as UC_ApproveReview
+    usecase "Reject Review" as UC_RejectReview
+    usecase "Approve / Reject\nComment" as UC_ModerateComment
+    usecase "Post Company\nResponse" as UC_Response
+    usecase "Manage Tools /\nServices" as UC_ManageTools
+    usecase "Upload / Delete\nImages" as UC_Images
+    usecase "Manage Categories" as UC_Categories
+    usecase "View Admin\nDashboard" as UC_Dashboard
+  }
+}
+
+PublicCustomer --> UC_Browse
+PublicCustomer --> UC_Search
+PublicCustomer --> UC_Details
+PublicCustomer --> UC_Calculate
+PublicCustomer --> UC_ViewReviews
+PublicCustomer --> UC_SubmitReview
+PublicCustomer --> UC_Comment
+PublicCustomer --> UC_ViewOwnReview
+PublicCustomer --> UC_SubmitBooking
+
+Guest --> UC_Register
+Guest --> UC_Login
+RegisteredCustomer --> UC_Login
+RegisteredCustomer --> UC_ManageAccount
+
+Admin --> UC_StaffLogin
+Admin --> UC_ManageBookings
+Admin --> UC_Queue
+Admin --> UC_ApproveReview
+Admin --> UC_RejectReview
+Admin --> UC_ModerateComment
+Admin --> UC_Response
+Admin --> UC_ManageTools
+Admin --> UC_Images
+Admin --> UC_Categories
+Admin --> UC_Dashboard
+
+Moderator --> UC_StaffLogin
+Moderator --> UC_ManageBookings
+Moderator --> UC_Queue
+Moderator --> UC_ApproveReview
+Moderator --> UC_RejectReview
+Moderator --> UC_ModerateComment
+Moderator --> UC_Response
+
+note right of UC_ViewOwnReview
+Guest access requires a submission
+reference or email lookup.
+Registered customers can use
+their account identity.
+end note
+
+note right of UC_Dashboard
+Admin only.
+Moderators must not see
+dashboard statistics.
+end note
+
+note right of UC_Response
+This is an official company
+response by staff, not a
+customer review submission.
+end note
+
+note bottom of UC_ApproveReview
+Postcondition: approved reviews
+become public and contribute to
+the aggregate tool rating.
+end note
+@enduml

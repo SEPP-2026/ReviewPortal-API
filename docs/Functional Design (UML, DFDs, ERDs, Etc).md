@@ -1,16 +1,29 @@
-# Functional Design Diagrams - Shelton Tool-Hire Review Portal
+# Functional Design (UML, DFDs, ERDs, Etc)
 
-> Purpose: MSc submission design artefact covering UML, DFD, ERD, sequence, activity, and high-level architecture diagrams.
->
-> Scope: full web system design, including the Next.js client, ASP.NET Core Web API, SQL Server/Azure SQL database, catalogue, rental calculator, reviews, moderation, image management, dashboard, and back-office administration.
->
-> Diagram source format: Mermaid. Older PlantUML/plain-text diagram drafts have been converted into Mermaid syntax so this file is the source of truth for generated Word diagram documents.
+**Module:** COMP70066 Software Engineering Principles and Practices  
+**Project:** Shelton Tool-Hire Review Portal System  
+**Document Context:** Group Portfolio Submission – Stage 3 (Requirements & Design) and Stage 4 (Implementation & Completion)  
+**Authors/Contributors:** Chamara Iresh Wijerathna (Scrum Master & Backend Developer), Sadisha Dilmin Samarasinghe (Frontend Developer), Fathima Safa Firzan (Product Owner, Requirements & Testing)
 
 ---
 
-## 1. Use Case Diagram
+## 1. Executive Summary & System Boundary
 
-This diagram shows the major public-customer, registered-customer, admin, and moderator use cases.
+This document outlines the **Functional Design** of the Shelton Tool-Hire Review Portal. It comprises standard software engineering models, including Unified Modeling Language (UML) Use Cases, Class Diagrams, Activity Flows, Sequence Interactions, Structured Data Flow Diagrams (DFDs), and the Entity Relationship Diagram (ERD).
+
+The system boundary encompasses two primary software layers:
+1. **Public Portal (Next.js Client):** A responsive customer-facing web application that allows visitors to browse the tool and service catalogue, search and filter listings, compute exact rental costs using an interactive calculator, read approved reviews, register/log in, and submit multidimensional ratings and comments.
+2. **Back-Office API (ASP.NET Core Web API):** A secure administrative portal that allows authenticated staff (Administrators and Moderators) to manage the catalogue, upload images directly to Azure Blob Storage, moderate reviews and comments, and view operational dashboard statistics.
+
+The architecture is built on **Clean Architecture** principles, maintaining strict separation of concerns between domain business logic, application request pipeline, infrastructure integration (Entity Framework Core & Cloud Storage), and the API controllers layer.
+
+---
+
+## 2. Use Case Modeling (UML)
+
+The UML Use Case model establishes the functional scope of the platform by defining the boundaries between external actors and internal system operations.
+
+### 2.1 Use Case Diagram
 
 ```mermaid
 flowchart LR
@@ -90,11 +103,52 @@ flowchart LR
     Moderator --> UC20
 ```
 
+### 2.2 Actor Specifications
+
+| Actor | Type | Description |
+| :--- | :--- | :--- |
+| **Public Customer** | External | A public user of the portal, whether browsing as a guest or signed in as a customer. Can search products, calculate rental costs, view approved reviews, submit reviews/comments, track submitted review status, and submit booking requests. |
+| **Guest Visitor** | External | An unauthenticated public customer. Can register or log in, but does not need to log in before submitting a review/comment when name and contact details are supplied. |
+| **Registered Customer** | External | An authenticated customer. Has all public customer capabilities and can manage their account. |
+| **Moderator** | Internal | An authenticated staff member responsible for moderation and booking-request handling. Can view the moderation queue, approve/reject reviews and comments, and post official company responses. Cannot access the admin dashboard or catalogue/category management screens. |
+| **Admin** | Internal | An authenticated system administrator. Can perform moderation and booking-request handling, post official company responses, manage tools/services, images and categories, and view the admin dashboard. |
+
+### 2.3 Use Case Directory
+
+| ID | Name | Actor | Description |
+| :--- | :--- | :--- | :--- |
+| **UC1** | Browse categories | Public Customer | View all structural catalogue groupings. |
+| **UC2** | View tool/service details | Public Customer | View technical details, rates, and aggregate star ratings. |
+| **UC3** | Search tools/services | Public Customer | Filter catalogue items via text search on name or description. |
+| **UC4** | Filter and sort catalogue | Public Customer | Refine catalogue views by categories, rating thresholds, and price. |
+| **UC5** | Calculate rental cost | Public Customer | Input dates and hours to compute tiered rental prices dynamically. |
+| **UC6** | Read approved reviews | Public Customer | View published customer reviews and staff responses. |
+| **UC7** | Register account | Guest Visitor | Create a new user profile with secure password credentials. |
+| **UC8** | Log in / log out | Guest Visitor, Registered Customer | Authenticate with email/password and end a customer session. |
+| **UC9** | Submit review | Public Customer | Submit a review with 5 rating vectors and descriptive text; login is optional, not mandatory. |
+| **UC10**| Comment on approved review | Public Customer | Post community commentary on an existing approved review; login is optional, not mandatory. |
+| **UC11**| View own review status | Public Customer | View the moderation status of submitted reviews; guests require a reference/email lookup, while registered customers can use account identity. |
+| **UC12**| Submit booking request | Public Customer | Send a hire enquiry or booking request from the public portal. |
+| **UC13**| Manage account | Registered Customer | Update account details and access authenticated customer-only pages. |
+| **UC14**| Staff log in | Admin, Moderator | Authenticate into the staff area using a role-bearing account. |
+| **UC15**| Manage booking requests | Admin, Moderator | View and update booking request status. |
+| **UC16**| View moderation queue | Admin, Moderator | Retrieve pending reviews and comments requiring action. |
+| **UC17**| Approve review | Admin, Moderator | Publish a pending review and allow it to contribute to the public aggregate rating. |
+| **UC18**| Reject review | Admin, Moderator | Reject a pending review and record the rejection reason. |
+| **UC19**| Approve/reject comments | Admin, Moderator | Moderate public comments before publishing or rejecting them. |
+| **UC20**| Post company response | Admin, Moderator | Publish an official Shelton response to an approved review. |
+| **UC21**| Manage tools/services | Admin | Create, edit, activate, or deactivate catalogue entries. |
+| **UC22**| Upload/delete images | Admin | Add or delete JPG/PNG/WebP media, automatically synced to Cloud Storage. |
+| **UC23**| Manage categories | Admin | Create, edit, or delete catalog classifications. |
+| **UC24**| View admin dashboard | Admin | Monitor platform performance metrics, review counts, and averages. |
+
 ---
 
-## 2. Class Diagram
+## 3. Structural Domain Modeling (UML Class Diagram)
 
-This UML class diagram summarises the current backend domain model, service layer, validation layer, and controller boundaries.
+The UML Class Diagram illustrates the structural domain of the backend API, mapping the relational entities, core business services, validation orchestrations, and API controller boundaries.
+
+### 3.1 Class Diagram
 
 ```mermaid
 classDiagram
@@ -298,13 +352,25 @@ classDiagram
     ReviewService --> RequestValidatorRunner
 ```
 
+### 3.2 Domain Model Definitions & Relations
+
+*   **Category & Tool (1:N):** A catalog Category acts as a container for multiple Tools and Services. Deleting a Category is restricted if it contains associated Tools to maintain schema integrity.
+*   **Tool & ToolImage (1:N):** A Tool can possess zero or more associated images (stored on Azure Blob Storage) for carousel rendering. The first image is enforced by the application service during tool creation rather than by a `Tool` class method.
+*   **Tool & Review (1:N):** A Tool receives multiple customer Reviews. To preserve aggregate history, a Tool cannot be deleted if active reviews are attached to it.
+*   **User & Review (0..1:N):** A Review may be linked to a registered User, but guest submissions are also valid and store reviewer name/email directly. If the user profile is deleted under GDPR rules, the User-to-Review link is set to `NULL` (SetNull action) to anonymise the review while preserving historical catalog rating aggregates.
+*   **User & ReviewComment (0..1:N):** A ReviewComment may be linked to a registered User, but guest comments are also valid and store commenter details directly.
+*   **Review & ReviewComment (1:N):** A Review can receive multiple community comments. If a review is deleted, all comments belonging to it are automatically cascade deleted.
+*   **Review & CompanyResponse (1:1):** An approved Review can receive at most one official staff response, which is written by an authenticated staff User with either the Admin or Moderator role.
+
 ---
 
-## 3. Activity Diagrams
+## 4. Behavioral Design (UML Activity Diagrams)
 
-### 3.1 Review Submission and Moderation Activity
+Activity diagrams map the dynamic workflow logic of system processes, highlighting validations, conditional branches, and persistent state transitions.
 
-This activity diagram shows the customer review lifecycle from submission through moderation, rejection, approval, rating recalculation, and public display. It explicitly supports both guest and signed-in customer submissions.
+### 4.1 Review Submission and Moderation Workflow
+
+This diagram models the end-to-end lifecycle of customer review submission, validation, and staff moderation. It explicitly supports both guest and signed-in customer submissions.
 
 ```mermaid
 flowchart TD
@@ -340,9 +406,9 @@ flowchart TD
     Decision -->|Approve| Approve --> Recalculate --> Publish --> End
 ```
 
-### 3.2 Admin Tool/Service and Image Management Activity
+### 4.2 Admin Catalogue and Image Management Workflow
 
-This activity diagram shows the current admin catalogue management flow, including validation, create/update, image upload/delete, and public visibility.
+This diagram models the workflow for administrative catalogue management, including validation, image constraints, and soft-delete toggle behavior.
 
 ```mermaid
 flowchart TD
@@ -387,67 +453,11 @@ flowchart TD
 
 ---
 
-## 4. High-Level System Architecture Diagram
+## 5. Interaction Design (UML Sequence Diagrams)
 
-This diagram shows the Clean Architecture structure, deployment shape, external configuration, testing, and frontend integration points.
-
-```mermaid
-flowchart TB
-    subgraph ClientLayer["Client Layer"]
-        Browser["Customer/Admin Browser"]
-        NextJs["Next.js Web App"]
-    end
-
-    subgraph ApiHost["Azure App Service / ASP.NET Core Web API"]
-        Middleware["Middleware: HTTPS, CORS, JWT Auth, Exception Handling"]
-        Controllers["API Controllers"]
-
-        subgraph CleanArchitecture["Clean Architecture"]
-            Application["Application Layer: DTOs, Interfaces, Services, Validators, Result Pattern"]
-            Domain["Domain Layer: Entities, Enums, Business Rules"]
-            Infrastructure["Infrastructure Layer: EF Core, Repositories, JWT, Password Hashing, Migrations, Image Storage"]
-        end
-    end
-
-    subgraph DataLayer["Data Layer"]
-        SqlServer["Azure SQL / SQL Server"]
-        ImageStorage["Azure Blob Storage: Tool/Service Images"]
-    end
-
-    subgraph DevOpsLayer["DevOps and Configuration"]
-        GitHubActions["GitHub Actions CI/CD"]
-        AppSettings["Azure App Service Settings / User Secrets"]
-        Tests["Unit and Integration Tests"]
-        SecurityScan["Secret and Package Vulnerability Scans"]
-    end
-
-    Browser --> NextJs
-    NextJs -->|"HTTPS JSON API + Bearer JWT"| Middleware
-    Middleware --> Controllers
-    Controllers --> Application
-    Application --> Domain
-    Application --> Infrastructure
-    Infrastructure --> SqlServer
-    Infrastructure --> ImageStorage
-    SqlServer --> Infrastructure
-    ImageStorage --> Infrastructure
-    Infrastructure --> Application
-    Application --> Controllers
-    Controllers --> NextJs
-
-    AppSettings --> ApiHost
-    GitHubActions --> Tests
-    GitHubActions --> SecurityScan
-    GitHubActions --> ApiHost
-```
-
----
-
-## 5. Sequence Diagrams
+Sequence diagrams illustrate system object interactions sorted chronologically, demonstrating API request mapping, service boundaries, and transactional database actions.
 
 ### 5.1 Review Lifecycle Sequence
-
-This sequence diagram covers customer review submission, moderation, approval, rejection, and rating-summary updates.
 
 ```mermaid
 sequenceDiagram
@@ -503,8 +513,6 @@ sequenceDiagram
 
 ### 5.2 Admin Tool/Service and Image Sequence
 
-This sequence diagram covers the back-office flow for creating or updating a tool/service and managing images.
-
 ```mermaid
 sequenceDiagram
     actor Admin
@@ -549,11 +557,13 @@ sequenceDiagram
 
 ---
 
-## 6. Data Flow Diagrams
+## 6. Data Flow Diagrams (DFDs)
 
-### 6.1 Context-Level DFD
+Data Flow Diagrams model the movement of data through the platform, illustrating external actors, internal processing blocks, and data store boundaries.
 
-This context-level DFD shows the system boundary and external actors that exchange data with the Review Portal.
+### 6.1 Context-Level DFD (Level 0)
+
+The Level 0 DFD defines the global system boundary, outlining how external actors interact with the unified API.
 
 ```mermaid
 flowchart LR
@@ -577,9 +587,9 @@ flowchart LR
     Storage -->|"Image URLs/files"| Portal
 ```
 
-### 6.2 Level 1 DFD
+### 6.2 Level 1 DFD (Decomposed Processes)
 
-This DFD decomposes the main backend processes and data stores.
+The Level 1 DFD decomposes the system boundary into 8 distinct functional processes and maps data movements between them and the 8 dedicated data stores.
 
 ```mermaid
 flowchart TB
@@ -660,9 +670,9 @@ flowchart TB
 
 ---
 
-## 7. Entity Relationship Diagram
+## 7. Entity Relationship Diagram (ERD)
 
-The ERD summarises the database entities, keys, and relationships. The full field-level explanation is maintained in [ERD.md](ERD.md) and [DATABASE-DESIGN.md](DATABASE-DESIGN.md).
+The ERD illustrates the physical relational database schema. It documents the tables, primary and foreign keys, columns, types, nullability, unique keys, and relationship cardinalities that support the system's functional operations.
 
 ```mermaid
 erDiagram
@@ -762,13 +772,17 @@ erDiagram
 
 ## 8. Design Traceability Summary
 
-| Diagram | Supports |
-|---------|----------|
-| Use Case Diagram | Functional scope for Epic 1, Epic 2, and Epic 3 |
-| Class Diagram | Domain model, services, validators, controllers, and role/status enums |
-| Activity Diagrams | Review moderation workflow and admin tool/image management workflow |
-| High-Level Architecture Diagram | Clean Architecture, Azure hosting, configuration, CI/CD, tests, database, image storage, and frontend integration |
-| Sequence Diagrams | End-to-end review lifecycle and admin tool/image management |
-| DFD Context and Level 1 | External actors, system boundary, API processes, data stores, and data movement |
-| ERD | Relational schema supporting users, categories, tools/services, images, reviews, comments, company responses, and rating aggregation |
-| Database Design | Detailed table schemas, relationships, keys, indexes, constraints, and migration process in [DATABASE-DESIGN.md](DATABASE-DESIGN.md) |
+The design elements are linked systematically to the software engineering goals of the Shelton Tool-Hire Review Portal.
+
+| Diagram / Model | Targeted System Feature | Software Engineering Benefit |
+| :--- | :--- | :--- |
+| **UML Use Case** | Epics 1, 2, and 3 Scope | Clear functional boundaries; defines exact authorization rules (RBAC) across actors. |
+| **UML Class Diagram** | Backend Domain Model & APIs | Maps entities, business services, validation orchestrations, and API controller layout, separating infrastructure from business domains. |
+| **UML Activity (Reviews)**| Review Moderation Lifecycle | Highlights the conditional pathways, validation boundaries, and status changes for reviews before publication. |
+| **UML Activity (Admin)** | Catalog & Image Uploads | Identifies safety checks, validation rules, soft-delete visibility, and mandatory "last-image preservation" logic. |
+| **UML Sequence (Reviews)**| Transactional Moderation | Outlines message passing chronologically; demonstrates transaction isolation when rating aggregates are recalculated. |
+| **UML Sequence (Admin)** | Cloud-sync Image Uploads | Demonstrates multi-step file uploads to Azure Blob Storage and saving metadata references in the database. |
+| **Context DFD** | High-Level System Boundary | Highlights unified data flow channels via HTTP/JWT across external layers and Cloud/SQL infrastructures. |
+| **Level 1 DFD** | Process Isolation & Data Stores | Decomposes the API into 8 central processes and maps their distinct database tables (stores) to eliminate tight coupling. |
+| **ER Diagram** | Physical Database Schema | Defines constraints, keys, cascading triggers, indexes, and schemas to enforce referential integrity. |
+| **Traceability Matrix** | Quality & Verification Assurance | Validates that every functional requirement maps directly to designed architectural systems, preventing feature bloat. |
