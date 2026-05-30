@@ -92,6 +92,7 @@ Add these application settings:
 - `Jwt__Issuer = ReviewPortalAPI`
 - `Jwt__Audience = ReviewPortalClient`
 - `Jwt__ExpiryMinutes = 60`
+- `APPLICATIONINSIGHTS_CONNECTION_STRING = <connection-string-from-reviewportal-api-application-insights>`
 - `ImageStorage__ServiceUri = https://<storage-account-name>.blob.core.windows.net`
 - `ImageStorage__ContainerName = tool-images`
 - `ImageStorage__PublicBaseUrl = https://<storage-account-name>.blob.core.windows.net/tool-images`
@@ -111,6 +112,8 @@ Optional if you have a frontend calling this API:
 - `Cors__AllowedOrigins__1 = http://localhost:3000`
 
 After saving configuration, restart the App Service.
+
+Application Insights telemetry is enabled only when `APPLICATIONINSIGHTS_CONNECTION_STRING` or `ApplicationInsights:ConnectionString` is present. Do not commit the real connection string to `appsettings.json`; keep it in Azure App Service settings for production and in .NET user secrets or ignored `appsettings.Local.json` for local development.
 
 Uploaded tool/service images are stored in Azure Blob Storage. Prefer App Service managed identity with the `Storage Blob Data Contributor` role on the storage account; use a storage connection string only as a local development fallback. See [`azure-blob-storage/README.md`](azure-blob-storage/README.md) for the Azure Portal steps.
 

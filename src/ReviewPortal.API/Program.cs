@@ -21,6 +21,14 @@ builder.Services.AddProblemDetails();
 builder.Services.AddControllers();
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddEndpointsApiExplorer();
+var applicationInsightsConnectionString = GetApplicationInsightsConnectionString(builder.Configuration);
+if (!string.IsNullOrWhiteSpace(applicationInsightsConnectionString))
+{
+    builder.Services.AddApplicationInsightsTelemetry(options =>
+    {
+        options.ConnectionString = applicationInsightsConnectionString;
+    });
+}
 
 // Add JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -94,6 +102,7 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+LogApplicationInsightsConfiguration(app);
 
 // Configure the HTTP request pipeline.
 //if (app.Environment.IsDevelopment())
@@ -189,6 +198,29 @@ static void AddLocalConfiguration(WebApplicationBuilder builder)
 static bool ContainsPlaceholder(string? value)
 {
     return value?.Contains('<') == true || value?.Contains('>') == true;
+}
+
+static void LogApplicationInsightsConfiguration(WebApplication app)
+{
+    if (IsApplicationInsightsConfigured(app.Configuration))
+    {
+        app.Logger.LogInformation("Application Insights telemetry is configured for ReviewPortal API.");
+        return;
+    }
+
+    app.Logger.LogWarning(
+        "Application Insights telemetry is disabled because no connection string is configured. Set ApplicationInsights:ConnectionString or APPLICATIONINSIGHTS_CONNECTION_STRING to send telemetry.");
+}
+
+static bool IsApplicationInsightsConfigured(IConfiguration configuration)
+{
+    return !string.IsNullOrWhiteSpace(GetApplicationInsightsConnectionString(configuration));
+}
+
+static string? GetApplicationInsightsConnectionString(IConfiguration configuration)
+{
+    return configuration["ApplicationInsights:ConnectionString"]
+        ?? configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
 }
 
 public partial class Program
