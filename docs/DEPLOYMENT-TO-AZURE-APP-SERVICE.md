@@ -3,8 +3,9 @@
 This repository includes a GitHub Actions workflow at `.github/workflows/ci.yml` that:
 
 1. runs unit tests first
-2. only publishes and deploys on pushes to `main`
-3. deploys the API to Azure App Service `reviewportal-api`
+2. runs integration tests on Windows with SQL Server LocalDB
+3. publishes and deploys only on pushes to `main`
+4. deploys the API to Azure App Service `reviewportal-api`
 
 Production URL:
 
@@ -12,8 +13,9 @@ Production URL:
 
 ## How the workflow behaves
 
-- Pull requests into `main`: run unit tests only
-- Pushes to `main`: run unit tests, publish the API, then deploy to Azure App Service
+- Pull requests into `development` or `main`: run unit tests and integration tests
+- Pushes to `development`: run unit tests and integration tests only
+- Pushes to `main`: run unit tests and integration tests, publish the API, deploy to Azure App Service through the `production` GitHub environment, then trigger the Playwright QA automation workflow
 
 ## Recommended setup
 
@@ -57,12 +59,12 @@ In GitHub:
 5. Add yourself or the people who are allowed to approve production deployments
 6. Recommended: turn on `Prevent self-review` if you want a second person to approve production releases
 7. Under deployment branches, restrict the environment to branch `main`
-8. In that same environment, add a secret named `AZURE_WEBAPP_PUBLISH_PROFILE`
+8. In the `production` environment, add a secret named `AZURE_WEBAPP_PUBLISH_PROFILE`
 9. Paste the full contents of the downloaded publish profile
 
 This is the setup used by this project.
 
-When the workflow reaches the `Deploy To Azure App Service` job, GitHub will pause the run and wait for approval before deployment starts.
+When the workflow reaches the `Deploy To Azure App Service` job for `main`, GitHub will pause the run and wait for production approval before deployment starts. The `development` branch runs tests only and does not publish or deploy to Azure.
 
 ### Option B: Simpler fallback - repository secret
 
@@ -92,6 +94,7 @@ Add these application settings:
 - `Jwt__Issuer = ReviewPortalAPI`
 - `Jwt__Audience = ReviewPortalClient`
 - `Jwt__ExpiryMinutes = 60`
+- `APPLICATIONINSIGHTS_CONNECTION_STRING = <connection-string-from-reviewportal-api-application-insights>`
 - `ImageStorage__ServiceUri = https://<storage-account-name>.blob.core.windows.net`
 - `ImageStorage__ContainerName = tool-images`
 - `ImageStorage__PublicBaseUrl = https://<storage-account-name>.blob.core.windows.net/tool-images`
@@ -111,6 +114,8 @@ Optional if you have a frontend calling this API:
 - `Cors__AllowedOrigins__1 = http://localhost:3000`
 
 After saving configuration, restart the App Service.
+
+Application Insights telemetry is enabled only when `APPLICATIONINSIGHTS_CONNECTION_STRING` or `ApplicationInsights:ConnectionString` is present. Do not commit the real connection string to `appsettings.json`; keep it in Azure App Service settings for production and in .NET user secrets or ignored `appsettings.Local.json` for local development.
 
 Uploaded tool/service images are stored in Azure Blob Storage. Prefer App Service managed identity with the `Storage Blob Data Contributor` role on the storage account; use a storage connection string only as a local development fallback. See [`azure-blob-storage/README.md`](azure-blob-storage/README.md) for the Azure Portal steps.
 
@@ -145,12 +150,15 @@ Before committing, run:
 1. Commit and push this workflow to GitHub
 2. Create the `production` environment in GitHub
 3. Add required reviewers to the `production` environment
-4. Add the `AZURE_WEBAPP_PUBLISH_PROFILE` environment secret
+4. Add the `AZURE_WEBAPP_PUBLISH_PROFILE` environment secret, or use one repository secret
 5. Add Azure application settings and connection string
-6. Push a commit to `main`
-7. Open the `Actions` tab in GitHub and watch the `CI-CD` workflow
-8. When the workflow reaches `Deploy To Azure App Service`, approve the deployment
-9. After deployment completes, browse:
+6. Open a PR into `development` and confirm unit and integration tests pass
+7. Merge or push to `development`; this runs unit and integration tests again, but does not deploy
+8. Open a PR from `development` to `main`
+9. Merge to `main` only after PR approval and passing unit and integration tests
+10. When the `main` workflow reaches `Deploy To Azure App Service`, approve the production deployment
+11. After deployment completes, the QA automation workflow is triggered against the deployed Azure app
+12. After deployment completes, browse:
    `https://reviewportal-api-escdb3f2epg8eeha.southeastasia-01.azurewebsites.net`
 
 ## What to expect in GitHub Actions
@@ -158,10 +166,13 @@ Before committing, run:
 The workflow has three jobs:
 
 - `Unit Tests`
+- `Integration Tests`
 - `Publish API`
 - `Deploy To Azure App Service`
 
-`Deploy To Azure App Service` will only run if the earlier jobs succeed.
+`Deploy To Azure App Service` will only run if the unit and integration test jobs succeed.
+
+Integration tests run on `windows-latest` because the integration test suite uses SQL Server LocalDB.
 
 If required reviewers are configured on the `production` environment, the deploy job will sit in a waiting state until someone approves it.
 
