@@ -42,7 +42,7 @@ public class AdminToolsController : ControllerBase
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> Create(
         [FromForm] CreateToolRequest request,
-        [FromForm] IFormFile? file,
+        IFormFile? file,
         CancellationToken cancellationToken)
     {
         if (file is null || file.Length == 0)
@@ -100,9 +100,10 @@ public class AdminToolsController : ControllerBase
     }
 
     [HttpPost("{id:int}/images")]
+    [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadImage(
         int id,
-        [FromForm] IFormFile? file,
+        IFormFile? file,
         CancellationToken cancellationToken)
     {
         if (file is null || file.Length == 0)
