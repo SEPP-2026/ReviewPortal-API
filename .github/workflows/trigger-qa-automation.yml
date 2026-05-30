@@ -1,14 +1,11 @@
 name: Trigger QA Automation
 
 on:
-  push:
-    branches:
-      - development
-      - develop
-  pull_request:
-    branches:
-      - development
-      - develop
+  workflow_run:
+    workflows:
+      - CI-CD
+    types:
+      - completed
   workflow_dispatch:
 
 permissions:
@@ -22,7 +19,12 @@ jobs:
   trigger-qa:
     name: Trigger Playwright QA repo
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref_name == 'main') ||
+      (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main'
+      )
 
     steps:
       - name: Dispatch QA automation
@@ -31,10 +33,10 @@ jobs:
           QA_REPOSITORY: SEPP-2026/ReviewPortal-QA-Automation
           EVENT_TYPE: reviewportal-api-development
           TEST_SUITE: all
-          SOURCE_REPOSITORY: ${{ github.repository }}
-          SOURCE_REF: ${{ github.head_ref || github.ref_name }}
-          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-          SOURCE_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SOURCE_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name || github.repository }}
+          SOURCE_REF: ${{ github.event.workflow_run.head_branch || github.ref_name }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          SOURCE_RUN_URL: ${{ github.event.workflow_run.html_url || format('{0}/{1}/actions/runs/{2}', github.server_url, github.repository, github.run_id) }}
         run: |
           if [ -z "$QA_AUTOMATION_TRIGGER_TOKEN" ]; then
             echo "::error::QA_AUTOMATION_TRIGGER_TOKEN secret is not configured in this repository."
