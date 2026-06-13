@@ -734,6 +734,51 @@ public class ReviewServiceTests
     }
 
     [Fact]
+    public async Task AddCommentAsync_WhenStaffMemberSubmits_AutoApprovesComment()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var tool = CreateTool(9, category, isActive: true);
+        var review = CreateReview(
+            1,
+            tool,
+            "Ava",
+            ReviewStatus.Approved,
+            new DateTime(2026, 4, 1, 8, 0, 0, DateTimeKind.Utc),
+            5,
+            4,
+            4,
+            5,
+            5);
+        var staff = new User
+        {
+            Id = 7,
+            Name = "Morgan Moderator",
+            Email = "morgan@example.com",
+            PasswordHash = "hash",
+            Role = UserRole.Moderator
+        };
+        var commentRepository = new InMemoryRepository<ReviewComment>();
+        var service = CreateService(
+            reviewRepository: new InMemoryReviewRepository([review]),
+            commentRepository: commentRepository,
+            unitOfWork: new FakeUnitOfWork(),
+            tools: [tool],
+            users: [staff]);
+
+        var request = new CreateCommentRequest(
+            string.Empty,
+            "Thanks for the detailed feedback - glad the kit worked well for you.");
+
+        var result = await service.AddCommentAsync(review.Id, request, staff.Id);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Approved", result.Value!.Status);
+
+        var savedComment = Assert.Single(commentRepository.Items);
+        Assert.Equal(ReviewStatus.Approved, savedComment.Status);
+    }
+
+    [Fact]
     public async Task AddCommentAsync_WhenReviewDoesNotExist_ReturnsNotFound()
     {
         var service = CreateService();
