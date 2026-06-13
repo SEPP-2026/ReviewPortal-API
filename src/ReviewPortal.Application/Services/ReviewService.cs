@@ -174,13 +174,26 @@ public class ReviewService : IReviewService
                 commenterNameResult.FailureType ?? ErrorType.Validation);
         }
 
+        // Staff (Admin/Moderator) are the moderators themselves, so their own
+        // comments are auto-approved rather than queued for self-approval.
+        var status = ReviewStatus.Pending;
+        if (userId.HasValue)
+        {
+            var author = await _userRepository.GetByIdAsync(userId.Value, cancellationToken);
+            if (author is not null &&
+                (author.Role == UserRole.Admin || author.Role == UserRole.Moderator))
+            {
+                status = ReviewStatus.Approved;
+            }
+        }
+
         var comment = new ReviewComment
         {
             ReviewId = reviewId,
             UserId = userId,
             CommenterName = commenterNameResult.Value!,
             CommentText = request.CommentText.Trim(),
-            Status = ReviewStatus.Pending
+            Status = status
         };
 
         await _reviewCommentRepository.AddAsync(comment, cancellationToken);
