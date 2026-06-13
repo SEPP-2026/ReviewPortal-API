@@ -16,6 +16,7 @@ public interface IReviewRepository : IRepository<Review>
         int toolId,
         int page,
         int pageSize,
+        string? sortBy = null,
         CancellationToken cancellationToken = default);
 
     Task<int> CountApprovedByToolIdAsync(int toolId, CancellationToken cancellationToken = default);

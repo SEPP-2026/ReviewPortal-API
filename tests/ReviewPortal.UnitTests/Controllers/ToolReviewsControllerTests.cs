@@ -25,13 +25,14 @@ public class ToolReviewsControllerTests
         };
         var controller = new ToolReviewsController(reviewService);
 
-        var result = await controller.GetApproved(7, page: 2, pageSize: 5, cancellationToken: CancellationToken.None);
+        var result = await controller.GetApproved(7, page: 2, pageSize: 5, sortBy: "helpful", cancellationToken: CancellationToken.None);
 
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Same(response, okResult.Value);
         Assert.Equal(7, reviewService.LastGetToolId);
         Assert.Equal(2, reviewService.LastGetPage);
         Assert.Equal(5, reviewService.LastGetPageSize);
+        Assert.Equal("helpful", reviewService.LastGetSortBy);
     }
 
     [Fact]
@@ -198,6 +199,7 @@ public class ToolReviewsControllerTests
             "Pending",
             null,
             new DateTime(2026, 4, 12, 10, 0, 0, DateTimeKind.Utc),
+            9,
             [],
             null);
     }
@@ -211,6 +213,8 @@ public class ToolReviewsControllerTests
         public int? LastGetPage { get; private set; }
 
         public int? LastGetPageSize { get; private set; }
+
+        public string? LastGetSortBy { get; private set; }
 
         public CreateReviewRequest? LastRequest { get; private set; }
 
@@ -230,11 +234,12 @@ public class ToolReviewsControllerTests
             return Task.FromResult(CreateReviewResult);
         }
 
-        public Task<Result<ToolReviewsDto>> GetApprovedReviewsAsync(int toolId, int page, int pageSize, CancellationToken cancellationToken = default)
+        public Task<Result<ToolReviewsDto>> GetApprovedReviewsAsync(int toolId, int page, int pageSize, string? sortBy = null, CancellationToken cancellationToken = default)
         {
             LastGetToolId = toolId;
             LastGetPage = page;
             LastGetPageSize = pageSize;
+            LastGetSortBy = sortBy;
             return Task.FromResult(GetApprovedReviewsResult);
         }
 
