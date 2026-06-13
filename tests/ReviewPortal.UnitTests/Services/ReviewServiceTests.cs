@@ -1235,6 +1235,33 @@ public class ReviewServiceTests
     }
 
     [Fact]
+    public async Task GetPendingReviewsAsync_WhenDatabaseTimestampHasNoKind_ReturnsUtcSubmittedDate()
+    {
+        var category = new Category { Id = 1, Name = "Breaking & Drilling" };
+        var tool = CreateTool(12, category, isActive: true);
+        var databaseTimestamp = new DateTime(2026, 6, 13, 12, 30, 0, DateTimeKind.Unspecified);
+        var pendingReview = CreateReview(
+            1,
+            tool,
+            "Recent Reviewer",
+            ReviewStatus.Pending,
+            databaseTimestamp,
+            5,
+            4,
+            4,
+            5,
+            4);
+        var service = CreateService(reviews: [pendingReview], tools: [tool]);
+
+        var result = await service.GetPendingReviewsAsync(page: 1, pageSize: 10);
+
+        Assert.True(result.IsSuccess);
+        var item = Assert.Single(result.Value!.Items);
+        Assert.Equal(DateTimeKind.Utc, item.SubmittedDate.Kind);
+        Assert.Equal(databaseTimestamp.Ticks, item.SubmittedDate.Ticks);
+    }
+
+    [Fact]
     public async Task GetPendingReviewsAsync_WhenApprovedReviewHasPendingComment_ReturnsCommentItem()
     {
         var category = new Category { Id = 1, Name = "Cleaning & Maintenance" };

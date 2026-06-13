@@ -593,7 +593,7 @@ public class ReviewService : IReviewService
             review.Tool?.Name ?? string.Empty,
             review.ReviewerName,
             review.ReviewText,
-            review.CreatedDate,
+            ToUtcDateTime(review.CreatedDate),
             review.Status.ToString(),
             review.EquipmentRating,
             review.CustomerServiceRating,
@@ -613,7 +613,7 @@ public class ReviewService : IReviewService
             review.Tool?.Name ?? string.Empty,
             comment.CommenterName,
             comment.CommentText,
-            comment.CreatedDate,
+            ToUtcDateTime(comment.CreatedDate),
             comment.Status.ToString(),
             null,
             null,
@@ -643,8 +643,8 @@ public class ReviewService : IReviewService
                 review.CompanyResponse.Id,
                 review.CompanyResponse.ResponseText,
                 review.CompanyResponse.StaffUser?.Name ?? string.Empty,
-                review.CompanyResponse.CreatedDate,
-                review.CompanyResponse.UpdatedDate);
+                ToUtcDateTime(review.CompanyResponse.CreatedDate),
+                ToUtcDateTime(review.CompanyResponse.UpdatedDate));
 
         return new ReviewDto(
             review.Id,
@@ -660,7 +660,7 @@ public class ReviewService : IReviewService
             review.OverallRating,
             review.Status.ToString(),
             review.RejectionReason,
-            review.CreatedDate,
+            ToUtcDateTime(review.CreatedDate),
             comments,
             companyResponse);
     }
@@ -675,7 +675,7 @@ public class ReviewService : IReviewService
             review.OverallRating,
             review.Status.ToString(),
             review.RejectionReason,
-            review.CreatedDate,
+            ToUtcDateTime(review.CreatedDate),
             review.CompanyResponse is not null);
     }
 
@@ -697,7 +697,7 @@ public class ReviewService : IReviewService
             comment.CommenterName,
             comment.CommentText,
             comment.Status.ToString(),
-            comment.CreatedDate);
+            ToUtcDateTime(comment.CreatedDate));
     }
 
     private static CompanyResponseDto MapCompanyResponse(CompanyResponse companyResponse)
@@ -706,7 +706,17 @@ public class ReviewService : IReviewService
             companyResponse.Id,
             companyResponse.ResponseText,
             companyResponse.StaffUser?.Name ?? string.Empty,
-            companyResponse.CreatedDate,
-            companyResponse.UpdatedDate);
+            ToUtcDateTime(companyResponse.CreatedDate),
+            ToUtcDateTime(companyResponse.UpdatedDate));
+    }
+
+    private static DateTime ToUtcDateTime(DateTime value)
+    {
+        return value.Kind switch
+        {
+            DateTimeKind.Utc => value,
+            DateTimeKind.Local => value.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+        };
     }
 }

@@ -72,6 +72,7 @@ public class AdminModerationApiIntegrationTests : IAsyncLifetime
 
         var allItems = firstPage.Items.Concat(secondPage.Items).ToList();
         Assert.Equal(3, allItems.Count);
+        Assert.All(allItems, item => Assert.Equal(DateTimeKind.Utc, item.SubmittedDate.Kind));
 
         var reviewItem = Assert.Single(allItems, item => item.ItemType == "Review");
         Assert.Equal(pendingReview.Id, reviewItem.ItemId);
