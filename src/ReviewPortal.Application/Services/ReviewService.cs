@@ -99,9 +99,15 @@ public class ReviewService : IReviewService
         return Result<ReviewDto>.Success(MapReview(review, tool.Name));
     }
 
-    public async Task<Result<ToolReviewsDto>> GetApprovedReviewsAsync(int toolId, int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<Result<ToolReviewsDto>> GetApprovedReviewsAsync(
+        int toolId,
+        int page,
+        int pageSize,
+        string? sortBy = null,
+        CancellationToken cancellationToken = default)
     {
-        var validationError = ValidatePaging(page, pageSize);
+        var validationError = ValidatePaging(page, pageSize)
+            ?? ValidateApprovedReviewsSort(sortBy);
         if (validationError is not null)
         {
             return Result<ToolReviewsDto>.Failure(validationError);
@@ -119,7 +125,7 @@ public class ReviewService : IReviewService
             : await _reviewRepository.GetAverageOverallRatingByToolIdAsync(toolId, cancellationToken);
         var approvedReviews = totalApprovedReviews == 0
             ? Array.Empty<Review>()
-            : await _reviewRepository.GetApprovedByToolIdWithDetailsAsync(toolId, page, pageSize, cancellationToken);
+            : await _reviewRepository.GetApprovedByToolIdWithDetailsAsync(toolId, page, pageSize, NormalizeApprovedReviewsSort(sortBy), cancellationToken);
         var pagedReviews = new PagedList<ReviewDto>(
             approvedReviews
                 .Select(review => MapReview(review, tool.Name))
@@ -500,6 +506,30 @@ public class ReviewService : IReviewService
         return null;
     }
 
+    private static string? ValidateApprovedReviewsSort(string? sortBy)
+    {
+        var normalizedSort = NormalizeApprovedReviewsSort(sortBy);
+        return normalizedSort is "recent" or "helpful" or "rating_desc" or "rating_asc"
+            ? null
+            : "Invalid sortBy value. Supported values are recent, helpful, rating, and rating_asc.";
+    }
+
+    private static string NormalizeApprovedReviewsSort(string? sortBy)
+    {
+        if (string.IsNullOrWhiteSpace(sortBy))
+        {
+            return "recent";
+        }
+
+        return sortBy.Trim().Replace("-", "_").ToLowerInvariant() switch
+        {
+            "created" or "created_desc" or "newest" or "most_recent" or "recent_desc" => "recent",
+            "helpful_desc" or "most_helpful" => "helpful",
+            "rating" or "highest_rating" => "rating_desc",
+            var normalized => normalized
+        };
+    }
+
     private async Task<Result<(string ReviewerName, string ReviewerEmail)>> ResolveReviewerDetailsAsync(
         CreateReviewRequest request,
         int? userId,
@@ -661,8 +691,17 @@ public class ReviewService : IReviewService
             review.Status.ToString(),
             review.RejectionReason,
             ToUtcDateTime(review.CreatedDate),
+            CalculateHelpfulCount(review),
             comments,
             companyResponse);
+    }
+
+    private static int CalculateHelpfulCount(Review review)
+    {
+        var approvedCommentCount = review.Comments.Count(comment => comment.Status == ReviewStatus.Approved);
+        var ratingHelpfulnessScore = (int)Math.Round(review.OverallRating * 2, MidpointRounding.AwayFromZero);
+
+        return approvedCommentCount + ratingHelpfulnessScore;
     }
 
     private static ReviewSummaryDto MapReviewSummary(Review review)

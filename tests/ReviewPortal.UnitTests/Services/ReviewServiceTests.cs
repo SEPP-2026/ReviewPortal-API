@@ -287,10 +287,82 @@ public class ReviewServiceTests
         Assert.Equal(["Ben", "Ava"], result.Value.Reviews.Items.Select(review => review.ReviewerName).ToArray());
 
         var olderReview = result.Value.Reviews.Items.Last();
+        Assert.Equal(7, result.Value.Reviews.Items.First().HelpfulCount);
+        Assert.Equal(10, olderReview.HelpfulCount);
         var comment = Assert.Single(olderReview.Comments);
         Assert.Equal("Helpful commenter", comment.CommenterName);
         Assert.NotNull(olderReview.CompanyResponse);
         Assert.Equal("Shelton Team", olderReview.CompanyResponse!.StaffName);
+    }
+
+    [Fact]
+    public async Task GetApprovedReviewsAsync_WhenSortedByHelpful_ReturnsMostHelpfulFirst()
+    {
+        var category = new Category { Id = 1, Name = "Cleaning & Maintenance" };
+        var tool = CreateTool(7, category, isActive: true);
+        var newerHighRating = CreateReview(
+            1,
+            tool,
+            "Newest Rating",
+            ReviewStatus.Approved,
+            new DateTime(2026, 4, 12, 8, 0, 0, DateTimeKind.Utc),
+            5,
+            5,
+            5,
+            5,
+            5);
+        newerHighRating.Comments =
+        [
+            new ReviewComment
+            {
+                Id = 10,
+                ReviewId = newerHighRating.Id,
+                CommenterName = "Pending Reply",
+                CommentText = "Pending replies should not count as helpful engagement.",
+                Status = ReviewStatus.Pending,
+                CreatedDate = new DateTime(2026, 4, 13, 8, 0, 0, DateTimeKind.Utc)
+            }
+        ];
+
+        var olderWithApprovedReplies = CreateReview(
+            2,
+            tool,
+            "Most Helpful",
+            ReviewStatus.Approved,
+            new DateTime(2026, 4, 10, 8, 0, 0, DateTimeKind.Utc),
+            4,
+            4,
+            4,
+            4,
+            4);
+        olderWithApprovedReplies.Comments =
+        [
+            CreateApprovedComment(21, olderWithApprovedReplies.Id),
+            CreateApprovedComment(22, olderWithApprovedReplies.Id),
+            CreateApprovedComment(23, olderWithApprovedReplies.Id)
+        ];
+
+        var leastHelpful = CreateReview(
+            3,
+            tool,
+            "Least Helpful",
+            ReviewStatus.Approved,
+            new DateTime(2026, 4, 11, 8, 0, 0, DateTimeKind.Utc),
+            3,
+            3,
+            3,
+            3,
+            3);
+
+        var service = CreateService(reviews: [newerHighRating, olderWithApprovedReplies, leastHelpful], tools: [tool]);
+
+        var result = await service.GetApprovedReviewsAsync(tool.Id, page: 1, pageSize: 2, sortBy: "helpful");
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(["Most Helpful", "Newest Rating"], result.Value!.Reviews.Items.Select(review => review.ReviewerName).ToArray());
+        Assert.Equal([11, 10], result.Value.Reviews.Items.Select(review => review.HelpfulCount).ToArray());
+        Assert.Equal(3, result.Value.Reviews.TotalCount);
+        Assert.True(result.Value.Reviews.HasNextPage);
     }
 
     [Fact]
@@ -347,6 +419,20 @@ public class ReviewServiceTests
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorType.Validation, result.FailureType);
         Assert.Equal("Page size must not exceed 100.", result.Error);
+    }
+
+    [Fact]
+    public async Task GetApprovedReviewsAsync_WhenSortIsInvalid_ReturnsValidationFailure()
+    {
+        var category = new Category { Id = 1, Name = "Electrical & Heating" };
+        var tool = CreateTool(6, category, isActive: true);
+        var service = CreateService(tools: [tool]);
+
+        var result = await service.GetApprovedReviewsAsync(tool.Id, page: 1, pageSize: 10, sortBy: "popularity");
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.FailureType);
+        Assert.Equal("Invalid sortBy value. Supported values are recent, helpful, rating, and rating_asc.", result.Error);
     }
 
     [Fact]
@@ -1651,6 +1737,19 @@ public class ReviewServiceTests
     private static CreateCompanyResponseRequest ValidCompanyResponseRequest()
     {
         return new CreateCompanyResponseRequest("Thanks for taking the time to leave this review.");
+    }
+
+    private static ReviewComment CreateApprovedComment(int id, int reviewId)
+    {
+        return new ReviewComment
+        {
+            Id = id,
+            ReviewId = reviewId,
+            CommenterName = $"Commenter {id}",
+            CommentText = "Approved public reply that contributes to helpful sorting.",
+            Status = ReviewStatus.Approved,
+            CreatedDate = new DateTime(2026, 4, 12, 8, 0, 0, DateTimeKind.Utc).AddMinutes(id)
+        };
     }
 
     private static Tool CreateTool(int id, Category category, bool isActive)

@@ -24,9 +24,10 @@ public class ToolReviewsController : ControllerBase
         int toolId,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = DefaultPageSize,
+        [FromQuery] string? sortBy = null,
         CancellationToken cancellationToken = default)
     {
-        var result = await _reviewService.GetApprovedReviewsAsync(toolId, page, pageSize, cancellationToken);
+        var result = await _reviewService.GetApprovedReviewsAsync(toolId, page, pageSize, sortBy, cancellationToken);
         return this.ToActionResult(result, Ok);
     }
 

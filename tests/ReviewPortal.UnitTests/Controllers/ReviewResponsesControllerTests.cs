@@ -187,7 +187,7 @@ public class ReviewResponsesControllerTests
             throw new NotSupportedException();
         }
 
-        public Task<Result<ToolReviewsDto>> GetApprovedReviewsAsync(int toolId, int page, int pageSize, CancellationToken cancellationToken = default)
+        public Task<Result<ToolReviewsDto>> GetApprovedReviewsAsync(int toolId, int page, int pageSize, string? sortBy = null, CancellationToken cancellationToken = default)
         {
             throw new NotSupportedException();
         }

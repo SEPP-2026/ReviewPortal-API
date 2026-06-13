@@ -40,14 +40,15 @@ public class ReviewRepository : Repository<Review>, IReviewRepository
         int toolId,
         int page,
         int pageSize,
+        string? sortBy = null,
         CancellationToken cancellationToken = default)
     {
-        return await _dbSet
+        var query = _dbSet
             .AsNoTracking()
             .AsSplitQuery()
-            .Where(review => review.ToolId == toolId && review.Status == ReviewStatus.Approved)
-            .OrderByDescending(review => review.CreatedDate)
-            .ThenByDescending(review => review.Id)
+            .Where(review => review.ToolId == toolId && review.Status == ReviewStatus.Approved);
+
+        return await ApplyApprovedReviewSort(query, sortBy)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Include(review => review.Comments.Where(comment => comment.Status == ReviewStatus.Approved))
@@ -113,5 +114,33 @@ public class ReviewRepository : Repository<Review>, IReviewRepository
         return await _dbSet
             .Where(review => review.ToolId == toolId)
             .ToListAsync(cancellationToken);
+    }
+
+    private static IQueryable<Review> ApplyApprovedReviewSort(IQueryable<Review> reviews, string? sortBy)
+    {
+        return sortBy switch
+        {
+            "helpful" => reviews
+                .OrderByDescending(review =>
+                    review.Comments.Count(comment => comment.Status == ReviewStatus.Approved) +
+                    (((review.EquipmentRating +
+                       review.CustomerServiceRating +
+                       review.TechnicalSupportRating +
+                       review.AfterSalesRating +
+                       review.ValueForMoneyRating) * 4 + 5) / 10))
+                .ThenByDescending(review => review.CreatedDate)
+                .ThenByDescending(review => review.Id),
+            "rating_desc" => reviews
+                .OrderByDescending(review => review.OverallRating)
+                .ThenByDescending(review => review.CreatedDate)
+                .ThenByDescending(review => review.Id),
+            "rating_asc" => reviews
+                .OrderBy(review => review.OverallRating)
+                .ThenByDescending(review => review.CreatedDate)
+                .ThenByDescending(review => review.Id),
+            _ => reviews
+                .OrderByDescending(review => review.CreatedDate)
+                .ThenByDescending(review => review.Id)
+        };
     }
 }

@@ -176,6 +176,30 @@ public class Epic2ApiContractIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetApprovedReviews_WhenSortedByHelpful_ReturnsHelpfulCountAndPaginatesAfterSorting()
+    {
+        using var client = _factory.CreateHttpsClient();
+        await AddApprovedCommentsToAlexSiteReviewAsync();
+
+        var firstPage = await client.GetFromJsonAsync<ToolReviewsDto>(
+            $"/api/tools/{_factory.TowerScaffoldToolId}/reviews?page=1&pageSize=1&sortBy=helpful");
+
+        Assert.NotNull(firstPage);
+        Assert.Equal(2, firstPage!.TotalApprovedReviews);
+        Assert.Equal(2, firstPage.Reviews.TotalCount);
+        Assert.True(firstPage.Reviews.HasNextPage);
+
+        var mostHelpfulReview = Assert.Single(firstPage.Reviews.Items);
+        Assert.Equal("Alex Site", mostHelpfulReview.ReviewerName);
+        Assert.Equal(10, mostHelpfulReview.HelpfulCount);
+
+        var invalidSort = await client.GetAsync(
+            $"/api/tools/{_factory.TowerScaffoldToolId}/reviews?page=1&pageSize=10&sortBy=popularity");
+
+        Assert.Equal(HttpStatusCode.BadRequest, invalidSort.StatusCode);
+    }
+
+    [Fact]
     public async Task Comments_WhenSubmittedOrRejected_RequireModerationAndPublicListOnlyApproved()
     {
         using var client = _factory.CreateHttpsClient();
@@ -497,5 +521,35 @@ public class Epic2ApiContractIntegrationTests : IAsyncLifetime
         await context.SaveChangesAsync();
 
         return (approvedComment.Id, rejectedComment.Id);
+    }
+
+    private async Task AddApprovedCommentsToAlexSiteReviewAsync()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var reviewId = await context.Reviews
+            .Where(review => review.ToolId == _factory.TowerScaffoldToolId && review.ReviewerName == "Alex Site")
+            .Select(review => review.Id)
+            .SingleAsync();
+
+        context.ReviewComments.AddRange(
+            new ReviewComment
+            {
+                ReviewId = reviewId,
+                CommenterName = "Helpful Commenter One",
+                CommentText = "This approved reply should increase helpful sorting weight.",
+                Status = ReviewStatus.Approved,
+                CreatedDate = new DateTime(2026, 4, 5, 10, 0, 0, DateTimeKind.Utc)
+            },
+            new ReviewComment
+            {
+                ReviewId = reviewId,
+                CommenterName = "Pending Commenter",
+                CommentText = "Pending replies should not contribute to public helpful sorting.",
+                Status = ReviewStatus.Pending,
+                CreatedDate = new DateTime(2026, 4, 5, 12, 0, 0, DateTimeKind.Utc)
+            });
+
+        await context.SaveChangesAsync();
     }
 }
