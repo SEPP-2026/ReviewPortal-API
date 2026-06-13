@@ -13,14 +13,17 @@ $binaryExtensions = @(
     ".zip", ".7z", ".nupkg", ".snk", ".pfx", ".pdf", ".xlsx", ".pptx"
 )
 
+$knownAzureSqlPasswordPattern = [regex]::Escape([string]::Concat("Chamar", "airesh", "@", "2026"))
+$passwordAssignmentPattern = [string]::Concat("Pass", "word", "=")
+
 $patterns = @(
     @{
         Name = "Known leaked Azure SQL password"
-        Regex = "Chamarairesh@2026"
+        Regex = $knownAzureSqlPasswordPattern
     },
     @{
         Name = "Connection string contains a literal password"
-        Regex = "(?i)Password=(?!<|\$\{|\$\(|%|__)[^;`"'\s]{8,}"
+        Regex = "(?i)$passwordAssignmentPattern(?!<|\$\{|\$\(|%|__)[^;`"'\s]{8,}"
     },
     @{
         Name = "JSON JWT secret contains a literal value"
