@@ -15,6 +15,7 @@ public record ReviewDto(
     string Status,
     string? RejectionReason,
     DateTime CreatedDate,
+    int HelpfulCount,
     List<ReviewCommentDto> Comments,
     CompanyResponseDto? CompanyResponse
 );

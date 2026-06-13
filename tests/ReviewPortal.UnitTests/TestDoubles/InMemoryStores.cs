@@ -242,13 +242,33 @@ internal sealed class InMemoryReviewRepository : IReviewRepository
         int toolId,
         int page,
         int pageSize,
+        string? sortBy = null,
         CancellationToken cancellationToken = default)
     {
-        return Task.FromResult<IReadOnlyList<Review>>(
-            _reviews
-                .Where(review => review.ToolId == toolId && review.Status == ReviewStatus.Approved)
+        var approvedReviews = _reviews
+            .Where(review => review.ToolId == toolId && review.Status == ReviewStatus.Approved);
+
+        approvedReviews = sortBy switch
+        {
+            "helpful" => approvedReviews
+                .OrderByDescending(CalculateHelpfulCount)
+                .ThenByDescending(review => review.CreatedDate)
+                .ThenByDescending(review => review.Id),
+            "rating_desc" => approvedReviews
+                .OrderByDescending(review => review.OverallRating)
+                .ThenByDescending(review => review.CreatedDate)
+                .ThenByDescending(review => review.Id),
+            "rating_asc" => approvedReviews
+                .OrderBy(review => review.OverallRating)
+                .ThenByDescending(review => review.CreatedDate)
+                .ThenByDescending(review => review.Id),
+            _ => approvedReviews
                 .OrderByDescending(review => review.CreatedDate)
                 .ThenByDescending(review => review.Id)
+        };
+
+        return Task.FromResult<IReadOnlyList<Review>>(
+            approvedReviews
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToList());
@@ -299,6 +319,14 @@ internal sealed class InMemoryReviewRepository : IReviewRepository
             _reviews
                 .Where(review => review.ToolId == toolId)
                 .ToList());
+    }
+
+    private static int CalculateHelpfulCount(Review review)
+    {
+        var approvedCommentCount = review.Comments.Count(comment => comment.Status == ReviewStatus.Approved);
+        var ratingHelpfulnessScore = (int)Math.Round(review.OverallRating * 2, MidpointRounding.AwayFromZero);
+
+        return approvedCommentCount + ratingHelpfulnessScore;
     }
 }
 
