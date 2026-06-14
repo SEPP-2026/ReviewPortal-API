@@ -213,6 +213,11 @@ public class AdminModerationControllerTests
             throw new NotSupportedException();
         }
 
+        public Task<Result<PagedList<ReviewDto>>> GetAllApprovedReviewsAsync(int page, int pageSize, string? sortBy = null, CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException();
+        }
+
         public Task<Result<ToolReviewsDto>> GetApprovedReviewsAsync(int toolId, int page, int pageSize, string? sortBy = null, CancellationToken cancellationToken = default)
         {
             throw new NotSupportedException();

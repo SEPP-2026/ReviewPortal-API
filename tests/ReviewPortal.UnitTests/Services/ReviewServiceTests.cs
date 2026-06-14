@@ -394,6 +394,59 @@ public class ReviewServiceTests
     }
 
     [Fact]
+    public async Task GetAllApprovedReviewsAsync_ReturnsApprovedReviewsAcrossAllTools()
+    {
+        var category = new Category { Id = 1, Name = "Garden & Landscaping" };
+        var toolA = CreateTool(1, category, isActive: true);
+        var toolB = CreateTool(2, category, isActive: true);
+        var baseDate = new DateTime(2026, 4, 1, 8, 0, 0, DateTimeKind.Utc);
+        var reviews = new[]
+        {
+            CreateReview(1, toolA, "Ava", ReviewStatus.Approved, baseDate.AddDays(1), 5, 5, 5, 5, 5),
+            CreateReview(2, toolB, "Ben", ReviewStatus.Approved, baseDate.AddDays(2), 4, 4, 4, 4, 4),
+            CreateReview(3, toolA, "Cara", ReviewStatus.Pending, baseDate.AddDays(3), 3, 3, 3, 3, 3),
+            CreateReview(4, toolB, "Dan", ReviewStatus.Approved, baseDate.AddDays(4), 5, 4, 5, 4, 5),
+        };
+        var service = CreateService(reviews: reviews, tools: [toolA, toolB]);
+
+        var result = await service.GetAllApprovedReviewsAsync(page: 1, pageSize: 10);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(3, result.Value!.TotalCount);
+        Assert.Equal(3, result.Value.Items.Count);
+        // Newest approved first; the pending review is excluded.
+        Assert.Equal(["Dan", "Ben", "Ava"], result.Value.Items.Select(review => review.ReviewerName).ToArray());
+    }
+
+    [Fact]
+    public async Task GetAllApprovedReviewsAsync_PaginatesAcrossTools()
+    {
+        var category = new Category { Id = 1, Name = "Access & Lifting" };
+        var tool = CreateTool(9, category, isActive: true);
+        var reviews = Enumerable.Range(1, 12)
+            .Select(index => CreateReview(
+                index,
+                tool,
+                $"Reviewer {index}",
+                ReviewStatus.Approved,
+                new DateTime(2026, 4, 1, 8, 0, 0, DateTimeKind.Utc).AddDays(index),
+                4,
+                4,
+                4,
+                4,
+                4))
+            .ToArray();
+        var service = CreateService(reviews: reviews, tools: [tool]);
+
+        var result = await service.GetAllApprovedReviewsAsync(page: 2, pageSize: 10);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(12, result.Value!.TotalCount);
+        Assert.Equal(2, result.Value.TotalPages);
+        Assert.Equal(2, result.Value.Items.Count);
+    }
+
+    [Fact]
     public async Task GetApprovedReviewsAsync_WhenPageIsInvalid_ReturnsValidationFailure()
     {
         var category = new Category { Id = 1, Name = "Electrical & Heating" };
