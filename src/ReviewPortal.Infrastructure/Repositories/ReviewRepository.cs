@@ -64,6 +64,32 @@ public class ReviewRepository : Repository<Review>, IReviewRepository
             cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Review>> GetAllApprovedWithDetailsAsync(
+        int page,
+        int pageSize,
+        string? sortBy = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbSet
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Where(review => review.Status == ReviewStatus.Approved);
+
+        return await ApplyApprovedReviewSort(query, sortBy)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Include(review => review.Tool)
+            .Include(review => review.Comments.Where(comment => comment.Status == ReviewStatus.Approved))
+            .Include(review => review.CompanyResponse)
+                .ThenInclude(response => response!.StaffUser)
+            .ToListAsync(cancellationToken);
+    }
+
+    public Task<int> CountAllApprovedAsync(CancellationToken cancellationToken = default)
+    {
+        return _dbSet.CountAsync(review => review.Status == ReviewStatus.Approved, cancellationToken);
+    }
+
     public Task<decimal?> GetAverageOverallRatingByToolIdAsync(int toolId, CancellationToken cancellationToken = default)
     {
         return _dbSet

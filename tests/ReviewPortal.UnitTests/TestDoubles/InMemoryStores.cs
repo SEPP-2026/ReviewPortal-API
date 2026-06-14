@@ -279,6 +279,46 @@ internal sealed class InMemoryReviewRepository : IReviewRepository
         return Task.FromResult(_reviews.Count(review => review.ToolId == toolId && review.Status == ReviewStatus.Approved));
     }
 
+    public Task<IReadOnlyList<Review>> GetAllApprovedWithDetailsAsync(
+        int page,
+        int pageSize,
+        string? sortBy = null,
+        CancellationToken cancellationToken = default)
+    {
+        var approvedReviews = _reviews
+            .Where(review => review.Status == ReviewStatus.Approved);
+
+        approvedReviews = sortBy switch
+        {
+            "helpful" => approvedReviews
+                .OrderByDescending(CalculateHelpfulCount)
+                .ThenByDescending(review => review.CreatedDate)
+                .ThenByDescending(review => review.Id),
+            "rating_desc" => approvedReviews
+                .OrderByDescending(review => review.OverallRating)
+                .ThenByDescending(review => review.CreatedDate)
+                .ThenByDescending(review => review.Id),
+            "rating_asc" => approvedReviews
+                .OrderBy(review => review.OverallRating)
+                .ThenByDescending(review => review.CreatedDate)
+                .ThenByDescending(review => review.Id),
+            _ => approvedReviews
+                .OrderByDescending(review => review.CreatedDate)
+                .ThenByDescending(review => review.Id)
+        };
+
+        return Task.FromResult<IReadOnlyList<Review>>(
+            approvedReviews
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList());
+    }
+
+    public Task<int> CountAllApprovedAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(_reviews.Count(review => review.Status == ReviewStatus.Approved));
+    }
+
     public Task<decimal?> GetAverageOverallRatingByToolIdAsync(int toolId, CancellationToken cancellationToken = default)
     {
         var approvedReviews = _reviews
