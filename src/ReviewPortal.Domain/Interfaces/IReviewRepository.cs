@@ -21,6 +21,14 @@ public interface IReviewRepository : IRepository<Review>
 
     Task<int> CountApprovedByToolIdAsync(int toolId, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Review>> GetAllApprovedWithDetailsAsync(
+        int page,
+        int pageSize,
+        string? sortBy = null,
+        CancellationToken cancellationToken = default);
+
+    Task<int> CountAllApprovedAsync(CancellationToken cancellationToken = default);
+
     Task<decimal?> GetAverageOverallRatingByToolIdAsync(int toolId, CancellationToken cancellationToken = default);
 
     Task<Review?> GetByIdWithDetailsAsync(int reviewId, CancellationToken cancellationToken = default);
