@@ -147,6 +147,39 @@ public class ReviewService : IReviewService
             pagedReviews));
     }
 
+    public async Task<Result<PagedList<ReviewDto>>> GetAllApprovedReviewsAsync(
+        int page,
+        int pageSize,
+        string? sortBy = null,
+        CancellationToken cancellationToken = default)
+    {
+        var validationError = ValidatePaging(page, pageSize)
+            ?? ValidateApprovedReviewsSort(sortBy);
+        if (validationError is not null)
+        {
+            return Result<PagedList<ReviewDto>>.Failure(validationError);
+        }
+
+        var totalApprovedReviews = await _reviewRepository.CountAllApprovedAsync(cancellationToken);
+        var approvedReviews = totalApprovedReviews == 0
+            ? Array.Empty<Review>()
+            : await _reviewRepository.GetAllApprovedWithDetailsAsync(
+                page,
+                pageSize,
+                NormalizeApprovedReviewsSort(sortBy),
+                cancellationToken);
+
+        var pagedReviews = new PagedList<ReviewDto>(
+            approvedReviews
+                .Select(review => MapReview(review, review.Tool?.Name ?? string.Empty))
+                .ToList(),
+            page,
+            pageSize,
+            totalApprovedReviews);
+
+        return Result<PagedList<ReviewDto>>.Success(pagedReviews);
+    }
+
     public async Task<Result<ReviewCommentDto>> AddCommentAsync(
         int reviewId,
         CreateCommentRequest request,
